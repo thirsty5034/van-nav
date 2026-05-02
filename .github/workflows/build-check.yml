@@ -1,8 +1,10 @@
-name: Build Check
+name: Build & Upload
+
 on:
   push:
     branches:
       - 'feature/great-search'
+      - 'master'
   workflow_dispatch:
 
 jobs:
@@ -19,19 +21,40 @@ jobs:
         with:
           go-version: "1.23"
 
+      - name: Install pnpm
+        run: npm install -g pnpm
+
       - name: Build Frontend
         run: |
-          npm install -g pnpm
           mkdir -p public
           cd ui && pnpm install && CI=false pnpm build && cd ..
-          cp -r ui/build/* public/ 2>/dev/null || true
+          cp -r ui/build/* public/
 
       - name: Build Backend
         run: |
           go mod tidy
-          go build -v -o van-nav .
+          go build -v -ldflags="-s -w" -o van-nav .
 
-      - name: Verify
+      - name: Verify Binary
         run: |
+          echo "--- Binary Info ---"
           ls -lh van-nav
-          echo "Build completed successfully!"
+          file van-nav
+          echo "--- Disk Usage ---"
+          du -sh van-nav
+
+      - name: Upload Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: van-nav-linux-amd64
+          path: van-nav
+          retention-days: 30
+
+      - name: Build Summary
+        run: |
+          echo "## Build Complete" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | :white_check_mark: Built |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | :white_check_mark: Compiled |" >> $GITHUB_STEP_SUMMARY
+          echo "| Binary Size | $(ls -lh van-nav | awk '{print $5}') |" >> $GITHUB_STEP_SUMMARY
