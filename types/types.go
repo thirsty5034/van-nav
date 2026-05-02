@@ -50,15 +50,15 @@ type Catelog struct {
 	Hide bool   `json:"hide"`
 }
 
-// 搜索引擎模型
+// 搜索引擎模型 - 使用 URL 模板方式
 type SearchEngine struct {
 	Id          int    `json:"id"`
 	Name        string `json:"name"`
-	BaseUrl     string `json:"baseUrl"`
-	QueryParam  string `json:"queryParam"`
+	UrlTemplate string `json:"urlTemplate"`
 	Logo        string `json:"logo"`
 	Sort        int    `json:"sort"`
 	Enabled     bool   `json:"enabled"`
+	Description string `json:"description"`
 }
 
 // 网站配置模型
