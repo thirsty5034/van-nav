@@ -55,8 +55,10 @@ func UpdateTool(data types.UpdateToolDto) {
 	utils.CheckErr(err)
 	_, err = res.RowsAffected()
 	utils.CheckErr(err)
-	// 更新 img
-	UpdateImg(data.Logo)
+	// 更新 img（异步，不阻塞响应）
+	if data.Logo != "" {
+		go UpdateImg(data.Logo)
+	}
 }
 
 func AddTool(data types.AddToolDto) (int64, error) {
@@ -101,9 +103,9 @@ func AddTool(data types.AddToolDto) (int64, error) {
 	}
 	logger.LogInfo("新增工具: %s", data.Name)
 
-	// 在事务完成后再异步更新图片
+	// 在事务完成后再异步更新图片（异步，不阻塞响应）
 	if data.Logo != "" {
-		UpdateImg(data.Logo)
+		go UpdateImg(data.Logo)
 	}
 
 	return id, nil
