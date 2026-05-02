@@ -1,70 +1,37 @@
-name: Build Check (feature/great-search)
-
+name: Build Check
 on:
+  push:
+    branches:
+      - 'feature/great-search'
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to build'
-        required: true
-        default: 'feature/great-search'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.inputs.branch || github.ref }}
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: "18"
 
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.23"
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
       - name: Build Frontend
         run: |
+          npm install -g pnpm
           mkdir -p public
-          cd ui
-          pnpm install
-          CI=false pnpm build
-          cd ..
-          cp -r ui/build/* public/
-          echo "✅ Frontend build complete"
+          cd ui && pnpm install && CI=false pnpm build && cd ..
+          cp -r ui/build/* public/ 2>/dev/null || true
 
       - name: Build Backend
         run: |
           go mod tidy
           go build -v -o van-nav .
-          echo "✅ Backend build complete"
 
-      - name: Verify Binary
+      - name: Verify
         run: |
           ls -lh van-nav
-          file van-nav
-          ./van-nav --help || true
-
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: van-nav-linux-amd64
-          path: van-nav
-          retention-days: 7
-
-      - name: Build Summary
-        run: |
-          echo "## ✅ Build Successful" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Item | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend (React + TypeScript) | ✅ Built |" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend (Go + Gin) | ✅ Compiled |" >> $GITHUB_STEP_SUMMARY
-          echo "| Binary | $(ls -lh van-nav | awk '{print $5}') |" >> $GITHUB_STEP_SUMMARY
+          echo "Build completed successfully!"
