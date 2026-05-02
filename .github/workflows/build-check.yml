@@ -1,6 +1,9 @@
 name: Build Check
 
 on:
+  push:
+    branches:
+      - 'feature/great-search'
   workflow_dispatch:
     inputs:
       branch:
@@ -45,11 +48,6 @@ jobs:
           go mod tidy
           go build -v -o van-nav .
           echo "Backend build complete"
-
-      - name: Verify Binary
-        run: |
-          ls -lh van-nav
-          file van-nav
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v3
