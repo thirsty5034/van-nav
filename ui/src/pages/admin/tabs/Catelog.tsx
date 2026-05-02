@@ -14,7 +14,7 @@ import {
   Switch,
 } from "antd";
 import { QuestionCircleOutlined, DragOutlined } from "@ant-design/icons";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   fetchAddCateLog,
   fetchDeleteCatelog,
@@ -80,11 +80,11 @@ export const Catelog: React.FC<CatelogProps> = (props) => {
   const [dataSource, setDataSource] = useState<CatelogItem[]>([]);
 
   // 从 store 同步 dataSource
-  useState(() => {
+  useEffect(() => {
     if (store?.catelogs) {
       setDataSource([...store.catelogs].sort((a: any, b: any) => a.sort - b.sort));
     }
-  });
+  }, [store?.catelogs]);
 
   const handleDelete = useCallback(
     async (id: number) => {
