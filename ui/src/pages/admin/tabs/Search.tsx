@@ -121,7 +121,7 @@ const SearchEngineManager: React.FC = () => {
       width: 80,
       render: (logo: string, record: SearchEngine) => (
         <Image 
-          src={logo.startsWith('http') ? logo : `/api/img?url=${logo}`} 
+          src={logo} 
           alt={record.name} 
           width={24} 
           height={24}
@@ -210,7 +210,7 @@ const SearchEngineManager: React.FC = () => {
     try {
       const values = await form.validateFields();
       if (editingEngine) {
-        await fetchUpdateSearchEngine({ ...values, id: editingEngine.id });
+        await fetchUpdateSearchEngine({ ...values, id: editingEngine.id, enabled: editingEngine.enabled });
         message.success('修改成功');
       } else {
         await fetchAddSearchEngine({ ...values, enabled: true });
