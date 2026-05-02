@@ -191,3 +191,9 @@ export const fetchUpdateSearchEnginesSort = async (updates: { id: number; sort: 
     const { data } = await axios.put(`/api/admin/searchEngines/sort`, updates);
     return data?.data || {};
 };
+
+// 更新分类排序
+export const fetchUpdateCatelogsSort = async (updates: { id: number; sort: number }[]) => {
+    const { data } = await axios.put(`/api/admin/catelogs/sort`, updates);
+    return data?.data || {};
+};

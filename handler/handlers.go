@@ -678,7 +678,37 @@ func UpdateSearchEngineSortHandler(c *gin.Context) {
 		})
 		return
 	}
-	
+
+	c.JSON(200, gin.H{
+		"success": true,
+		"message": "更新排序成功",
+	})
+}
+
+// 更新分类排序
+func UpdateCatelogSortHandler(c *gin.Context) {
+	var sortData []struct {
+		Id   int `json:"id"`
+		Sort int `json:"sort"`
+	}
+	err := c.ShouldBindJSON(&sortData)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+
+	err = database.UpdateCatelogSort(sortData)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "更新排序成功",

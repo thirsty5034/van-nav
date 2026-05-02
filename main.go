@@ -116,6 +116,9 @@ func main() {
 			admin.PUT("/searchEngine/:id", handler.UpdateSearchEngineHandler)
 			admin.DELETE("/searchEngine/:id", handler.DeleteSearchEngineHandler)
 			admin.PUT("/searchEngines/sort", handler.UpdateSearchEngineSortHandler)
+			
+			// 分类排序路由
+			admin.PUT("/catelogs/sort", handler.UpdateCatelogSortHandler)
 		}
 	}
 	logger.LogInfo("应用启动成功，网址: http://localhost:%s", *port)

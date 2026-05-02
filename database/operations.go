@@ -136,3 +136,30 @@ func UpdateSearchEngineSort(sortData []struct {
 	
 	return tx.Commit()
 }
+
+// 更新分类排序
+func UpdateCatelogSort(sortData []struct {
+	Id   int `json:"id"`
+	Sort int `json:"sort"`
+}) error {
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`UPDATE nav_catelog SET sort = ? WHERE id = ?`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, item := range sortData {
+		_, err = stmt.Exec(item.Sort, item.Id)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}

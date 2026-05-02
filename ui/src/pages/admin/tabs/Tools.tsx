@@ -15,7 +15,7 @@ import {
   Tooltip,
   Switch
 } from "antd";
-import { QuestionCircleOutlined, HolderOutlined } from '@ant-design/icons';
+import { HolderOutlined, DragOutlined } from '@ant-design/icons';
 import React, { useCallback, useState, useEffect, useContext, useMemo } from "react";
 import { getFilter, getOptions, mutiSearch } from "../../../utils/admin";
 import {
@@ -51,14 +51,20 @@ const RowContext = React.createContext<RowContextProps>({});
 const DragHandle: React.FC = () => {
   const { setActivatorNodeRef, listeners } = useContext(RowContext);
   return (
-    <Button
-      type="text"
-      size="small"
-      icon={<HolderOutlined />}
-      style={{ cursor: 'move', touchAction: 'none' }}
+    <div
+      className="drag-handle"
       ref={setActivatorNodeRef}
       {...listeners}
-    />
+      style={{
+        cursor: 'move',
+        padding: '8px',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}
+    >
+      <DragOutlined style={{ color: '#999' }} />
+    </div>
   );
 };
 
@@ -126,6 +132,15 @@ export const Tools: React.FC<ToolsProps> = (props) => {
     },
     [reload]
   );
+  const handleToggleHide = useCallback(async (record: any, hide: boolean) => {
+    try {
+      await fetchUpdateTool({ ...record, hide });
+      message.success("更新成功");
+      reload();
+    } catch (error) {
+      message.error("更新失败");
+    }
+  }, [reload]);
   const handleUpdate = useCallback(
     async (record: any) => {
       setRequestLoading(true);
@@ -484,8 +499,8 @@ export const Tools: React.FC<ToolsProps> = (props) => {
                     <QuestionCircleOutlined style={{ marginLeft: '5px' }} />
                   </Tooltip>
                 </span>
-              } dataIndex={"hide"} width={50} render={(val) => {
-                return Boolean(val) ? "是" : "否"
+              } dataIndex={"hide"} width={60} render={(val: boolean, record: any) => {
+                return <Switch checked={Boolean(val)} onChange={(checked) => handleToggleHide(record, checked)} />
               }} />
               <Table.Column
                 title="操作"
