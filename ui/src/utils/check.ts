@@ -3,9 +3,11 @@ export const isLogin = () => {
 }
 
 export const getLogoUrl = (url: string) => {
-  // 直接返回原始URL，浏览器可以处理：
-  // - 相对路径（如 baidu.ico）→ 从静态资源目录加载
-  // - HTTP链接 → 直接从远程加载
-  // 不再通过 /api/img 代理，避免搜索引擎图标找不到的问题
-  return url;
+  // HTTP/dataURI/已经是/开头的直接返回
+  // 其他（如 baidu.ico）加 / 前缀做根相对路径
+  if (!url) return url;
+  if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('/')) {
+    return url;
+  }
+  return '/' + url;
 } 

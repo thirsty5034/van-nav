@@ -120,8 +120,9 @@ const SearchEngineManager: React.FC = () => {
       dataIndex: 'logo',
       width: 80,
       render: (logo: string, record: SearchEngine) => (
+        // HTTP/dataURI用原值，文件名用根相对路径（管理页面在 /admin，相对路径会404）
         <Image 
-          src={logo} 
+          src={logo.startsWith('http') || logo.startsWith('data:') ? logo : '/' + logo} 
           alt={record.name} 
           width={24} 
           height={24}

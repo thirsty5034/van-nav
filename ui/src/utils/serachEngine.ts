@@ -75,7 +75,8 @@ export const generateSearchEngineCard = async (searchString: string) => {
         desc: `在 ${engine.name} 中搜索 「${searchString}」`,
         id: 8800880000 + engine.id, // 使用特定的ID前缀避免冲突
         logo: engine.logo,
-        hide: false
+        hide: false,
+        catelog: '搜索' // 搜索引擎卡片统一分类
       }));
   } catch (error) {
     console.error('生成搜索引擎卡片失败:', error);

@@ -51,6 +51,7 @@ func GetImgBase64FromUrl(url string) string {
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
+		Timeout: 10 * time.Second,
 	}
 	res, err := client.Do(req)
 	if err != nil {
