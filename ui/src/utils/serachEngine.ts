@@ -9,47 +9,44 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
 const getEnabledSearchEngines = async () => {
   const now = Date.now();
   
-  // 如果缓存有效，直接返回缓存
   if (searchEnginesCache.length > 0 && now < cacheExpiry) {
     return searchEnginesCache;
   }
   
   try {
-    // 从API获取数据
     searchEnginesCache = await fetchGetEnabledSearchEngines();
     cacheExpiry = now + CACHE_DURATION;
     return searchEnginesCache;
   } catch (error) {
     console.error('获取搜索引擎失败，使用默认配置:', error);
     
-    // 如果API调用失败，使用默认搜索引擎配置
     const defaultEngines = [
       {
         id: 1,
         name: "百度",
-        baseUrl: "https://www.baidu.com/s",
-        queryParam: "wd",
+        urlTemplate: "https://www.baidu.com/s?wd={query}",
         logo: "baidu.ico",
         sort: 1,
-        enabled: true
+        enabled: true,
+        description: "百度搜索"
       },
       {
         id: 2,
         name: "Bing",
-        baseUrl: "https://cn.bing.com/search",
-        queryParam: "q",
+        urlTemplate: "https://cn.bing.com/search?q={query}",
         logo: "bing.ico",
         sort: 2,
-        enabled: true
+        enabled: true,
+        description: "微软必应搜索"
       },
       {
         id: 3,
         name: "Google",
-        baseUrl: "https://www.google.com/search",
-        queryParam: "q",
+        urlTemplate: "https://www.google.com/search?q={query}",
         logo: "google.ico",
         sort: 3,
-        enabled: true
+        enabled: true,
+        description: "Google 搜索"
       }
     ];
     
@@ -59,7 +56,6 @@ const getEnabledSearchEngines = async () => {
   }
 };
 
-// 生成搜索引擎卡片
 export const generateSearchEngineCard = async (searchString: string) => {
   if (!searchString.trim()) return [];
   
@@ -67,13 +63,13 @@ export const generateSearchEngineCard = async (searchString: string) => {
     const engines = await getEnabledSearchEngines();
     
     return engines
-      .filter(engine => engine.enabled)
-      .sort((a, b) => a.sort - b.sort)
-      .map((engine, index) => ({
+      .filter((engine: any) => engine.enabled)
+      .sort((a: any, b: any) => a.sort - b.sort)
+      .map((engine: any, index: number) => ({
         name: `使用 ${engine.name} 搜索`,
-        url: generateSearchUrl(engine.baseUrl, engine.queryParam, searchString),
+        url: generateSearchUrl(engine.urlTemplate, searchString),
         desc: `在 ${engine.name} 中搜索 「${searchString}」`,
-        id: 8800880000 + engine.id, // 使用特定的ID前缀避免冲突
+        id: 8800880000 + engine.id,
         logo: engine.logo,
         hide: false
       }));
@@ -83,13 +79,10 @@ export const generateSearchEngineCard = async (searchString: string) => {
   }
 };
 
-// 生成搜索URL
-const generateSearchUrl = (baseUrl: string, queryParam: string, searchString: string) => {
-  const separator = baseUrl.includes('?') ? '&' : '?';
-  return `${baseUrl}${separator}${queryParam}=${encodeURIComponent(searchString)}`;
+const generateSearchUrl = (urlTemplate: string, searchString: string) => {
+  return urlTemplate.replace(/{query}/g, encodeURIComponent(searchString));
 };
 
-// 清除缓存（当管理员修改搜索引擎配置时调用）
 export const clearSearchEngineCache = () => {
   searchEnginesCache = [];
   cacheExpiry = 0;
