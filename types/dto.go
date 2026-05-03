@@ -49,6 +49,15 @@ type AddToolDto struct {
 	Sort    int    `json:"sort"`
 	Hide    bool   `json:"hide"`
 }
+
+type FetchPageInfoResponse struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
+
+type MaxSortResponse struct {
+	MaxSort int `json:"maxSort"`
+}
 type UpdateToolsSortDto struct {
 	Id   int `json:"id"`
 	Sort int `json:"sort"`

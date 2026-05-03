@@ -118,6 +118,18 @@ export const fetchGetFaviconFromApi = async (url: string) => {
     return data;
 };
 
+// 获取页面标题和描述
+export const fetchPageInfo = async (url: string) => {
+    const { data } = await axios.get(`/api/admin/fetch-page-info?url=${encodeURIComponent(url)}`);
+    return data;
+};
+
+// 获取工具表最大排序值
+export const fetchMaxSort = async () => {
+    const { data } = await axios.get(`/api/admin/tools/max-sort`);
+    return data;
+};
+
 // 分类管理接口；新增、修改、删除
 export const fetchAddCateLog = async (payload: any) => {
     const { data } = await axios.post(`/api/admin/catelog`, payload);

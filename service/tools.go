@@ -193,3 +193,14 @@ func UpdateToolsSort(updates []types.UpdateToolsSortDto) error {
 
 	return tx.Commit()
 }
+
+// GetMaxSort 获取工具表最大排序值
+func GetMaxSort() (int, error) {
+	sql := `SELECT COALESCE(MAX(sort), 0) FROM nav_table`
+	var maxSort int
+	err := database.DB.QueryRow(sql).Scan(&maxSort)
+	if err != nil {
+		return 0, err
+	}
+	return maxSort, nil
+}

@@ -26,6 +26,8 @@ import {
   fetchUpdateTool,
   fetchUpdateToolsSort,
   fetchGetFaviconFromApi,
+  fetchPageInfo,
+  fetchMaxSort,
 } from "../../../utils/api";
 import { useData } from "../hooks/useData";
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -120,6 +122,7 @@ export const Tools: React.FC<ToolsProps> = (props) => {
   const [selectedRows, setSelectRows] = useState<any>([]);
   const [dataSource, setDataSource] = useState<DataType[]>([]);
   const [gettingFavicon, setGettingFavicon] = useState(false);
+  const [gettingDesc, setGettingDesc] = useState(false);
 
   // 获取 favicon 的函数
   const handleGetFavicon = async (form: any, formInstance: 'add' | 'update') => {
@@ -141,6 +144,34 @@ export const Tools: React.FC<ToolsProps> = (props) => {
       message.error(err.response?.data?.errorMessage || '获取 favicon 失败');
     } finally {
       setGettingFavicon(false);
+    }
+  };
+
+  // 获取描述的函数
+  const handleGetDesc = async (form: any) => {
+    const url = form.getFieldValue('url');
+    if (!url) {
+      message.warning('请先填写工具网址');
+      return;
+    }
+    setGettingDesc(true);
+    try {
+      const res = await fetchPageInfo(url);
+      if (res.success) {
+        const desc = res.data.description || res.data.title;
+        if (desc) {
+          form.setFieldsValue({ desc });
+          message.success('获取描述成功');
+        } else {
+          message.warning('未找到描述信息，请手动输入');
+        }
+      } else {
+        message.warning(res.errorMessage || '获取失败，请手动输入描述');
+      }
+    } catch (err: any) {
+      message.error(err.response?.data?.errorMessage || '获取失败，请手动输入描述');
+    } finally {
+      setGettingDesc(false);
     }
   };
 
@@ -384,7 +415,16 @@ export const Tools: React.FC<ToolsProps> = (props) => {
           />
           <Button
             type="primary"
-            onClick={() => {
+            onClick={async () => {
+              // 获取最大排序值并设置默认值
+              try {
+                const res = await fetchMaxSort();
+                if (res.success) {
+                  addForm.setFieldsValue({ sort: res.data.maxSort + 1 });
+                }
+              } catch (e) {
+                // 忽略错误，使用默认值
+              }
               setShowAddModel(true);
             }}
           >
@@ -638,18 +678,33 @@ export const Tools: React.FC<ToolsProps> = (props) => {
               />
             </Form.Item>
             <Form.Item
-              rules={[{ required: true, message: "请填写描述" }]}
               name="desc"
-              required
               label="描述"
               labelCol={{ span: 4 }}
             >
-              <Input placeholder="请输入描述" />
+              <Input 
+                placeholder="请输入描述"
+                addonAfter={
+                  <Tooltip title="自动获取描述">
+                    <Button 
+                      type="text" 
+                      size="small" 
+                      icon={<CloudDownloadOutlined />} 
+                      loading={gettingDesc}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleGetDesc(addForm);
+                      }}
+                      style={{ padding: 0 }}
+                    />
+                  </Tooltip>
+                }
+              />
             </Form.Item>
             <Form.Item
               rules={[{ required: true, message: "请排序" }]}
               name="sort"
-              initialValue={1}
               required
               label={
                 <span>
@@ -659,13 +714,13 @@ export const Tools: React.FC<ToolsProps> = (props) => {
                   &nbsp;排序
                 </span>
               }
-              labelCol={{ span: 4 }}>
+              labelCol={{ span: 4 }}
+            >
               <InputNumber placeholder="请输入排序" />
             </Form.Item>
             <Form.Item
               name="hide"
               initialValue={false}
-              required
               label={
                 <span>
                   <Tooltip title="开启后只有登录后才会展示该工具">
@@ -735,8 +790,26 @@ export const Tools: React.FC<ToolsProps> = (props) => {
                 placeholder="请选���分类"
               />
             </Form.Item>
-            <Form.Item name="desc" required label="描述" labelCol={{ span: 4 }}>
-              <Input placeholder="请输入描述" />
+            <Form.Item name="desc" label="描述" labelCol={{ span: 4 }}>
+              <Input 
+                placeholder="请输入描述"
+                addonAfter={
+                  <Tooltip title="自动获取描述">
+                    <Button 
+                      type="text" 
+                      size="small" 
+                      icon={<CloudDownloadOutlined />} 
+                      loading={gettingDesc}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleGetDesc(updateForm);
+                      }}
+                      style={{ padding: 0 }}
+                    />
+                  </Tooltip>
+                }
+              />
             </Form.Item>
 
             <Form.Item

@@ -106,6 +106,8 @@ func main() {
 			admin.PUT("/tool/:id", handler.UpdateToolHandler)
 			admin.PUT("/tools/sort", handler.UpdateToolsSortHandler)
 			admin.POST("/tools/logo/from-api", handler.GetFaviconFromApiHandler)
+			admin.GET("/tools/max-sort", handler.GetMaxSortHandler)
+			admin.GET("/fetch-page-info", handler.FetchPageInfoHandler)
 
 			admin.POST("/catelog", handler.AddCatelogHandler)
 			admin.DELETE("/catelog/:id", handler.DeleteCatelogHandler)

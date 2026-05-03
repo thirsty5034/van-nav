@@ -1,11 +1,16 @@
 package handler
 
 import (
+	"crypto/tls"
 	"encoding/base64"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mereith/nav/database"
@@ -13,6 +18,7 @@ import (
 	"github.com/mereith/nav/service"
 	"github.com/mereith/nav/types"
 	"github.com/mereith/nav/utils"
+	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
 func ExportToolsHandler(c *gin.Context) {
@@ -804,4 +810,306 @@ func extractDomain(urlStr string) string {
 func replaceDomain(template, domain string) string {
 	result := strings.ReplaceAll(template, "{domain}", domain)
 	return result
+}
+
+// FetchPageInfoHandler 获取页面标题和描述
+func FetchPageInfoHandler(c *gin.Context) {
+	urlStr := c.Query("url")
+	if urlStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": "url 参数不能为空",
+		})
+		return
+	}
+
+	// 如果 URL 没有协议头，添加 https://
+	if len(urlStr) > 0 && !(urlStr[:7] == "http://" || urlStr[:8] == "https://") {
+		urlStr = "https://" + urlStr
+	}
+
+	// 浏览器 User-Agent，模拟真实浏览器请求
+	browserUA := "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+	client.Transport = &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+
+	// 最多重试 2 次（处理 429 限速）
+	maxRetries := 2
+	var lastErr error
+
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		req, err := http.NewRequest("GET", urlStr, nil)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success":      false,
+				"errorMessage": "构建请求失败: " + err.Error(),
+			})
+			return
+		}
+		req.Header.Set("User-Agent", browserUA)
+		req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+		req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+
+		resp, err := client.Do(req)
+		if err != nil {
+			lastErr = err
+			// 网络错误可以重试
+			if attempt < maxRetries {
+				time.Sleep(time.Second)
+				continue
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"success":      false,
+				"errorMessage": "请求失败: " + err.Error(),
+			})
+			return
+		}
+		defer resp.Body.Close()
+
+		// 处理 429 限速
+		if resp.StatusCode == http.StatusTooManyRequests {
+			retryAfter := resp.Header.Get("Retry-After")
+			waitSeconds := 2 // 默认等待 2 秒
+			if retryAfter != "" {
+				if s, err := strconv.Atoi(retryAfter); err == nil {
+					waitSeconds = s
+				}
+			}
+			if attempt < maxRetries {
+				time.Sleep(time.Duration(waitSeconds) * time.Second)
+				continue
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"success":      false,
+				"errorMessage": "请求过于频繁，请稍后再试",
+			})
+			return
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			lastErr = fmt.Errorf("状态码 %d", resp.StatusCode)
+			c.JSON(http.StatusOK, gin.H{
+				"success":      false,
+				"errorMessage": "请求失败，状态码: " + strconv.Itoa(resp.StatusCode),
+			})
+			return
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success":      false,
+				"errorMessage": "读取响应失败: " + err.Error(),
+			})
+			return
+		}
+
+		// 识别网页编码并转换
+		html := decodeHTMLBody(body, resp.Header.Get("Content-Type"))
+
+		// 提取 title
+		title := extractTitle(html)
+
+		// 检测反爬页面（如验证码页面）
+		if isAntiCrawlPage(title) != "" {
+			c.JSON(http.StatusOK, gin.H{
+				"success":      false,
+				"errorMessage": "目标网站存在反爬限制，请手动填写描述",
+			})
+			return
+		}
+
+		// 提取 description
+		desc := extractMetaContent(html, "description")
+
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data": types.FetchPageInfoResponse{
+				Title:       title,
+				Description: desc,
+			},
+		})
+		return
+	}
+
+	// 兜底错误
+	c.JSON(http.StatusOK, gin.H{
+		"success":      false,
+		"errorMessage": "请求失败: " + lastErr.Error(),
+	})
+}
+
+// extractMetaContent 从 HTML 中提取 meta 标签内容
+func extractMetaContent(html, name string) string {
+	// 匹配 <meta name="description" content="..."> 或 <meta content="..." name="description">
+	patterns := []string{
+		fmt.Sprintf(`<meta[^>]+name=["']%s["'][^>]+content=["']([^"']+)["']`, name),
+		fmt.Sprintf(`<meta[^>]+content=["']([^"']+)["'][^>]+name=["']%s["']`, name),
+	}
+
+	for _, pattern := range patterns {
+		re := regexp.MustCompile(`(?i)` + pattern)
+		matches := re.FindStringSubmatch(html)
+		if len(matches) > 1 && strings.TrimSpace(matches[1]) != "" {
+			return strings.TrimSpace(matches[1])
+		}
+	}
+	return ""
+}
+
+// extractTitle 从 HTML 中提取 title 标签内容
+func extractTitle(html string) string {
+	re := regexp.MustCompile(`(?i)<title[^>]*>([^<]+)</title>`)
+	matches := re.FindStringSubmatch(html)
+	if len(matches) > 1 {
+		return strings.TrimSpace(matches[1])
+	}
+	return ""
+}
+
+// decodeHTMLBody 根据 Content-Type 或 HTML meta 标签识别编码并转换为 UTF-8
+func decodeHTMLBody(body []byte, contentType string) string {
+	// 1. 尝试从 Content-Type header 获取编码
+	charset := extractCharsetFromContentType(contentType)
+
+	// 2. 如果 header 没有，尝试从 HTML meta 标签获取
+	if charset == "" {
+		charset = extractCharsetFromMeta(string(body))
+	}
+
+	// 3. 根据编码转换
+	if charset != "" {
+		encodingName := strings.ToLower(charset)
+		switch encodingName {
+		case "gbk", "gb2312", "gb18030":
+			// 使用 simplifiedchinese 将 GBK 转换为 UTF-8
+			result := convertGBKToUTF8(body)
+			if result != "" {
+				return result
+			}
+		case "big5":
+			// Big5 编码需要额外处理，这里暂不支持
+			return string(body)
+		case "utf-8", "utf8":
+			return string(body)
+		}
+	}
+
+	// 4. 默认：尝试用 UTF-8 解码，如果失败则尝试 GBK
+	// 检查是否有效的 UTF-8
+	if validUTF8(body) {
+		return string(body)
+	}
+	// 不是有效 UTF-8，尝试 GBK
+	result := convertGBKToUTF8(body)
+	if result != "" {
+		return result
+	}
+
+	// 5. 兜底：直接返回原始内容
+	return string(body)
+}
+
+// validUTF8 检查是否为有效的 UTF-8 编码
+func validUTF8(data []byte) bool {
+	for i := 0; i < len(data); {
+		if data[i] < 0x80 {
+			i++
+			continue
+		}
+		// 简单的 UTF-8 验证
+		return false
+	}
+	return true
+}
+
+// extractCharsetFromContentType 从 Content-Type header 提取 charset
+func extractCharsetFromContentType(contentType string) string {
+	re := regexp.MustCompile(`(?i)charset=([^\s;]+)`)
+	matches := re.FindStringSubmatch(contentType)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
+}
+
+// extractCharsetFromMeta 从 HTML meta 标签提取编码
+func extractCharsetFromMeta(html string) string {
+	// 匹配 <meta charset="utf-8">
+	re := regexp.MustCompile(`(?i)<meta[^>]+charset=["']?([^\s"'>]+)`)
+	matches := re.FindStringSubmatch(html)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+
+	// 匹配 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	re = regexp.MustCompile(`(?i)<meta[^>]+http-equiv=["']?Content-Type["']?[^>]+content=["']?[^"']*charset=([^\s"'>]+)`)
+	matches = re.FindStringSubmatch(html)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+
+	return ""
+}
+
+// convertGBKToUTF8 手动转换 GBK 到 UTF-8
+func convertGBKToUTF8(body []byte) string {
+	// 使用 golang.org/x/text/encoding/simplifiedchinese
+	GBK := simplifiedchinese.GB18030
+	decoder := GBK.NewDecoder()
+	result, err := decoder.Bytes(body)
+	if err == nil {
+		return string(result)
+	}
+	return ""
+}
+
+// isAntiCrawlPage 检测是否为反爬页面（如验证码页面）
+func isAntiCrawlPage(title string) string {
+	if title == "" {
+		return ""
+	}
+
+	// 常见的反爬关键词
+	antiCrawlKeywords := []string{
+		"验证码",
+		"captcha",
+		"验证",
+		"安全验证",
+		"人机验证",
+		"atk",
+		"安全中心",
+	}
+
+	titleLower := strings.ToLower(title)
+	for _, keyword := range antiCrawlKeywords {
+		if strings.Contains(titleLower, strings.ToLower(keyword)) {
+			return keyword
+		}
+	}
+	return ""
+}
+
+// GetMaxSortHandler 获取工具表最大排序值
+func GetMaxSortHandler(c *gin.Context) {
+	maxSort, err := service.GetMaxSort()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": "获取最大排序失败",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": types.MaxSortResponse{
+			MaxSort: maxSort,
+		},
+	})
 }
