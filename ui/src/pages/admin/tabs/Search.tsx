@@ -294,52 +294,52 @@ const SearchEngineManager: React.FC = () => {
   };
 
 return (
-    <Card
-      title={
-        <Space>
-          <span>搜索引擎管理</span>
-          <span style={{ color: '#999', fontSize: 13 }}>当前共 {engines.length} 条</span>
-          {selectedRows.length > 0 && (
-            <Popconfirm
-              title="确定删除选中的搜索引擎吗？"
-              onConfirm={handleBulkDelete}
-            >
-              <Button type="link" danger>删除 ({selectedRows.length})</Button>
-            </Popconfirm>
-          )}
-        </Space>
-      }
-      extra={
-        <Space>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>添加搜索引擎</Button>
-        </Space>
-      }
-    >
-      <Spin spinning={loading}>
-        <DndContext onDragEnd={onDragEnd}>
-          <SortableContext items={engines.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-            <Table
-              columns={columns}
-              dataSource={engines}
-              rowKey="id"
-              components={{ body: { row: DraggableRow } }}
-              pagination={false}
-              size="middle"
-              rowSelection={{
-                type: 'checkbox',
-                selectedRowKeys: selectedRows.map(r => r.id),
-                onChange: (_: React.Key[], selectedRows: SearchEngine[]) => {
-                  setSelectedRows(selectedRows);
-                },
-              }}
-            />
-          </SortableContext>
-        </DndContext>
-      </Spin>
-    </Card>
-  );
-  return (
-    <Modal
+    <>
+      <Card
+        title={
+          <Space>
+            <span>搜索引擎管理</span>
+            <span style={{ color: '#999', fontSize: 13 }}>当前共 {engines.length} 条</span>
+            {selectedRows.length > 0 && (
+              <Popconfirm
+                title="确定删除选中的搜索引擎吗？"
+                onConfirm={handleBulkDelete}
+              >
+                <Button type="link" danger>删除 ({selectedRows.length})</Button>
+              </Popconfirm>
+            )}
+          </Space>
+        }
+        extra={
+          <Space>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>添加搜索引擎</Button>
+          </Space>
+        }
+      >
+        <Spin spinning={loading}>
+          <DndContext onDragEnd={onDragEnd}>
+            <SortableContext items={engines.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+              <Table
+                columns={columns}
+                dataSource={engines}
+                rowKey="id"
+                components={{ body: { row: DraggableRow } }}
+                pagination={false}
+                size="middle"
+                rowSelection={{
+                  type: 'checkbox',
+                  selectedRowKeys: selectedRows.map(r => r.id),
+                  onChange: (_: React.Key[], selectedRows: SearchEngine[]) => {
+                    setSelectedRows(selectedRows);
+                  },
+                }}
+              />
+            </SortableContext>
+          </DndContext>
+        </Spin>
+      </Card>
+      <Modal
+        open={isModalVisible}
         onOk={handleModalOk}
         onCancel={() => setIsModalVisible(false)}
         width={600}
@@ -380,6 +380,7 @@ return (
           </Form.Item>
         </Form>
       </Modal>
+    </>
   );
 };
 
