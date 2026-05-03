@@ -405,6 +405,45 @@ func UpdateToolHandler(c *gin.Context) {
 	})
 }
 
+// UpdateToolDescOnlyHandler 只更新工具描述，不修改其他字段
+func UpdateToolDescOnlyHandler(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": "无效的ID",
+		})
+		return
+	}
+
+	var body struct {
+		Desc string `json:"desc"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+
+	sql := `UPDATE nav_table SET desc = ? WHERE id = ?`
+	_, err = database.DB.Exec(sql, body.Desc, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"success": true,
+		"message": "更新描述成功",
+	})
+}
+
 func AddCatelogHandler(c *gin.Context) {
 	// 添加分类
 	var data types.AddCatelogDto
@@ -820,14 +859,14 @@ func FetchPageInfoHandler(c *gin.Context) {
 	browserUA := "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
 	client := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 30 * time.Second,
 	}
 	client.Transport = &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
-	// 最多重试 2 次（处理 429 限速）
-	maxRetries := 2
+	// 最多重试 1 次
+	maxRetries := 1
 	var lastErr error
 
 	for attempt := 0; attempt <= maxRetries; attempt++ {

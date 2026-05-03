@@ -28,6 +28,7 @@ import {
   fetchGetFaviconFromApi,
   fetchPageInfo,
   fetchMaxSort,
+  fetchUpdateToolDesc,
 } from "../../../utils/api";
 import { useData } from "../hooks/useData";
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -308,7 +309,7 @@ export const Tools: React.FC<ToolsProps> = (props) => {
         try {
           const res = await fetchGetFaviconFromApi(each.url);
           if (res.success && res.logoUrl) {
-            await fetchUpdateTool({ ...each, logo: res.logoUrl });
+            await fetchUpdateTool({ id: each.id, name: each.name, url: each.url, logo: res.logoUrl, catelog: each.catelog, desc: each.desc, sort: each.sort, hide: each.hide });
             success++;
           } else {
             fail++;
@@ -331,11 +332,14 @@ export const Tools: React.FC<ToolsProps> = (props) => {
     try {
       for (const each of selectedRows) {
         try {
+          // 先获取该工具的当前最新数据（防止前面其他操作已修改过 logo 等字段）
+          const current = store?.tools?.find((t: any) => t.id === each.id) || each;
           const res = await fetchPageInfo(each.url);
           if (res.success) {
             const desc = res.data.description || res.data.title;
             if (desc) {
-              await fetchUpdateTool({ ...each, desc });
+              // 只更新描述，不修改其他字段
+              await fetchUpdateToolDesc(each.id, desc);
               success++;
             } else {
               fail++;
@@ -352,7 +356,7 @@ export const Tools: React.FC<ToolsProps> = (props) => {
       message.success(`更新完成：成功 ${success} 个，失败 ${fail} 个`);
       reload();
     }
-  }, [reload, selectedRows]);
+  }, [reload, selectedRows, store?.tools]);
   const handleExport = useCallback(async () => {
     const data = await fetchExportTools();
     const jsr = JSON.stringify(data);

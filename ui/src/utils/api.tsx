@@ -124,6 +124,12 @@ export const fetchPageInfo = async (url: string) => {
     return data;
 };
 
+// 只更新工具描述
+export const fetchUpdateToolDesc = async (id: number, desc: string) => {
+    const { data } = await axios.put(`/api/admin/tool/${id}/desc`, { desc });
+    return data?.data || {};
+};
+
 // 获取工具表最大排序值
 export const fetchMaxSort = async () => {
     const { data } = await axios.get(`/api/admin/tools/max-sort`);

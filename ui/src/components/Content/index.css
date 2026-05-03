@@ -583,7 +583,8 @@
     display: flex;
     flex-wrap: wrap;
     align-content: space-around;
-    height: 48px;
+    height: auto;
+    min-height: 48px;
     flex: 1;
     overflow: hidden;
   }
