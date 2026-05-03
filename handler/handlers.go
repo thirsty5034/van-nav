@@ -1113,3 +1113,166 @@ func GetMaxSortHandler(c *gin.Context) {
 		},
 	})
 }
+
+// ==================== 导入导出相关 Handler ====================
+
+// ExportConfigHandler 导出所有配置
+func ExportConfigHandler(c *gin.Context) {
+	tools := service.GetAllTool()
+	catelogs := service.GetAllCatelog()
+	searchEngines, err := database.GetAllSearchEngines()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": "获取搜索引擎失败: " + err.Error(),
+		})
+		return
+	}
+	tokens, err := database.GetAllTokens()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": "获取Token失败: " + err.Error(),
+		})
+		return
+	}
+	settings, err := database.GetAllSettings()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": "获取设置失败: " + err.Error(),
+		})
+		return
+	}
+
+	resp := types.ExportConfigResponse{
+		ExportTime:    time.Now().Format("2006-01-02T15:04:05Z"),
+		Version:       "1.0",
+		Tools:         tools,
+		Catelogs:      catelogs,
+		SearchEngines: searchEngines,
+		ApiTokens:     tokens,
+		Settings:      settings,
+	}
+
+	c.JSON(200, gin.H{
+		"success": true,
+		"data":    resp,
+	})
+}
+
+// ImportConfigHandler 导入配置
+func ImportConfigHandler(c *gin.Context) {
+	var req types.ImportConfigRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": "请求格式无效: " + err.Error(),
+		})
+		return
+	}
+
+	result := types.ImportConfigResponse{
+		Success: true,
+		Errors:  make([]string, 0),
+	}
+
+	// 按顺序导入：分类 → 工具 → 搜索引擎 → Token → 设置
+
+	// 1. 导入分类（先清空）
+	if err := database.DeleteAllCatelogs(); err != nil {
+		result.Success = false
+		result.Errors = append(result.Errors, "清空分类失败: "+err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": "清空分类失败: " + err.Error(),
+		})
+		return
+	}
+	if err := database.InsertCatelogs(req.Catelogs); err != nil {
+		result.Success = false
+		result.Errors = append(result.Errors, "导入分类失败: "+err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": "导入分类失败: " + err.Error(),
+		})
+		return
+	}
+	result.CatelogsImported = len(req.Catelogs)
+
+	// 2. 导入工具（先清空）
+	if err := database.DeleteAllTools(); err != nil {
+		result.Success = false
+		result.Errors = append(result.Errors, "清空工具失败: "+err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": "清空工具失败: " + err.Error(),
+		})
+		return
+	}
+	if err := database.InsertTools(req.Tools); err != nil {
+		result.Success = false
+		result.Errors = append(result.Errors, "导入工具失败: "+err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": "导入工具失败: " + err.Error(),
+		})
+		return
+	}
+	result.ToolsImported = len(req.Tools)
+
+	// 3. 导入搜索引擎（先清空）
+	if err := database.DeleteAllSearchEngines(); err != nil {
+		result.Success = false
+		result.Errors = append(result.Errors, "清空搜索引擎失败: "+err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": "清空搜索引擎失败: " + err.Error(),
+		})
+		return
+	}
+	if err := database.InsertSearchEngines(req.SearchEngines); err != nil {
+		result.Success = false
+		result.Errors = append(result.Errors, "导入搜索引擎失败: "+err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": "导入搜索引擎失败: " + err.Error(),
+		})
+		return
+	}
+	result.SearchEnginesImported = len(req.SearchEngines)
+
+	// 4. 导入 API Token（按name去重）
+	for _, token := range req.ApiTokens {
+		if database.TokenExists(token.Name) {
+			result.ApiTokensSkipped++
+			continue
+		}
+		if err := database.InsertToken(token); err != nil {
+			result.Errors = append(result.Errors, "导入Token '"+token.Name+"' 失败: "+err.Error())
+			continue
+		}
+		result.ApiTokensImported++
+	}
+
+	// 5. 导入设置（合并更新）
+	for key, value := range req.Settings {
+		if err := database.UpdateSettingField(key, value); err != nil {
+			result.Errors = append(result.Errors, "更新设置 '"+key+"' 失败: "+err.Error())
+			continue
+		}
+		result.SettingsUpdated++
+	}
+
+	if len(result.Errors) > 0 {
+		result.Success = false
+		result.Message = "部分导入完成，但有错误"
+	} else {
+		result.Message = "全部导入成功"
+	}
+
+	c.JSON(200, gin.H{
+		"success": true,
+		"data":    result,
+	})
+}

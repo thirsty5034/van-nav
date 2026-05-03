@@ -122,6 +122,10 @@ func main() {
 			
 			// 分类排序路由
 			admin.PUT("/catelogs/sort", handler.UpdateCatelogSortHandler)
+			
+			// 导入导出路由
+			admin.GET("/exportConfig", handler.ExportConfigHandler)
+			admin.POST("/importConfig", handler.ImportConfigHandler)
 		}
 	}
 	logger.LogInfo("应用启动成功，网址: http://localhost:%s", *port)

@@ -1,13 +1,18 @@
-import { Button, Card, Form, Input, message, Select, Spin, Switch } from "antd";
-import { useCallback, useEffect } from "react";
-import { fetchUpdateSetting, fetchUpdateUser, fetchUpdateSiteConfig } from "../../../utils/api";
+import { Button, Card, Form, Input, message, Modal, Select, Spin, Switch, Table, Upload } from "antd";
+import { useCallback, useEffect, useState } from "react";
+import { fetchUpdateSetting, fetchUpdateUser, fetchUpdateSiteConfig, fetchExportConfig, fetchImportConfig } from "../../../utils/api";
 import { useData } from "../hooks/useData";
+import { CloudDownloadOutlined, CloudUploadOutlined, ExclamationCircleOutlined, WarningOutlined } from "@ant-design/icons";
 export interface SettingProps { }
 export const Setting: React.FC<SettingProps> = (props) => {
   const { store, loading, reload } = useData();
   const [userForm] = Form.useForm();
   const [settingForm] = Form.useForm();
   const [siteConfigForm] = Form.useForm();
+  const [importing, setImporting] = useState(false);
+  const [importModalVisible, setImportModalVisible] = useState(false);
+  const [importPreview, setImportPreview] = useState<any>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
   useEffect(() => {
     userForm.setFieldsValue(store?.user ?? {})
     settingForm.setFieldsValue(store?.setting ?? {})
@@ -52,8 +57,226 @@ export const Setting: React.FC<SettingProps> = (props) => {
     },
     [reload]
   );
+
+  // 导出配置
+  const handleExport = useCallback(async () => {
+    try {
+      const res = await fetchExportConfig();
+      if (res?.success && res?.data) {
+        const jsonStr = JSON.stringify(res.data, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const now = new Date();
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        const filename = `project-config-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.json`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        // API Token 安全提示
+        if (res.data.api_tokens && res.data.api_tokens.length > 0) {
+          Modal.warning({
+            title: '⚠️ 包含敏感令牌信息',
+            icon: <WarningOutlined />,
+            content: '导出的配置文件中包含 API Token 的完整值，请妥善保管此文件，切勿分享给他人或在非安全环境中存储。',
+          });
+        }
+
+        message.success(`配置已导出至 ${filename}`);
+      } else {
+        message.error('导出失败');
+      }
+    } catch (err) {
+      message.error('导出失败: ' + (err as any).message);
+    }
+  }, []);
+
+  // 导入文件选择
+  const handleImportFileSelect = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = JSON.parse(e.target?.result as string);
+        // 校验格式
+        if (!content.version || !content.tools || !content.categories || !content.search_engines || !content.api_tokens || !content.settings) {
+          message.error('文件格式无效：缺少必要的字段（version、tools、categories、search_engines、api_tokens、settings）');
+          return;
+        }
+        setImportFile(file);
+        setImportPreview(content);
+        setImportModalVisible(true);
+      } catch {
+        message.error('文件格式无效：请上传有效的 JSON 文件');
+      }
+    };
+    reader.readAsText(file);
+    return false; // 阻止自动上传
+  }, []);
+
+  // 确认导入
+  const handleImportConfirm = useCallback(async () => {
+    if (!importPreview) return;
+    setImporting(true);
+    try {
+      const payload = {
+        tools: importPreview.tools || [],
+        categories: importPreview.categories || [],
+        search_engines: importPreview.search_engines || [],
+        api_tokens: importPreview.api_tokens || [],
+        settings: importPreview.settings || {},
+      };
+      const res = await fetchImportConfig(payload);
+      if (res?.success && res?.data) {
+        const result = res.data;
+        const detailLines = [
+          `分类：导入 ${result.categories_imported} 条`,
+          `工具：导入 ${result.tools_imported} 条`,
+          `搜索引擎：导入 ${result.search_engines_imported} 条`,
+          `Token：导入 ${result.api_tokens_imported} 条，跳过 ${result.api_tokens_skipped} 条`,
+          `设置：更新 ${result.settings_updated} 项`,
+        ];
+        if (result.errors && result.errors.length > 0) {
+          detailLines.push('', '⚠️ 部分操作出现错误：');
+          result.errors.forEach((err: string) => detailLines.push(`  - ${err}`));
+        }
+        Modal.success({
+          title: result.success ? '✅ 导入成功' : '⚠️ 导入完成（有错误）',
+          content: (
+            <div>
+              {detailLines.map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
+            </div>
+          ),
+        });
+        setImportModalVisible(false);
+        setImportPreview(null);
+        setImportFile(null);
+        reload();
+      } else {
+        message.error('导入失败: ' + (res?.data?.errorMessage || '未知错误'));
+      }
+    } catch (err) {
+      message.error('导入失败: ' + (err as any).message);
+    } finally {
+      setImporting(false);
+    }
+  }, [importPreview, reload]);
+
+  // 构建预览表格列
+  const previewColumns = [
+    { title: '模块', dataIndex: 'module', key: 'module' },
+    { title: '数量', dataIndex: 'count', key: 'count' },
+  ];
+
+  const previewData = importPreview ? [
+    { key: '1', module: '工具', count: importPreview.tools?.length || 0 },
+    { key: '2', module: '分类', count: importPreview.categories?.length || 0 },
+    { key: '3', module: '搜索引擎', count: importPreview.search_engines?.length || 0 },
+    { key: '4', module: 'API Token', count: importPreview.api_tokens?.length || 0 },
+    { key: '5', module: '设置项', count: Object.keys(importPreview.settings || {}).length },
+  ] : [];
+
+  // 样本数据
+  const sampleColumns = [
+    { title: '名称', dataIndex: 'name', key: 'name', ellipsis: true },
+    { title: '值', dataIndex: 'value', key: 'value', ellipsis: true },
+  ];
+
   return (
     <div className="overflow-auto">
+      {/* 导入导出操作区 */}
+      <Card
+        title={
+          <span>
+            <CloudDownloadOutlined style={{ marginRight: 8 }} />
+            配置导入导出
+          </span>
+        }
+        style={{ marginBottom: 32, border: '2px solid #1890ff' }}
+        extra={
+          <span style={{ fontSize: 12, color: '#999' }}>
+            <ExclamationCircleOutlined style={{ marginRight: 4 }} />
+            支持工具、分类、搜索引擎、API Token、设置的整体备份与恢复
+          </span>
+        }
+      >
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          <Button
+            type="primary"
+            size="large"
+            icon={<CloudDownloadOutlined />}
+            onClick={handleExport}
+            loading={loading}
+          >
+            导出配置
+          </Button>
+          <Upload
+            accept=".json"
+            showUploadList={false}
+            beforeUpload={handleImportFileSelect}
+            disabled={importing}
+          >
+            <Button
+              size="large"
+              icon={<CloudUploadOutlined />}
+              loading={importing}
+              disabled={importing}
+            >
+              导入配置
+            </Button>
+          </Upload>
+        </div>
+      </Card>
+
+      {/* 导入确认 Modal */}
+      <Modal
+        title="确认导入配置"
+        open={importModalVisible}
+        onOk={handleImportConfirm}
+        onCancel={() => {
+          setImportModalVisible(false);
+          setImportPreview(null);
+          setImportFile(null);
+        }}
+        confirmLoading={importing}
+        okText="确认导入"
+        cancelText="取消"
+        width={600}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <ExclamationCircleOutlined style={{ color: '#faad14', marginRight: 8 }} />
+          即将导入以下配置，当前数据将被替换（Token 按名称去重、设置合并更新）：
+        </div>
+        <Table
+          dataSource={previewData}
+          columns={previewColumns}
+          pagination={false}
+          size="small"
+          style={{ marginBottom: 16 }}
+        />
+        {importPreview?.api_tokens?.length > 0 && (
+          <div style={{ marginBottom: 16, padding: 8, background: '#fff7e6', borderRadius: 4, border: '1px solid #ffd591' }}>
+            <WarningOutlined style={{ color: '#fa8c16', marginRight: 8 }} />
+            <strong>包含敏感令牌信息</strong>，请确保导出文件来源可靠。
+          </div>
+        )}
+        {/* 样本预览 */}
+        {importPreview?.tools?.length > 0 && (
+          <details>
+            <summary style={{ cursor: 'pointer', marginBottom: 8 }}>工具样本（前 5 条）</summary>
+            <Table
+              dataSource={importPreview.tools.slice(0, 5).map((t: any, i: number) => ({ key: i, name: t.name, value: t.url }))}
+              columns={sampleColumns}
+              pagination={false}
+              size="small"
+            />
+          </details>
+        )}
+      </Modal>
+
       <Card title={`修改用户信息`} style={{ marginBottom: 32 }}>
         <Spin spinning={loading}>
           <Form onFinish={handleUpdateUser} initialValues={store?.user ?? {}} form={userForm}>

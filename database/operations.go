@@ -162,3 +162,275 @@ func UpdateCatelogSort(sortData []struct {
 
 	return tx.Commit()
 }
+
+// ==================== 导入导出相关数据库操作 ====================
+
+// 获取所有 API Token
+func GetAllTokens() ([]types.Token, error) {
+	sql := `SELECT id, name, value, disabled FROM nav_api_token ORDER BY id ASC`
+	rows, err := DB.Query(sql)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tokens []types.Token
+	for rows.Next() {
+		var token types.Token
+		err := rows.Scan(&token.Id, &token.Name, &token.Value, &token.Disabled)
+		if err != nil {
+			return nil, err
+		}
+		tokens = append(tokens, token)
+	}
+	return tokens, nil
+}
+
+// 获取所有分类
+func GetAllCatelogs() ([]types.Catelog, error) {
+	sql := `SELECT id, name, sort, hide FROM nav_catelog ORDER BY sort ASC`
+	rows, err := DB.Query(sql)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var catelogs []types.Catelog
+	for rows.Next() {
+		var catelog types.Catelog
+		var hide interface{}
+		var sort interface{}
+		err := rows.Scan(&catelog.Id, &catelog.Name, &sort, &hide)
+		if err != nil {
+			return nil, err
+		}
+		if hide == nil {
+			catelog.Hide = false
+		} else {
+			catelog.Hide = hide.(int64) == 1
+		}
+		if sort == nil {
+			catelog.Sort = 0
+		} else {
+			catelog.Sort = int(sort.(int64))
+		}
+		catelogs = append(catelogs, catelog)
+	}
+	return catelogs, nil
+}
+
+// 获取所有设置（键值对形式）
+func GetAllSettings() (map[string]string, error) {
+	sql := `SELECT id, favicon, title, govRecord, logo192, logo512, hideAdmin, hideGithub, hideToggleJumpTarget, jumpTargetBlank FROM nav_setting ORDER BY id ASC LIMIT 1`
+	row := DB.QueryRow(sql)
+
+	var setting types.Setting
+	var hideGithub, hideAdmin, hideToggleJumpTarget, jumpTargetBlank interface{}
+	err := row.Scan(&setting.Id, &setting.Favicon, &setting.Title, &setting.GovRecord, &setting.Logo192, &setting.Logo512, &hideAdmin, &hideGithub, &hideToggleJumpTarget, &jumpTargetBlank)
+	if err != nil {
+		return make(map[string]string), nil
+	}
+
+	settings := make(map[string]string)
+	settings["favicon"] = setting.Favicon
+	settings["title"] = setting.Title
+	settings["govRecord"] = setting.GovRecord
+	settings["logo192"] = setting.Logo192
+	settings["logo512"] = setting.Logo512
+
+	if hideAdmin != nil {
+		if hideAdmin.(int64) == 1 {
+			settings["hideAdmin"] = "true"
+		} else {
+			settings["hideAdmin"] = "false"
+		}
+	} else {
+		settings["hideAdmin"] = "false"
+	}
+	if hideGithub != nil {
+		if hideGithub.(int64) == 1 {
+			settings["hideGithub"] = "true"
+		} else {
+			settings["hideGithub"] = "false"
+		}
+	} else {
+		settings["hideGithub"] = "false"
+	}
+	if hideToggleJumpTarget != nil {
+		if hideToggleJumpTarget.(int64) == 1 {
+			settings["hideToggleJumpTarget"] = "true"
+		} else {
+			settings["hideToggleJumpTarget"] = "false"
+		}
+	} else {
+		settings["hideToggleJumpTarget"] = "false"
+	}
+	if jumpTargetBlank != nil {
+		if jumpTargetBlank.(int64) == 1 {
+			settings["jumpTargetBlank"] = "true"
+		} else {
+			settings["jumpTargetBlank"] = "false"
+		}
+	} else {
+		settings["jumpTargetBlank"] = "true"
+	}
+
+	return settings, nil
+}
+
+// 删除所有工具
+func DeleteAllTools() error {
+	_, err := DB.Exec(`DELETE FROM nav_table`)
+	return err
+}
+
+// 删除所有分类
+func DeleteAllCatelogs() error {
+	_, err := DB.Exec(`DELETE FROM nav_catelog`)
+	return err
+}
+
+// 删除所有搜索引擎
+func DeleteAllSearchEngines() error {
+	_, err := DB.Exec(`DELETE FROM nav_search_engine`)
+	return err
+}
+
+// 批量插入工具
+func InsertTools(tools []types.Tool) error {
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`INSERT INTO nav_table (id, name, url, logo, catelog, desc, sort, hide) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, tool := range tools {
+		hide := 0
+		if tool.Hide {
+			hide = 1
+		}
+		_, err := stmt.Exec(tool.Id, tool.Name, tool.Url, tool.Logo, tool.Catelog, tool.Desc, tool.Sort, hide)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+// 批量插入分类
+func InsertCatelogs(catelogs []types.Catelog) error {
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`INSERT INTO nav_catelog (id, name, sort, hide) VALUES (?, ?, ?, ?)`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, catelog := range catelogs {
+		hide := 0
+		if catelog.Hide {
+			hide = 1
+		}
+		_, err := stmt.Exec(catelog.Id, catelog.Name, catelog.Sort, hide)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+// 批量插入搜索引擎
+func InsertSearchEngines(engines []types.SearchEngine) error {
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`INSERT INTO nav_search_engine (id, name, urlTemplate, logo, sort, enabled, description) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, engine := range engines {
+		enabled := 1
+		if !engine.Enabled {
+			enabled = 0
+		}
+		_, err := stmt.Exec(engine.Id, engine.Name, engine.UrlTemplate, engine.Logo, engine.Sort, enabled, engine.Description)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+// 检查 Token 是否存在
+func TokenExists(name string) bool {
+	var count int
+	err := DB.QueryRow(`SELECT COUNT(*) FROM nav_api_token WHERE name = ?`, name).Scan(&count)
+	if err != nil {
+		return false
+	}
+	return count > 0
+}
+
+// 插入 Token
+func InsertToken(token types.Token) error {
+	_, err := DB.Exec(`INSERT INTO nav_api_token (name, value, disabled) VALUES (?, ?, ?)`, token.Name, token.Value, token.Disabled)
+	return err
+}
+
+// 更新设置字段
+func UpdateSettingField(key string, value string) error {
+	var sql string
+	switch key {
+	case "favicon":
+		sql = `UPDATE nav_setting SET favicon = ? WHERE id = (SELECT id FROM nav_setting ORDER BY id ASC LIMIT 1)`
+	case "title":
+		sql = `UPDATE nav_setting SET title = ? WHERE id = (SELECT id FROM nav_setting ORDER BY id ASC LIMIT 1)`
+	case "govRecord":
+		sql = `UPDATE nav_setting SET govRecord = ? WHERE id = (SELECT id FROM nav_setting ORDER BY id ASC LIMIT 1)`
+	case "logo192":
+		sql = `UPDATE nav_setting SET logo192 = ? WHERE id = (SELECT id FROM nav_setting ORDER BY id ASC LIMIT 1)`
+	case "logo512":
+		sql = `UPDATE nav_setting SET logo512 = ? WHERE id = (SELECT id FROM nav_setting ORDER BY id ASC LIMIT 1)`
+	case "hideAdmin":
+		sql = `UPDATE nav_setting SET hideAdmin = ? WHERE id = (SELECT id FROM nav_setting ORDER BY id ASC LIMIT 1)`
+	case "hideGithub":
+		sql = `UPDATE nav_setting SET hideGithub = ? WHERE id = (SELECT id FROM nav_setting ORDER BY id ASC LIMIT 1)`
+	case "hideToggleJumpTarget":
+		sql = `UPDATE nav_setting SET hideToggleJumpTarget = ? WHERE id = (SELECT id FROM nav_setting ORDER BY id ASC LIMIT 1)`
+	case "jumpTargetBlank":
+		sql = `UPDATE nav_setting SET jumpTargetBlank = ? WHERE id = (SELECT id FROM nav_setting ORDER BY id ASC LIMIT 1)`
+	default:
+		return nil
+	}
+
+	var val interface{}
+	if value == "true" {
+		val = 1
+	} else if value == "false" {
+		val = 0
+	} else {
+		val = value
+	}
+
+	_, err := DB.Exec(sql, val)
+	return err
+}

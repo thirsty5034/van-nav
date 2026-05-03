@@ -62,3 +62,39 @@ type UpdateToolsSortDto struct {
 	Id   int `json:"id"`
 	Sort int `json:"sort"`
 }
+
+// ==================== 导入导出相关 ====================
+
+// 导出配置响应
+type ExportConfigResponse struct {
+	ExportTime    string         `json:"export_time"`
+	Version       string         `json:"version"`
+	Tools         []Tool         `json:"tools"`
+	Catelogs      []Catelog      `json:"categories"`
+	SearchEngines []SearchEngine `json:"search_engines"`
+	ApiTokens     []Token        `json:"api_tokens"`
+	Settings      map[string]string `json:"settings"`
+}
+
+// 导入配置请求
+type ImportConfigRequest struct {
+	Tools         []Tool         `json:"tools"`
+	Catelogs      []Catelog      `json:"categories"`
+	SearchEngines []SearchEngine `json:"search_engines"`
+	ApiTokens     []Token        `json:"api_tokens"`
+	Settings      map[string]string `json:"settings"`
+}
+
+// 导入配置响应
+type ImportConfigResponse struct {
+	Success       bool                    `json:"success"`
+	Message       string                  `json:"message"`
+	ToolsImported int                     `json:"tools_imported"`
+	ToolsSkipped  int                     `json:"tools_skipped"`
+	CatelogsImported int                  `json:"categories_imported"`
+	SearchEnginesImported int             `json:"search_engines_imported"`
+	ApiTokensImported int                 `json:"api_tokens_imported"`
+	ApiTokensSkipped int                  `json:"api_tokens_skipped"`
+	SettingsUpdated int                   `json:"settings_updated"`
+	Errors        []string                `json:"errors"`
+}

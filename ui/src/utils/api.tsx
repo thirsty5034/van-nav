@@ -215,3 +215,17 @@ export const fetchUpdateCatelogsSort = async (updates: { id: number; sort: numbe
     const { data } = await axios.put(`/api/admin/catelogs/sort`, updates);
     return data?.data || {};
 };
+
+// ==================== 导入导出接口 ====================
+
+// 导出配置
+export const fetchExportConfig = async () => {
+    const { data } = await axios.get(`/api/admin/exportConfig`);
+    return data;
+};
+
+// 导入配置
+export const fetchImportConfig = async (payload: any) => {
+    const { data } = await axios.post(`/api/admin/importConfig`, payload);
+    return data;
+};
