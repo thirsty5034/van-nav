@@ -74,6 +74,7 @@ type ExportConfigResponse struct {
 	SearchEngines []SearchEngine `json:"search_engines"`
 	ApiTokens     []Token        `json:"api_tokens"`
 	Settings      map[string]string `json:"settings"`
+	SiteConfig    map[string]interface{} `json:"site_config"`
 }
 
 // 导入配置请求
@@ -83,6 +84,7 @@ type ImportConfigRequest struct {
 	SearchEngines []SearchEngine `json:"search_engines"`
 	ApiTokens     []Token        `json:"api_tokens"`
 	Settings      map[string]string `json:"settings"`
+	SiteConfig    map[string]interface{} `json:"site_config"`
 }
 
 // 导入配置响应
@@ -96,5 +98,6 @@ type ImportConfigResponse struct {
 	ApiTokensImported int                 `json:"api_tokens_imported"`
 	ApiTokensSkipped int                  `json:"api_tokens_skipped"`
 	SettingsUpdated int                   `json:"settings_updated"`
+	SiteConfigUpdated int                 `json:"site_config_updated"`
 	Errors        []string                `json:"errors"`
 }

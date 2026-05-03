@@ -434,3 +434,77 @@ func UpdateSettingField(key string, value string) error {
 	_, err := DB.Exec(sql, val)
 	return err
 }
+
+// GetSiteConfigAsMap 获取网站配置为 map
+func GetSiteConfigAsMap() (map[string]interface{}, error) {
+	sql := `SELECT id, noImageMode, compactMode, faviconApiEnabled, COALESCE(faviconApiTemplate, '') FROM nav_site_config ORDER BY id ASC LIMIT 1`
+	row := DB.QueryRow(sql)
+
+	var id int
+	var noImageMode, compactMode, faviconApiEnabled interface{}
+	var faviconApiTemplate string
+	err := row.Scan(&id, &noImageMode, &compactMode, &faviconApiEnabled, &faviconApiTemplate)
+	if err != nil {
+		return make(map[string]interface{}), nil
+	}
+
+	cfg := make(map[string]interface{})
+	cfg["id"] = id
+
+	if noImageMode == nil {
+		cfg["noImageMode"] = false
+	} else {
+		cfg["noImageMode"] = noImageMode.(int64) == 1
+	}
+	if compactMode == nil {
+		cfg["compactMode"] = false
+	} else {
+		cfg["compactMode"] = compactMode.(int64) == 1
+	}
+	if faviconApiEnabled == nil {
+		cfg["faviconApiEnabled"] = false
+	} else {
+		cfg["faviconApiEnabled"] = faviconApiEnabled.(int64) == 1
+	}
+	cfg["faviconApiTemplate"] = faviconApiTemplate
+
+	return cfg, nil
+}
+
+// UpdateSiteConfigFromMap 从 map 更新网站配置
+func UpdateSiteConfigFromMap(cfg map[string]interface{}) error {
+	sql := `UPDATE nav_site_config SET noImageMode = ?, compactMode = ?, faviconApiEnabled = ?, faviconApiTemplate = ? WHERE id = (SELECT id FROM nav_site_config ORDER BY id ASC LIMIT 1)`
+
+	toBool := func(v interface{}) int {
+		switch val := v.(type) {
+		case bool:
+			if val {
+				return 1
+			}
+			return 0
+		case float64:
+			if val != 0 {
+				return 1
+			}
+			return 0
+		case string:
+			if val == "true" || val == "1" {
+				return 1
+			}
+			return 0
+		default:
+			return 0
+		}
+	}
+
+	noImageMode := toBool(cfg["noImageMode"])
+	compactMode := toBool(cfg["compactMode"])
+	faviconApiEnabled := toBool(cfg["faviconApiEnabled"])
+	faviconApiTemplate := ""
+	if v, ok := cfg["faviconApiTemplate"].(string); ok {
+		faviconApiTemplate = v
+	}
+
+	_, err := DB.Exec(sql, noImageMode, compactMode, faviconApiEnabled, faviconApiTemplate)
+	return err
+}

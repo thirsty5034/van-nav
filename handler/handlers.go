@@ -1144,6 +1144,14 @@ func ExportConfigHandler(c *gin.Context) {
 		})
 		return
 	}
+	siteConfig, err := database.GetSiteConfigAsMap()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": "获取网站配置失败: " + err.Error(),
+		})
+		return
+	}
 
 	resp := types.ExportConfigResponse{
 		ExportTime:    time.Now().Format("2006-01-02T15:04:05Z"),
@@ -1153,6 +1161,7 @@ func ExportConfigHandler(c *gin.Context) {
 		SearchEngines: searchEngines,
 		ApiTokens:     tokens,
 		Settings:      settings,
+		SiteConfig:    siteConfig,
 	}
 
 	c.JSON(200, gin.H{
@@ -1262,6 +1271,15 @@ func ImportConfigHandler(c *gin.Context) {
 			continue
 		}
 		result.SettingsUpdated++
+	}
+
+	// 6. 导入网站配置（直接替换）
+	if req.SiteConfig != nil && len(req.SiteConfig) > 0 {
+		if err := database.UpdateSiteConfigFromMap(req.SiteConfig); err != nil {
+			result.Errors = append(result.Errors, "更新网站配置失败: "+err.Error())
+		} else {
+			result.SiteConfigUpdated = 1
+		}
 	}
 
 	if len(result.Errors) > 0 {
