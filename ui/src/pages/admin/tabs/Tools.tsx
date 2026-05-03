@@ -239,7 +239,15 @@ export const Tools: React.FC<ToolsProps> = (props) => {
     async (data: any) => {
       try {
         await fetchImportTools(data);
-        message.success("导入成功!");
+        message.success("导入成功! 正在刷新图标缓存...");
+        // 触发缓存刷新：逐个更新工具触发图标缓存
+        if (data && Array.isArray(data)) {
+          for (const tool of data) {
+            try {
+              await fetchUpdateTool({ ...tool });
+            } catch (e) { }
+          }
+        }
       } catch (err) {
         message.warning("导入失败!");
       } finally {
@@ -287,6 +295,61 @@ export const Tools: React.FC<ToolsProps> = (props) => {
     } catch (err) {
       message.success("重置失败!");
     } finally {
+      reload();
+    }
+  }, [reload, selectedRows]);
+  const handleBulkUpdateLogoFromApi = useCallback(async () => {
+    if (selectedRows.length === 0) return;
+    let success = 0;
+    let fail = 0;
+    const hide = message.loading('正在更新 Logo 网址...', 0);
+    try {
+      for (const each of selectedRows) {
+        try {
+          const res = await fetchGetFaviconFromApi(each.url);
+          if (res.success && res.logoUrl) {
+            await fetchUpdateTool({ ...each, logo: res.logoUrl });
+            success++;
+          } else {
+            fail++;
+          }
+        } catch (err) {
+          fail++;
+        }
+      }
+    } finally {
+      hide();
+      message.success(`更新完成：成功 ${success} 个，失败 ${fail} 个`);
+      reload();
+    }
+  }, [reload, selectedRows]);
+  const handleBulkUpdateDesc = useCallback(async () => {
+    if (selectedRows.length === 0) return;
+    let success = 0;
+    let fail = 0;
+    const hide = message.loading('正在获取描述...', 0);
+    try {
+      for (const each of selectedRows) {
+        try {
+          const res = await fetchPageInfo(each.url);
+          if (res.success) {
+            const desc = res.data.description || res.data.title;
+            if (desc) {
+              await fetchUpdateTool({ ...each, desc });
+              success++;
+            } else {
+              fail++;
+            }
+          } else {
+            fail++;
+          }
+        } catch (err) {
+          fail++;
+        }
+      }
+    } finally {
+      hide();
+      message.success(`更新完成：成功 ${success} 个，失败 ${fail} 个`);
       reload();
     }
   }, [reload, selectedRows]);
@@ -388,6 +451,26 @@ export const Tools: React.FC<ToolsProps> = (props) => {
               }}
             >
               <Button type="link">重置缓存图标</Button>
+            </Popconfirm>
+          )}
+          {selectedRows.length > 0 && (
+            <Popconfirm
+              title="根据 Logo API 模板自动获取并更新选中工具的 logo 网址？"
+              onConfirm={() => {
+                handleBulkUpdateLogoFromApi();
+              }}
+            >
+              <Button type="link">一键更新Logo网址</Button>
+            </Popconfirm>
+          )}
+          {selectedRows.length > 0 && (
+            <Popconfirm
+              title="自动获取并更新选中工具的描述？"
+              onConfirm={() => {
+                handleBulkUpdateDesc();
+              }}
+            >
+              <Button type="link">一键更新描述</Button>
             </Popconfirm>
           )}
         </Space>
@@ -682,25 +765,24 @@ export const Tools: React.FC<ToolsProps> = (props) => {
               label="描述"
               labelCol={{ span: 4 }}
             >
-              <Input 
+              <Input.TextArea
+                rows={2}
                 placeholder="请输入描述"
-                addonAfter={
-                  <Tooltip title="自动获取描述">
-                    <Button 
-                      type="text" 
-                      size="small" 
-                      icon={<CloudDownloadOutlined />} 
-                      loading={gettingDesc}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleGetDesc(addForm);
-                      }}
-                      style={{ padding: 0 }}
-                    />
-                  </Tooltip>
-                }
               />
+            </Form.Item>
+            <Form.Item wrapperCol={{ offset: 4, span: 20 }}>
+              <Button
+                type="link"
+                icon={<CloudDownloadOutlined />}
+                loading={gettingDesc}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleGetDesc(addForm);
+                }}
+                style={{ padding: 0, fontSize: 13 }}
+              >
+                自动获取描述
+              </Button>
             </Form.Item>
             <Form.Item
               rules={[{ required: true, message: "请排序" }]}
@@ -791,25 +873,24 @@ export const Tools: React.FC<ToolsProps> = (props) => {
               />
             </Form.Item>
             <Form.Item name="desc" label="描述" labelCol={{ span: 4 }}>
-              <Input 
+              <Input.TextArea
+                rows={2}
                 placeholder="请输入描述"
-                addonAfter={
-                  <Tooltip title="自动获取描述">
-                    <Button 
-                      type="text" 
-                      size="small" 
-                      icon={<CloudDownloadOutlined />} 
-                      loading={gettingDesc}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleGetDesc(updateForm);
-                      }}
-                      style={{ padding: 0 }}
-                    />
-                  </Tooltip>
-                }
               />
+            </Form.Item>
+            <Form.Item wrapperCol={{ offset: 4, span: 20 }}>
+              <Button
+                type="link"
+                icon={<CloudDownloadOutlined />}
+                loading={gettingDesc}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleGetDesc(updateForm);
+                }}
+                style={{ padding: 0, fontSize: 13 }}
+              >
+                自动获取描述
+              </Button>
             </Form.Item>
 
             <Form.Item

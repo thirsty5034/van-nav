@@ -114,8 +114,7 @@ export const Setting: React.FC<SettingProps> = (props) => {
     reader.readAsText(file);
     return false; // 阻止自动上传
   }, []);
-
-  // 确认导入
+// 确认导入
   const handleImportConfirm = useCallback(async () => {
     if (!importPreview) return;
     setImporting(true);
@@ -126,6 +125,7 @@ export const Setting: React.FC<SettingProps> = (props) => {
         search_engines: importPreview.search_engines || [],
         api_tokens: importPreview.api_tokens || [],
         settings: importPreview.settings || {},
+        site_config: importPreview.site_config || {},
       };
       const res = await fetchImportConfig(payload);
       if (res?.success && res?.data) {
@@ -154,6 +154,17 @@ export const Setting: React.FC<SettingProps> = (props) => {
         setImportModalVisible(false);
         setImportPreview(null);
         setImportFile(null);
+        // 刷新图标缓存：逐个触发工具图标缓存
+        if (importPreview.tools && importPreview.tools.length > 0) {
+          try {
+            const { fetchUpdateTool } = await import('../../../utils/api');
+            for (const tool of importPreview.tools) {
+              try {
+                await fetchUpdateTool({ ...tool });
+              } catch (e) { }
+            }
+          } catch (e) { }
+        }
         reload();
       } else {
         message.error('导入失败: ' + (res?.data?.errorMessage || '未知错误'));
@@ -408,13 +419,10 @@ export const Setting: React.FC<SettingProps> = (props) => {
             <Form.Item label="精简模式" name="compactMode" tooltip="开启后卡片只显示标题和logo，如果同时开启无图模式则只显示标题">
               <Switch defaultChecked={Boolean(store?.siteConfig?.compactMode)} />
             </Form.Item>
-            <Form.Item label="工具 Logo API 启用" name="faviconApiEnabled" tooltip="开启后可在添加工具时自动获取 favicon">
-              <Switch defaultChecked={Boolean(store?.siteConfig?.faviconApiEnabled)} />
-            </Form.Item>
             <Form.Item
-              label="API 地址模板"
+              label="Logo API 地址模板"
               name="faviconApiTemplate"
-              tooltip="使用 {domain} 占位符表示工具主域名"
+              tooltip="使用 {domain} 占位符表示工具主域名，默认使用 https://favicon.im/{domain}"
               rules={[
                 { required: true, message: "请输入 API 地址模板" },
                 {

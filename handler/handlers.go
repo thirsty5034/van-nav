@@ -743,22 +743,10 @@ func GetFaviconFromApiHandler(c *gin.Context) {
 	// 获取站点配置
 	siteConfig := service.GetSiteConfig()
 
-	// 检查是否启用 API
-	if !siteConfig.FaviconApiEnabled {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success":      false,
-			"errorMessage": "自动获取 Logo 功能未启用，请在设置中开启",
-		})
-		return
-	}
-
-	// 检查模板是否配置
-	if siteConfig.FaviconApiTemplate == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success":      false,
-			"errorMessage": "API 模板未配置，请在设置中配置",
-		})
-		return
+	// 获取 API 地址模板，始终可用
+	apiTemplate := siteConfig.FaviconApiTemplate
+	if apiTemplate == "" {
+		apiTemplate = "https://favicon.im/{domain}"
 	}
 
 	// 从 URL 中提取域名
@@ -772,7 +760,7 @@ func GetFaviconFromApiHandler(c *gin.Context) {
 	}
 
 	// 替换模板中的 {domain}
-	logoUrl := replaceDomain(siteConfig.FaviconApiTemplate, domain)
+	logoUrl := replaceDomain(apiTemplate, domain)
 
 	c.JSON(200, gin.H{
 		"success":  true,

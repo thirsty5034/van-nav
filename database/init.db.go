@@ -139,9 +139,9 @@ func InitDB() {
 	rows, err = DB.Query(`SELECT * FROM nav_site_config;`)
 	utils.CheckErr(err)
 	if !rows.Next() {
-		stmt, err := DB.Prepare(`INSERT INTO nav_site_config (noImageMode, compactMode) VALUES (?, ?);`)
+		stmt, err := DB.Prepare(`INSERT INTO nav_site_config (noImageMode, compactMode, faviconApiEnabled, faviconApiTemplate) VALUES (?, ?, ?, ?);`)
 		utils.CheckErr(err)
-		_, err = stmt.Exec(false, false)
+		_, err = stmt.Exec(false, false, true, "https://favicon.im/{domain}")
 		utils.CheckErr(err)
 	}
 	rows.Close()

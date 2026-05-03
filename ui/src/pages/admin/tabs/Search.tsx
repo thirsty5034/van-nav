@@ -14,7 +14,7 @@ import {
   Tooltip,
   Popconfirm,
 } from 'antd';
-import { DragOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DragOutlined, DeleteOutlined, EditOutlined, PlusOutlined, CloudDownloadOutlined } from '@ant-design/icons';
 import { DndContext } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -24,6 +24,8 @@ import {
   fetchUpdateSearchEngine,
   fetchDeleteSearchEngine,
   fetchUpdateSearchEnginesSort,
+  fetchGetFaviconFromApi,
+  fetchPageInfo,
 } from '../../../utils/api';
 import { clearSearchEngineCache } from '../../../utils/serachEngine';
 
@@ -72,6 +74,44 @@ const SearchEngineManager: React.FC = () => {
   const [editingEngine, setEditingEngine] = useState<SearchEngine | null>(null);
   const [form] = Form.useForm();
   const [selectedRows, setSelectedRows] = useState<SearchEngine[]>([]);
+  const [fetchingLogo, setFetchingLogo] = useState(false);
+  const [fetchingInfo, setFetchingInfo] = useState(false);
+
+  // 获取搜索引擎描述和图标
+  const handleFetchInfo = async () => {
+    const urlTemplate = form.getFieldValue('urlTemplate');
+    if (!urlTemplate) {
+      message.warning('请先填写搜索URL模板');
+      return;
+    }
+    // 从 URL 模板中提取域名
+    const baseUrl = urlTemplate.replace('{query}', '').replace('%s', '').replace('?', '').trim();
+    if (!baseUrl) {
+      message.warning('无法从 URL 模板中提取网址');
+      return;
+    }
+    setFetchingInfo(true);
+    try {
+      // 获取 favicon
+      const faviconRes = await fetchGetFaviconFromApi(baseUrl);
+      if (faviconRes.success && faviconRes.logoUrl) {
+        form.setFieldsValue({ logo: faviconRes.logoUrl });
+      }
+      // 获取描述
+      const pageRes = await fetchPageInfo(baseUrl);
+      if (pageRes.success) {
+        const desc = pageRes.data.description || pageRes.data.title;
+        if (desc) {
+          form.setFieldsValue({ description: desc });
+        }
+      }
+      message.success('获取完成');
+    } catch (err: any) {
+      message.error('获取失败: ' + (err.response?.data?.errorMessage || err.message));
+    } finally {
+      setFetchingInfo(false);
+    }
+  };
 
   const loadEngines = async () => {
     try {
@@ -378,6 +418,16 @@ return (
           >
             <Input placeholder="例如：baidu.ico 或 https://example.com/logo.png" />
           </Form.Item>
+          <div style={{ marginBottom: 16 }}>
+            <Button
+              type="dashed"
+              icon={<CloudDownloadOutlined />}
+              loading={fetchingInfo}
+              onClick={handleFetchInfo}
+            >
+              一键获取描述和图标
+            </Button>
+          </div>
         </Form>
       </Modal>
     </>

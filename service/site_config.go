@@ -8,7 +8,7 @@ import (
 
 func GetSiteConfig() types.SiteConfig {
 	sql_get_site_config := `
-		SELECT id, noImageMode, compactMode, faviconApiEnabled, faviconApiTemplate 
+		SELECT id, noImageMode, compactMode, faviconApiEnabled, COALESCE(faviconApiTemplate, 'https://favicon.im/{domain}') 
 		FROM nav_site_config 
 		ORDER BY id ASC 
 		LIMIT 1;
@@ -24,7 +24,7 @@ func GetSiteConfig() types.SiteConfig {
 			Id:                  1,
 			NoImageMode:         false,
 			CompactMode:         false,
-			FaviconApiEnabled:   false,
+			FaviconApiEnabled:   true,
 			FaviconApiTemplate:  "https://favicon.im/{domain}",
 		}
 	}
