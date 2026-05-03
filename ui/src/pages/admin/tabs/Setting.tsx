@@ -185,6 +185,27 @@ export const Setting: React.FC<SettingProps> = (props) => {
             <Form.Item label="精简模式" name="compactMode" tooltip="开启后卡片只显示标题和logo，如果同时开启无图模式则只显示标题">
               <Switch defaultChecked={Boolean(store?.siteConfig?.compactMode)} />
             </Form.Item>
+            <Form.Item label="工具 Logo API 启用" name="faviconApiEnabled" tooltip="开启后可在添加工具时自动获取 favicon">
+              <Switch defaultChecked={Boolean(store?.siteConfig?.faviconApiEnabled)} />
+            </Form.Item>
+            <Form.Item
+              label="API 地址模板"
+              name="faviconApiTemplate"
+              tooltip="使用 {domain} 占位符表示工具主域名"
+              rules={[
+                { required: true, message: "请输入 API 地址模板" },
+                {
+                  validator: (_, value) => {
+                    if (!value || !value.includes("{domain}")) {
+                      return Promise.reject(new Error("模板必须包含 {domain} 占位符"));
+                    }
+                    return Promise.resolve();
+                  },
+                },
+              ]}
+            >
+              <Input placeholder="https://favicon.im/{domain}" />
+            </Form.Item>
             <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
               <Button type="primary" htmlType="submit">
                 提交

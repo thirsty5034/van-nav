@@ -63,7 +63,9 @@ type SearchEngine struct {
 
 // 网站配置模型
 type SiteConfig struct {
-	Id          int  `json:"id"`
-	NoImageMode bool `json:"noImageMode"`
-	CompactMode bool `json:"compactMode"`
+	Id                  int  `json:"id"`
+	NoImageMode         bool `json:"noImageMode"`
+	CompactMode         bool `json:"compactMode"`
+	FaviconApiEnabled   bool   `json:"faviconApiEnabled"`
+	FaviconApiTemplate  string `json:"faviconApiTemplate"`
 }

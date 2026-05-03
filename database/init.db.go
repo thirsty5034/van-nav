@@ -83,10 +83,12 @@ func InitDB() {
 		DB.Exec(`ALTER TABLE nav_search_engine ADD COLUMN description TEXT DEFAULT '';`)
 	}
 
-	sql_create_table = `CREATE TABLE IF NOT EXISTS nav_site_config (id INTEGER PRIMARY KEY AUTOINCREMENT, noImageMode BOOLEAN NOT NULL DEFAULT 0, compactMode BOOLEAN NOT NULL DEFAULT 0);`
+	sql_create_table = `CREATE TABLE IF NOT EXISTS nav_site_config (id INTEGER PRIMARY KEY AUTOINCREMENT, noImageMode BOOLEAN NOT NULL DEFAULT 0, compactMode BOOLEAN NOT NULL DEFAULT 0, faviconApiEnabled BOOLEAN NOT NULL DEFAULT 0, faviconApiTemplate TEXT DEFAULT '');`
 	_, err = DB.Exec(sql_create_table)
 	utils.CheckErr(err)
 	if !columnExists("nav_site_config", "compactMode") { DB.Exec(`ALTER TABLE nav_site_config ADD COLUMN compactMode BOOLEAN NOT NULL DEFAULT 0;`) }
+	if !columnExists("nav_site_config", "faviconApiEnabled") { DB.Exec(`ALTER TABLE nav_site_config ADD COLUMN faviconApiEnabled BOOLEAN NOT NULL DEFAULT 0;`) }
+	if !columnExists("nav_site_config", "faviconApiTemplate") { DB.Exec(`ALTER TABLE nav_site_config ADD COLUMN faviconApiTemplate TEXT DEFAULT 'https://favicon.im/{domain}';`) }
 
 	// 初始化默认搜索引擎
 	var searchEngineCount int

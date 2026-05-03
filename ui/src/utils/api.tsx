@@ -112,6 +112,12 @@ export const fetchAddTool = async (payload: any) => {
     const { data } = await axios.post(`/api/admin/tool`, payload);
     return data?.data || {};
 };
+
+export const fetchGetFaviconFromApi = async (url: string) => {
+    const { data } = await axios.post(`/api/admin/tools/logo/from-api`, { url });
+    return data;
+};
+
 // 分类管理接口；新增、修改、删除
 export const fetchAddCateLog = async (payload: any) => {
     const { data } = await axios.post(`/api/admin/catelog`, payload);

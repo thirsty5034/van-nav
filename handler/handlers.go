@@ -714,3 +714,94 @@ func UpdateCatelogSortHandler(c *gin.Context) {
 		"message": "更新排序成功",
 	})
 }
+
+// GetFaviconFromApiHandler 通过 API 获取工具 favicon
+type FaviconRequest struct {
+	URL string `json:"url" binding:"required"`
+}
+
+type FaviconResponse struct {
+	LogoUrl string `json:"logoUrl"`
+}
+
+func GetFaviconFromApiHandler(c *gin.Context) {
+	var req FaviconRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": "请提供有效的工具网址",
+		})
+		return
+	}
+
+	// 获取站点配置
+	siteConfig := service.GetSiteConfig()
+
+	// 检查是否启用 API
+	if !siteConfig.FaviconApiEnabled {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": "自动获取 Logo 功能未启用，请在设置中开启",
+		})
+		return
+	}
+
+	// 检查模板是否配置
+	if siteConfig.FaviconApiTemplate == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": "API 模板未配置，请在设置中配置",
+		})
+		return
+	}
+
+	// 从 URL 中提取域名
+	domain := extractDomain(req.URL)
+	if domain == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": "无法从网址中提取域名",
+		})
+		return
+	}
+
+	// 替换模板中的 {domain}
+	logoUrl := replaceDomain(siteConfig.FaviconApiTemplate, domain)
+
+	c.JSON(200, gin.H{
+		"success":  true,
+		"logoUrl":  logoUrl,
+		"message":  "获取成功",
+	})
+}
+
+// extractDomain 从 URL 中提取主域名
+func extractDomain(urlStr string) string {
+	// 如果 URL 没有协议头，添加 http://
+	if len(urlStr) > 0 && !(urlStr[:7] == "http://" || urlStr[:8] == "https://") {
+		urlStr = "http://" + urlStr
+	}
+
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return ""
+	}
+
+	host := u.Host
+	if host == "" {
+		return ""
+	}
+
+	// 如果包含端口，去掉端口
+	if idx := strings.Index(host, ":"); idx != -1 {
+		host = host[:idx]
+	}
+
+	return host
+}
+
+// replaceDomain 替换模板中的 {domain}
+func replaceDomain(template, domain string) string {
+	result := strings.ReplaceAll(template, "{domain}", domain)
+	return result
+}

@@ -15,7 +15,7 @@ import {
   Tooltip,
   Switch
 } from "antd";
-import { HolderOutlined, DragOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { HolderOutlined, DragOutlined, QuestionCircleOutlined, CloudDownloadOutlined } from '@ant-design/icons';
 import React, { useCallback, useState, useEffect, useContext, useMemo } from "react";
 import { getFilter, getOptions, mutiSearch } from "../../../utils/admin";
 import {
@@ -25,6 +25,7 @@ import {
   fetchImportTools,
   fetchUpdateTool,
   fetchUpdateToolsSort,
+  fetchGetFaviconFromApi,
 } from "../../../utils/api";
 import { useData } from "../hooks/useData";
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -118,6 +119,30 @@ export const Tools: React.FC<ToolsProps> = (props) => {
   const [updateForm] = Form.useForm();
   const [selectedRows, setSelectRows] = useState<any>([]);
   const [dataSource, setDataSource] = useState<DataType[]>([]);
+  const [gettingFavicon, setGettingFavicon] = useState(false);
+
+  // 获取 favicon 的函数
+  const handleGetFavicon = async (form: any, formInstance: 'add' | 'update') => {
+    const url = form.getFieldValue('url');
+    if (!url) {
+      message.warning('请先填写工具网址');
+      return;
+    }
+    setGettingFavicon(true);
+    try {
+      const res = await fetchGetFaviconFromApi(url);
+      if (res.success && res.logoUrl) {
+        form.setFieldsValue({ logo: res.logoUrl });
+        message.success('获取 favicon 成功');
+      } else {
+        message.warning(res.errorMessage || '获取失败');
+      }
+    } catch (err: any) {
+      message.error(err.response?.data?.errorMessage || '获取 favicon 失败');
+    } finally {
+      setGettingFavicon(false);
+    }
+  };
 
   const handleDelete = useCallback(
     async (id: number) => {
@@ -580,7 +605,25 @@ export const Tools: React.FC<ToolsProps> = (props) => {
               <Input placeholder="请输入完整URL（以 http:// 或 https:// 开头）" />
             </Form.Item>
             <Form.Item name="logo" label="logo 网址" labelCol={{ span: 4 }}>
-              <Input placeholder="请输入 logo url, 为空则自动获取" />
+              <Input 
+                placeholder="请输入 logo url, 为空则自动获取"
+                addonAfter={
+                  <Tooltip title="根据网址自动获取 favicon">
+                    <Button 
+                      type="text" 
+                      size="small" 
+                      icon={<CloudDownloadOutlined />} 
+                      loading={gettingFavicon}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleGetFavicon(addForm, 'add');
+                      }}
+                      style={{ padding: 0 }}
+                    />
+                  </Tooltip>
+                }
+              />
             </Form.Item>
             <Form.Item
               name="catelog"
@@ -661,7 +704,25 @@ export const Tools: React.FC<ToolsProps> = (props) => {
               <Input placeholder="请输入 url" />
             </Form.Item>
             <Form.Item name="logo" label="logo 网址" labelCol={{ span: 4 }}>
-              <Input placeholder="请输入 logo url, 为空则自动获取" />
+              <Input 
+                placeholder="请输入 logo url, 为空则自动获取"
+                addonAfter={
+                  <Tooltip title="根据网址自动获取 favicon">
+                    <Button 
+                      type="text" 
+                      size="small" 
+                      icon={<CloudDownloadOutlined />} 
+                      loading={gettingFavicon}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleGetFavicon(updateForm, 'update');
+                      }}
+                      style={{ padding: 0 }}
+                    />
+                  </Tooltip>
+                }
+              />
             </Form.Item>
             <Form.Item
               name="catelog"
