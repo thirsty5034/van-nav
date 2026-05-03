@@ -192,9 +192,10 @@ export const Catelog: React.FC<CatelogProps> = (props) => {
 
   return (
     <Card
-      title={`当前共 ${store?.catelogs?.length ?? 0} 条`}
-      extra={
+      title={
         <Space>
+          <span>分类管理</span>
+          <span style={{ color: '#999', fontSize: 13 }}>{`当前共 ${store?.catelogs?.length ?? 0} 条`}</span>
           {selectedRows.length > 0 && (
             <Popconfirm
               title="确定删除选中的分类吗？"
@@ -203,6 +204,10 @@ export const Catelog: React.FC<CatelogProps> = (props) => {
               <Button type="link" danger>删除 ({selectedRows.length})</Button>
             </Popconfirm>
           )}
+        </Space>
+      }
+      extra={
+        <Space>
           <Button
             type="primary"
             onClick={() => {
@@ -245,7 +250,7 @@ export const Catelog: React.FC<CatelogProps> = (props) => {
               }}
             >
               <Table.Column
-                title="排序"
+                title={<div style={{ textAlign: 'center' }}>排序</div>}
                 dataIndex="sort"
                 width={60}
                 render={(_: any, record: CatelogItem) => (
@@ -263,7 +268,7 @@ export const Catelog: React.FC<CatelogProps> = (props) => {
                   </div>
                 )}
               />
-              <Table.Column title="ID" dataIndex="id" width={40} />
+              
               <Table.Column
                 title="名称"
                 dataIndex="name"
@@ -296,8 +301,7 @@ export const Catelog: React.FC<CatelogProps> = (props) => {
                   return (
                     <Space>
                       <Button
-                        type="text"
-                        icon={<QuestionCircleOutlined />}
+                        type="link"
                         onClick={() => {
                           updateForm.setFieldsValue(record);
                           setShowEdit(true);
@@ -311,7 +315,7 @@ export const Catelog: React.FC<CatelogProps> = (props) => {
                         }}
                         title={`确定要删除分类 ${record.name} 吗？`}
                       >
-                        <Button type="text" danger>删除</Button>
+                        <Button type="link" danger>删除</Button>
                       </Popconfirm>
                     </Space>
                   );

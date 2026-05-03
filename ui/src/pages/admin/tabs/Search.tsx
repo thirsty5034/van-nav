@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Card,
   Table,
   Button,
   Modal,
@@ -11,8 +12,9 @@ import {
   Switch,
   Spin,
   Tooltip,
+  Popconfirm,
 } from 'antd';
-import { DragOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
+import { DragOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { DndContext } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -69,6 +71,7 @@ const SearchEngineManager: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingEngine, setEditingEngine] = useState<SearchEngine | null>(null);
   const [form] = Form.useForm();
+  const [selectedRows, setSelectedRows] = useState<SearchEngine[]>([]);
 
   const loadEngines = async () => {
     try {
@@ -99,20 +102,21 @@ const SearchEngineManager: React.FC = () => {
 
   const columns = [
     {
-      title: '排序',
+      title: <div style={{ textAlign: 'left' }}>排序</div>,
       dataIndex: 'sort',
-      width: 90,
-      render: (_: any, record: SearchEngine, index: number) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <div className="drag-handle" style={{ cursor: 'move', padding: '4px', display: 'flex', alignItems: 'center' }}>
-            <DragOutlined style={{ color: '#999' }} />
-          </div>
-          <Tooltip title="上移">
-            <Button type="text" size="small" icon={<ArrowUpOutlined />} disabled={index === 0} onClick={() => handleMoveUp(index)} />
-          </Tooltip>
-          <Tooltip title="下移">
-            <Button type="text" size="small" icon={<ArrowDownOutlined />} disabled={index === engines.length - 1} onClick={() => handleMoveDown(index)} />
-          </Tooltip>
+      width: 60,
+      render: (_: any, record: SearchEngine) => (
+        <div
+          className="drag-handle"
+          style={{
+            cursor: 'move',
+            padding: '8px',
+            display: 'flex',
+            justifyContent: 'flex-start',
+            alignItems: 'center'
+          }}
+        >
+          <DragOutlined style={{ color: '#999' }} />
         </div>
       ),
     },
@@ -134,17 +138,20 @@ const SearchEngineManager: React.FC = () => {
     {
       title: '名称',
       dataIndex: 'name',
+      width: 120,
       ellipsis: true,
     },
     {
       title: 'URL模板',
       dataIndex: 'urlTemplate',
+      width: 280,
       ellipsis: true,
       render: (url: string) => (<Tooltip title={url}><span>{url}</span></Tooltip>),
     },
     {
       title: '描述',
       dataIndex: 'description',
+      width: 150,
       ellipsis: true,
     },
     {
@@ -157,11 +164,16 @@ const SearchEngineManager: React.FC = () => {
     },
     {
       title: '操作',
-      width: 140,
+      width: 120,
       render: (_: any, record: SearchEngine) => (
         <Space>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
-          <Button type="link" danger size="small" icon={<DeleteOutlined />} onClick={() => handleDelete(record)}>删除</Button>
+          <Button type="link" onClick={() => handleEdit(record)}>编辑</Button>
+          <Popconfirm
+            title="确定要删除这个搜索引擎吗？"
+            onConfirm={() => handleDelete(record)}
+          >
+            <Button type="link" danger>删除</Button>
+          </Popconfirm>
         </Space>
       ),
     },
@@ -209,28 +221,34 @@ const SearchEngineManager: React.FC = () => {
     });
   };
 
+  const handleBulkDelete = () => {
+    if (selectedRows.length === 0) return;
+    Modal.confirm({
+      title: '确定删除选中的搜索引擎吗？',
+      content: `即将删除 ${selectedRows.length} 个搜索引擎，此操作不可恢复。`,
+      okText: '确认删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          for (const engine of selectedRows) {
+            await fetchDeleteSearchEngine(engine.id);
+          }
+          message.success('删除成功');
+          clearSearchEngineCache();
+          setSelectedRows([]);
+          loadEngines();
+        } catch (error) {
+          message.error('删除失败');
+        }
+      },
+    });
+  };
+
   const handleAdd = () => {
     setEditingEngine(null);
     form.resetFields();
     setIsModalVisible(true);
-  };
-
-  const handleMoveUp = (index: number) => {
-    if (index === 0) return;
-    const newItems = [...engines];
-    [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
-    const reordered = newItems.map((item, i) => ({ ...item, sort: i + 1 }));
-    setEngines(reordered);
-    saveSortOrder(reordered);
-  };
-
-  const handleMoveDown = (index: number) => {
-    if (index === engines.length - 1) return;
-    const newItems = [...engines];
-    [newItems[index], newItems[index + 1]] = [newItems[index + 1], newItems[index]];
-    const reordered = newItems.map((item, i) => ({ ...item, sort: i + 1 }));
-    setEngines(reordered);
-    saveSortOrder(reordered);
   };
 
   const saveSortOrder = async (items: SearchEngine[]) => {
@@ -275,12 +293,28 @@ const SearchEngineManager: React.FC = () => {
     }
   };
 
-  return (
-    <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>添加搜索引擎</Button>
-        <span style={{ color: '#999', fontSize: 13 }}>支持拖拽排序或点击 ↑↓ 按钮调整顺序</span>
-      </div>
+return (
+    <Card
+      title={
+        <Space>
+          <span>搜索引擎管理</span>
+          <span style={{ color: '#999', fontSize: 13 }}>当前共 {engines.length} 条</span>
+          {selectedRows.length > 0 && (
+            <Popconfirm
+              title="确定删除选中的搜索引擎吗？"
+              onConfirm={handleBulkDelete}
+            >
+              <Button type="link" danger>删除 ({selectedRows.length})</Button>
+            </Popconfirm>
+          )}
+        </Space>
+      }
+      extra={
+        <Space>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>添加搜索引擎</Button>
+        </Space>
+      }
+    >
       <Spin spinning={loading}>
         <DndContext onDragEnd={onDragEnd}>
           <SortableContext items={engines.map((i) => i.id)} strategy={verticalListSortingStrategy}>
@@ -291,13 +325,21 @@ const SearchEngineManager: React.FC = () => {
               components={{ body: { row: DraggableRow } }}
               pagination={false}
               size="middle"
+              rowSelection={{
+                type: 'checkbox',
+                selectedRowKeys: selectedRows.map(r => r.id),
+                onChange: (_: React.Key[], selectedRows: SearchEngine[]) => {
+                  setSelectedRows(selectedRows);
+                },
+              }}
             />
           </SortableContext>
         </DndContext>
       </Spin>
-      <Modal
-        title={editingEngine ? '编辑搜索引擎' : '添加搜索引擎'}
-        open={isModalVisible}
+    </Card>
+  );
+  return (
+    <Modal
         onOk={handleModalOk}
         onCancel={() => setIsModalVisible(false)}
         width={600}
@@ -338,7 +380,6 @@ const SearchEngineManager: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
   );
 };
 

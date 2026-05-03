@@ -39,7 +39,12 @@ export const ApiToken: React.FC<ApiTokenProps> = (props) => {
   );
   return (
     <Card
-      title={`当前共 ${store?.tokens?.length ?? 0} 条`}
+      title={
+        <Space>
+          <span>API Token 管理</span>
+          <span style={{ color: '#999', fontSize: 13 }}>当前共 {store?.tokens?.length ?? 0} 条</span>
+        </Space>
+      }
       extra={
         <Space>
           <Button
@@ -93,7 +98,7 @@ export const ApiToken: React.FC<ApiTokenProps> = (props) => {
           />
           <Table.Column
             title="操作"
-            width={40}
+            width={120}
             dataIndex="action"
             key="action"
             render={(_, record: any) => {
@@ -105,7 +110,7 @@ export const ApiToken: React.FC<ApiTokenProps> = (props) => {
                     }}
                     title={`确定要删除 Token ${record.name} 吗？`}
                   >
-                    <Button type="link">删除</Button>
+                    <Button type="link" danger>删除</Button>
                   </Popconfirm>
                 </Space>
               );

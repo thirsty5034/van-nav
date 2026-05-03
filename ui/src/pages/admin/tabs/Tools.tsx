@@ -284,7 +284,7 @@ export const Tools: React.FC<ToolsProps> = (props) => {
           if (searchString === "") {
             show = true;
           } else {
-            show = mutiSearch(item.name, searchString) || mutiSearch(item.desc, searchString);
+            show = mutiSearch(item.name, searchString) || mutiSearch(item.desc, searchString) || mutiSearch(item.url, searchString);
           }
           if (!catelogName || catelogName === "") {
             show = show && true;
@@ -302,7 +302,8 @@ export const Tools: React.FC<ToolsProps> = (props) => {
     <Card
       title={
         <Space>
-          <span>{`当前共 ${store?.tools?.length ?? 0} 条`}</span>
+          <span>工具管理</span>
+          <span style={{ color: '#999', fontSize: 13 }}>{`当前共 ${store?.tools?.length ?? 0} 条`}</span>
           {selectedRows.length > 0 && (
             <Popconfirm
               title="确定删除这些吗？"
@@ -338,6 +339,7 @@ export const Tools: React.FC<ToolsProps> = (props) => {
       extra={
         <Space>
           <Select
+            style={{ minWidth: 120 }}
             options={getOptions(store?.catelogs || [])}
             placeholder="分类筛选"
             allowClear
@@ -435,7 +437,7 @@ export const Tools: React.FC<ToolsProps> = (props) => {
                 title="排序"
                 render={() => <DragHandle />}
               />
-              <Table.Column title="ID" dataIndex="id" width={40} />
+              
               <Table.Column
                 title="名称"
                 dataIndex="name"
@@ -504,7 +506,7 @@ export const Tools: React.FC<ToolsProps> = (props) => {
               }} />
               <Table.Column
                 title="操作"
-                width={40}
+                width={120}
                 dataIndex="action"
                 key="action"
                 render={(_, record: any) => {
@@ -525,7 +527,7 @@ export const Tools: React.FC<ToolsProps> = (props) => {
                         }}
                         title={`确定要删除 ${record.name} 吗？`}
                       >
-                        <Button type="link">删除</Button>
+                        <Button type="link" danger>删除</Button>
                       </Popconfirm>
                     </Space>
                   );
