@@ -14,6 +14,7 @@ export function decodeAuto() {
     return "auto-light";
   }
 }
+
 export const decodeTheme = (t: "auto" | "light" | "dark") => {
   if (t === "auto") {
     return decodeAuto();
@@ -21,6 +22,7 @@ export const decodeTheme = (t: "auto" | "light" | "dark") => {
     return t;
   }
 };
+
 export const applyTheme = (t: string, source: string, disableLog: boolean) => {
   if (t.includes("light")) {
     const bodyEl = document.querySelector("body")!;
@@ -36,11 +38,12 @@ export const applyTheme = (t: string, source: string, disableLog: boolean) => {
     }
   }
 };
+
 export const initTheme = () => {
   if (typeof localStorage == "undefined") {
     return "auto";
   }
-  // 2种情况： 1. 自动。 2.手动
+  // 2 种情况：1. 自动。2.手动
   if (!("theme" in localStorage) || localStorage.theme === "auto") {
     return "auto";
   } else {
@@ -49,5 +52,14 @@ export const initTheme = () => {
     } else {
       return "light";
     }
+  }
+};
+
+/**
+ * 广播主题变更事件，通知其他标签页/页面同步主题
+ */
+export const broadcastThemeChange = () => {
+  if (typeof window !== "undefined" && window.dispatchEvent) {
+    window.dispatchEvent(new CustomEvent("theme-change"));
   }
 };

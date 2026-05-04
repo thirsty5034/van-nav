@@ -2,9 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { message } from 'antd';
 import { login } from '../utils/api';
+import { useGlobalTheme } from '../utils/useGlobalTheme';
+import DarkSwitch from '../components/DarkSwitch';
 import './Login.css';
 
 const Login: React.FC = () => {
+  // 全局主题监听：自动响应主题变更
+  useGlobalTheme();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
@@ -72,6 +76,7 @@ const Login: React.FC = () => {
           <span>VanNav</span>
         </a>
       </div>
+      <DarkSwitch showGithub={true} />
     </div>
   );
 };

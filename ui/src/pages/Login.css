@@ -69,7 +69,7 @@
 
 /* 暗黑模式适配 */
 body.dark-mode .login-container {
-  /* 除原来的背景色设置，保持背景图片显示 */
+  background-color: #121212;
 }
 
 body.dark-mode .login-box {

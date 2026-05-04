@@ -11,6 +11,8 @@ import {
   MagnifyingGlassIcon,
 } from '@radix-ui/react-icons';
 import { useOnce } from '../../utils/useOnce';
+import { useGlobalTheme } from '../../utils/useGlobalTheme';
+import DarkSwitch from '../../components/DarkSwitch';
 
 const menuItems: MenuItem[] = [
   {
@@ -46,6 +48,9 @@ const menuItems: MenuItem[] = [
 ];
 
 export const AdminPage = () => {
+  // 全局主题监听：自动响应主题变更
+  useGlobalTheme();
+
   const location = useLocation();
   const navigate = useNavigate();
   const [currentKey, setCurrentKey] = useState('tools');
@@ -72,9 +77,9 @@ export const AdminPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#121212]">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-[#2a2a2a]">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -96,19 +101,20 @@ export const AdminPage = () => {
                 <ExitIcon className="w-4 h-4 mr-2" />
                 退出登录
               </button>
+              <DarkSwitch showGithub={false} />
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
+      {/* Main Content */}
       <div className="flex flex-1 w-full mx-auto h-[calc(100vh-64px)]">
         {/* Sidebar */}
         <Sidebar items={menuItems} currentKey={currentKey} onChange={setCurrentKey} />
-
         {/* Main Content Area */}
-        <main className="flex-1  overflow-auto">
-          <div className=" p-4  h-full">
+        <main className="flex-1 overflow-auto bg-gray-50 dark:bg-[#121212]">
+          <div className="p-4 h-full">
             <Outlet />
           </div>
         </main>

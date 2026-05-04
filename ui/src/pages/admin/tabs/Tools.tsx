@@ -618,10 +618,6 @@ export const Tools: React.FC<ToolsProps> = (props) => {
                 title="分类"
                 dataIndex="catelog"
                 width={60}
-                filters={getFilter(store?.catelogs || [])}
-                onFilter={(value: any, record: any) => {
-                  return value === record["catelog"];
-                }}
               />
               <Table.Column
                 title="网址"
@@ -700,9 +696,13 @@ export const Tools: React.FC<ToolsProps> = (props) => {
           addForm.resetFields(); // Modal完全关闭后再次重置表单
         }}
         destroyOnClose={true}
-        onOk={() => {
-          const values = addForm?.getFieldsValue();
-          handleCreate(values);
+        onOk={async () => {
+          try {
+            const values = await addForm.validateFields();
+            handleCreate(values);
+          } catch (err) {
+            // 验证失败，antd 会自动显示错误提示
+          }
         }}
       >
         <Spin spinning={requestLoading}>
@@ -828,9 +828,13 @@ export const Tools: React.FC<ToolsProps> = (props) => {
         onCancel={() => {
           setShowEdit(false);
         }}
-        onOk={() => {
-          const values = updateForm?.getFieldsValue();
-          handleUpdate(values);
+        onOk={async () => {
+          try {
+            const values = await updateForm.validateFields();
+            handleUpdate(values);
+          } catch (err) {
+            // 验证失败，antd 会自动显示错误提示
+          }
         }}
       >
         <Spin spinning={requestLoading}>
@@ -838,10 +842,20 @@ export const Tools: React.FC<ToolsProps> = (props) => {
             <Form.Item name="id" label="序号" labelCol={{ span: 4 }}>
               <Input disabled />
             </Form.Item>
-            <Form.Item name="name" required label="名称" labelCol={{ span: 4 }}>
+            <Form.Item name="name" required label="名称" labelCol={{ span: 4 }}
+              rules={[{ required: true, message: "请填写名称" }]}
+            >
               <Input placeholder="请输入工具名称" />
             </Form.Item>
-            <Form.Item name="url" required label="网址" labelCol={{ span: 4 }}>
+            <Form.Item name="url" required label="网址" labelCol={{ span: 4 }}
+              rules={[
+                { required: true, message: "请填写网址" },
+                {
+                  pattern: /^(https?:\/\/)/,
+                  message: "网址必须以 http:// 或 https:// 开头"
+                }
+              ]}
+            >
               <Input placeholder="请输入 url" />
             </Form.Item>
             <Form.Item name="logo" label="logo 网址" labelCol={{ span: 4 }}>
@@ -870,6 +884,7 @@ export const Tools: React.FC<ToolsProps> = (props) => {
               required
               label="分类"
               labelCol={{ span: 4 }}
+              rules={[{ required: true, message: "请选择分类" }]}
             >
               <Select
                 options={getOptions(store?.catelogs || [])}
@@ -908,7 +923,9 @@ export const Tools: React.FC<ToolsProps> = (props) => {
                   &nbsp;排序
                 </span>
               }
-              labelCol={{ span: 4 }}>
+              labelCol={{ span: 4 }}
+              rules={[{ required: true, message: "请排序" }]}
+            >
               <InputNumber placeholder="请输入排序" defaultValue={1} />
             </Form.Item>
 

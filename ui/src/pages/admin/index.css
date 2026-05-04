@@ -21,6 +21,19 @@
   background: #a8a8a8;
 }
 
+/* 暗色模式滚动条 */
+body.dark-mode ::-webkit-scrollbar-track {
+  background: #2a2a2a;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+  background: #4a4a4a;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+}
+
 .ant-input-affix-wrapper {
   padding: 0px;
 }
@@ -41,4 +54,381 @@
 
 .ant-select-selection-search-input {
   height: 40px !important;
+}
+
+/* 暗色模式适配 - Ant Design Card */
+body.dark-mode .ant-card {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .ant-card-head {
+  background-color: #1a1a1a;
+  border-bottom-color: #2a2a2a;
+}
+
+body.dark-mode .ant-card-head-title {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-mode .ant-table {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .ant-table-thead > tr > th {
+  background-color: #1a1a1a;
+  color: rgba(255, 255, 255, 0.6);
+  border-bottom-color: #2a2a2a;
+}
+
+body.dark-mode .ant-table-tbody > tr > td {
+  background-color: #1a1a1a;
+  color: rgba(255, 255, 255, 0.6);
+  border-bottom-color: #2a2a2a;
+}
+
+body.dark-mode .ant-table-tbody > tr:hover > td {
+  background-color: #2a2a2a !important;
+}
+
+/* 修复：多选工具时被选中的行变白蓝色 */
+body.dark-mode .ant-table-row-selected > td {
+  background-color: #1a3a5c !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* 修复：搜索框和搜索按钮中间白色区域 */
+body.dark-mode .ant-input-group-wrapper .ant-input-group {
+  background-color: transparent !important;
+}
+
+body.dark-mode .ant-input-search-button {
+  background-color: #1890ff !important;
+  border-color: #1890ff !important;
+}
+
+/* 修复：共 X 条文字黑色 */
+body.dark-mode .ant-pagination-total-text {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* 修复：页码切换框和每页条数选择框背景白色 */
+body.dark-mode .ant-pagination-options {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+body.dark-mode .ant-pagination .ant-select-selector {
+  background-color: #222222 !important;
+  border-color: #333333 !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+body.dark-mode .ant-pagination-item {
+  background-color: #222222 !important;
+  border-color: #333333 !important;
+}
+
+body.dark-mode .ant-pagination-item a {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+body.dark-mode .ant-pagination-item:hover {
+  border-color: #1890ff !important;
+}
+
+body.dark-mode .ant-pagination-item:hover a {
+  color: #1890ff !important;
+}
+
+body.dark-mode .ant-pagination-item-active {
+  background-color: #1890ff !important;
+  border-color: #1890ff !important;
+}
+
+body.dark-mode .ant-pagination-item-active a {
+  color: #ffffff !important;
+}
+
+body.dark-mode .ant-pagination-prev .ant-pagination-item-link,
+body.dark-mode .ant-pagination-next .ant-pagination-item-link {
+  background-color: #222222 !important;
+  border-color: #333333 !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+body.dark-mode .ant-pagination-prev:hover .ant-pagination-item-link,
+body.dark-mode .ant-pagination-next:hover .ant-pagination-item-link {
+  border-color: #1890ff !important;
+  color: #1890ff !important;
+}
+
+body.dark-mode .ant-modal-content {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .ant-modal-header {
+  background-color: #1a1a1a;
+  border-bottom-color: #2a2a2a;
+}
+
+body.dark-mode .ant-modal-title {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-mode .ant-form-item-label > label {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-mode .ant-input,
+body.dark-mode .ant-input-number-input {
+  background-color: #222222;
+  border-color: #333333;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-mode .ant-input::placeholder,
+body.dark-mode .ant-input-number-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+body.dark-mode .ant-select-selector {
+  background-color: #222222;
+  border-color: #333333;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-mode .ant-select-dropdown {
+  background-color: #1a1a1a !important;
+}
+
+body.dark-mode .ant-select-item {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+body.dark-mode .ant-select-item:hover {
+  background-color: #2a2a2a !important;
+}
+
+body.dark-mode .ant-select-item-option-selected {
+  background-color: #1a3a5c !important;
+}
+
+body.dark-mode .ant-select-arrow {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* 修复：Form 中 Select 组件背景白色（如默认跳转方式选择框）*/
+body.dark-mode .ant-form-item .ant-select-selector {
+  background-color: #222222 !important;
+  border-color: #333333 !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* 修复：分类筛选框（ant-space-item）白色 */
+body.dark-mode .ant-space-item {
+  background-color: transparent !important;
+}
+
+body.dark-mode .ant-space {
+  background-color: transparent !important;
+}
+
+/* 修复：Modal 中 Select 组件变白（ant-select-outlined, ant-select-single 等）*/
+body.dark-mode .ant-select-outlined {
+  background-color: #222222 !important;
+  border-color: #333333 !important;
+}
+
+body.dark-mode .ant-select-single {
+  background-color: #222222 !important;
+}
+
+body.dark-mode .ant-select-outlined:not(.ant-select-disabled):hover {
+  border-color: #1890ff !important;
+}
+
+body.dark-mode .ant-modal-body .ant-select-selector,
+body.dark-mode .ant-modal-content .ant-select-selector {
+  background-color: #222222 !important;
+  border-color: #333333 !important;
+}
+
+/* 修复：Card extra 区域（如分类筛选）的 Select 组件夜间模式变白 */
+body.dark-mode .ant-card-extra .ant-select-selector {
+  background-color: #222222 !important;
+  border-color: #333333 !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+body.dark-mode .ant-card-extra .ant-select-selection-placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* 修复：Modal 中 Select 的 placeholder 文字为黑色（如新增工具"请选择分类"）*/
+body.dark-mode .ant-modal-content .ant-select-selection-placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* 修复：Modal 中 Form.Item extra 文字为黑色（如搜索引擎"使用 {query} 或 %s 作为搜索关键词占位符"）*/
+body.dark-mode .ant-modal-content .ant-form-item-extra {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* 修复：Modal.warning 标题和内容文字为黑色（如"包含敏感令牌信息"）*/
+body.dark-mode .ant-modal-confirm-title {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body.dark-mode .ant-modal-confirm-content {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* 修复：最上方标题部分文字太暗（Tailwind text-gray-900 / text-gray-700）*/
+body.dark-mode header h1,
+body.dark-mode header .text-gray-900,
+body.dark-mode header .text-gray-700 {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body.dark-mode header .hover\:text-gray-900:hover,
+body.dark-mode header a:hover,
+body.dark-mode header button:hover {
+  color: #ffffff !important;
+}
+
+/* 修复：搜索框和搜索按钮中间白色区域（ant-input-affix-wrapper）*/
+body.dark-mode .ant-input-affix-wrapper {
+  background-color: #222222 !important;
+  border-color: #333333 !important;
+}
+
+body.dark-mode .ant-input-affix-wrapper:not(.ant-input-affix-wrapper-disabled):hover {
+  border-color: #1890ff !important;
+}
+
+body.dark-mode .ant-input-affix-wrapper-focused,
+body.dark-mode .ant-input-affix-wrapper:focus,
+body.dark-mode .ant-input-affix-wrapper:focus-within {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+/* 修复：操作成功/失败弹窗背景白色 */
+body.dark-mode .ant-message {
+  background-color: #1a1a1a !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body.dark-mode .ant-message-notice-content {
+  background-color: #1a1a1a !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body.dark-mode .ant-notification {
+  background-color: #1a1a1a !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body.dark-mode .ant-notification-notice {
+  background-color: #1a1a1a !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border-color: #2a2a2a !important;
+}
+
+body.dark-mode .ant-notification-notice-message {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body.dark-mode .ant-notification-notice-description {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+body.dark-mode .ant-dropdown-menu {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .ant-dropdown-menu-item {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-mode .ant-dropdown-menu-item:hover {
+  background-color: #2a2a2a;
+}
+
+body.dark-mode .ant-popover {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .ant-popover-arrow {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .ant-message,
+body.dark-mode .ant-notification {
+  background-color: #1a1a1a;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-mode .ant-btn-default {
+  background-color: #222222;
+  border-color: #333333;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-mode .ant-btn-default:hover {
+  background-color: #333333;
+  border-color: #444444;
+}
+
+body.dark-mode .ant-btn-dashed {
+  background-color: #222222 !important;
+  border-color: #333333 !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+body.dark-mode .ant-btn-dashed:hover {
+  background-color: #333333 !important;
+  border-color: #444444 !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body.dark-mode .ant-switch {
+  background-color: #333333;
+}
+
+body.dark-mode .ant-switch.ant-switch-checked {
+  background-color: #1890ff;
+}
+
+body.dark-mode .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #1890ff !important;
+  border-color: #1890ff !important;
+}
+
+body.dark-mode .ant-checkbox-inner {
+  background-color: #222222 !important;
+  border-color: #333333 !important;
+}
+
+body.dark-mode .ant-table-selection-column {
+  background-color: #1a1a1a !important;
+}
+
+body.dark-mode .ant-table-thead > tr > th.ant-table-column-has-sorts {
+  border-color: #2a2a2a !important;
+}
+
+body.dark-mode .ant-tag {
+  background-color: #2a2a2a;
+  border-color: #333333;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-mode .ant-spin-dot-item {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-mode .ant-table-row-expand-icon {
+  background-color: #1a1a1a;
+  border-color: #333333;
+  color: rgba(255, 255, 255, 0.6);
 }

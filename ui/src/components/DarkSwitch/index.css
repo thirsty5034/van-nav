@@ -1,6 +1,9 @@
 .theme-switch-box {
   position: fixed;
+  bottom: 20px;
+  right: 20px;
   cursor: pointer;
+  z-index: 9999;
 }
 .theme-switch-box svg {
   fill: #3d3d3d;
