@@ -624,7 +624,11 @@ func AddSearchEngineHandler(c *gin.Context) {
 		})
 		return
 	}
-	
+	// 更新图片缓存（和工具添加一致）
+	if engine.Logo != "" {
+		go service.UpdateImg(engine.Logo)
+	}
+
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "添加搜索引擎成功",
@@ -666,7 +670,11 @@ func UpdateSearchEngineHandler(c *gin.Context) {
 		})
 		return
 	}
-	
+	// 更新图片缓存（和工具更新一致）
+	if engine.Logo != "" {
+		go service.UpdateImg(engine.Logo)
+	}
+
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "更新搜索引擎成功",

@@ -84,8 +84,18 @@ const SearchEngineManager: React.FC = () => {
       message.warning('请先填写搜索URL模板');
       return;
     }
-    // 从 URL 模板中提取域名
-    const baseUrl = urlTemplate.replace('{query}', '').replace('%s', '').replace('?', '').trim();
+    // 从 URL 模板中提取域名（用 URL 解析，比字符串替换更可靠）
+    let baseUrl = '';
+    try {
+      const parsed = new URL(urlTemplate);
+      baseUrl = parsed.origin + parsed.pathname;
+    } catch {
+      // 如果 URL 解析失败，尝试简单提取
+      const clean = urlTemplate.replace('{query}', '').replace('%s', '').replace('?', '').trim();
+      if (clean) {
+        baseUrl = clean;
+      }
+    }
     if (!baseUrl) {
       message.warning('无法从 URL 模板中提取网址');
       return;
@@ -106,6 +116,7 @@ const SearchEngineManager: React.FC = () => {
         }
       }
       message.success('获取完成');
+      clearSearchEngineCache();
     } catch (err: any) {
       message.error('获取失败: ' + (err.response?.data?.errorMessage || err.message));
     } finally {
