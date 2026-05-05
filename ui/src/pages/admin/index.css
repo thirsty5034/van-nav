@@ -442,3 +442,16 @@ body.dark-mode .ant-card[title="部署版本信息"] {
 body.dark-mode .ant-card[title="部署版本信息"] .ant-card-head-title {
   color: rgba(255, 255, 255, 0.6);
 }
+
+/* Statistic 组件（网站健康检测） */
+body.dark-mode .ant-statistic-title {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+body.dark-mode .ant-statistic-content {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+body.dark-mode .ant-statistic-content-prefix {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
