@@ -16,7 +16,7 @@ import {
   Switch,
   Tag,
   Statistic,
-  Row,
+  Row as AntRow,
   Col,
 } from "antd";
 import { HolderOutlined, DragOutlined, QuestionCircleOutlined, CloudDownloadOutlined, HeartOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
@@ -1045,7 +1045,7 @@ export const Tools: React.FC<ToolsProps> = (props) => {
       }
     >
       {checkSummary && (
-        <Row gutter={16} style={{ marginBottom: 16 }}>
+        <AntRow gutter={16} style={{ marginBottom: 16 }}>
           <Col span={8}>
             <Statistic
               title="总数"
@@ -1069,7 +1069,7 @@ export const Tools: React.FC<ToolsProps> = (props) => {
               prefix={<CloseCircleOutlined />}
             />
           </Col>
-        </Row>
+        </AntRow>
       )}
 
       {checkResults.length > 0 && (
