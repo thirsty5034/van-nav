@@ -3,6 +3,7 @@ package service
 import (
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/mereith/nav/database"
 	"github.com/mereith/nav/logger"
@@ -113,7 +114,7 @@ func AddTool(data types.AddToolDto) (int64, error) {
 
 func GetAllTool() []types.Tool {
 	sql_get_all := `
-		SELECT id,name,url,logo,catelog,desc,sort,hide FROM nav_table order by sort;
+		SELECT id,name,url,logo,catelog,desc,sort,hide,is_alive,last_checked FROM nav_table order by sort;
 		`
 	results := make([]types.Tool, 0)
 	rows, err := database.DB.Query(sql_get_all)
@@ -122,7 +123,9 @@ func GetAllTool() []types.Tool {
 		var tool types.Tool
 		var hide interface{}
 		var sort interface{}
-		err = rows.Scan(&tool.Id, &tool.Name, &tool.Url, &tool.Logo, &tool.Catelog, &tool.Desc, &sort, &hide)
+		var isAlive interface{}
+		var lastChecked interface{}
+		err = rows.Scan(&tool.Id, &tool.Name, &tool.Url, &tool.Logo, &tool.Catelog, &tool.Desc, &sort, &hide, &isAlive, &lastChecked)
 		if hide == nil {
 			tool.Hide = false
 		} else {
@@ -137,6 +140,20 @@ func GetAllTool() []types.Tool {
 		} else {
 			i64 := sort.(int64)
 			tool.Sort = int(i64)
+		}
+		// is_alive: NULL 或 1 表示正常，0 表示失效
+		if isAlive == nil {
+			alive := true
+			tool.IsAlive = &alive
+		} else {
+			alive := isAlive.(int64) == 1
+			tool.IsAlive = &alive
+		}
+		// last_checked: NULL 表示从未检测
+		if lastChecked != nil {
+			if t, ok := lastChecked.(time.Time); ok {
+				tool.LastChecked = t.Format("2006-01-02 15:04:05")
+			}
 		}
 		utils.CheckErr(err)
 		results = append(results, tool)

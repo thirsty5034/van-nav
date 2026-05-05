@@ -718,6 +718,21 @@ export const Tools: React.FC<ToolsProps> = (props) => {
                 return <Switch checked={Boolean(val)} onChange={(checked) => handleToggleHide(record, checked)} />
               }} />
               <Table.Column
+                title="状态"
+                dataIndex="is_alive"
+                width={70}
+                align="center"
+                render={(alive: boolean | null, record: any) => {
+                  if (alive === false) {
+                    return <Tag color="error">失效</Tag>;
+                  }
+                  if (alive === true && record.last_checked) {
+                    return <Tag color="success">正常</Tag>;
+                  }
+                  return <Tag>未检测</Tag>;
+                }}
+              />
+              <Table.Column
                 title="操作"
                 width={120}
                 dataIndex="action"

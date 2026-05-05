@@ -34,14 +34,16 @@ type Img struct {
 }
 
 type Tool struct {
-	Id      int    `json:"id"`
-	Name    string `json:"name"`
-	Url     string `json:"url"`
-	Logo    string `json:"logo"`
-	Catelog string `json:"catelog"`
-	Desc    string `json:"desc"`
-	Sort    int    `json:"sort"`
-	Hide    bool   `json:"hide"`
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
+	Url         string `json:"url"`
+	Logo        string `json:"logo"`
+	Catelog     string `json:"catelog"`
+	Desc        string `json:"desc"`
+	Sort        int    `json:"sort"`
+	Hide        bool   `json:"hide"`
+	IsAlive     *bool  `json:"is_alive,omitempty"`
+	LastChecked string `json:"last_checked,omitempty"`
 }
 
 type Catelog struct {
