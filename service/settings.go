@@ -6,9 +6,19 @@ import (
 	"github.com/mereith/nav/types"
 )
 
+// GetDeploymentVersion 获取当前部署版本号
+func GetDeploymentVersion() string {
+	return database.GetDeploymentVersion()
+}
+
+// IncrementDeploymentVersion 递增部署版本号
+func IncrementDeploymentVersion() (string, error) {
+	return database.IncrementDeploymentVersion()
+}
+
 func GetSetting() types.Setting {
 	sql_get_user := `
-		SELECT id,favicon,title,govRecord,logo192,logo512,hideAdmin,hideGithub,hideToggleJumpTarget,jumpTargetBlank 
+		SELECT id,favicon,title,govRecord,logo192,logo512,hideAdmin,hideGithub,hideToggleJumpTarget,jumpTargetBlank,COALESCE(deployment_version,'v1.13.1.1')
 		FROM nav_setting 
 		ORDER BY id ASC 
 		LIMIT 1;
@@ -20,7 +30,8 @@ func GetSetting() types.Setting {
 	var hideAdmin interface{}
 	var hideToggleJumpTarget interface{}
 	var jumpTargetBlank interface{}
-	err := row.Scan(&setting.Id, &setting.Favicon, &setting.Title, &setting.GovRecord, &setting.Logo192, &setting.Logo512, &hideAdmin, &hideGithub, &hideToggleJumpTarget, &jumpTargetBlank)
+	var deploymentVersion string
+	err := row.Scan(&setting.Id, &setting.Favicon, &setting.Title, &setting.GovRecord, &setting.Logo192, &setting.Logo512, &hideAdmin, &hideGithub, &hideToggleJumpTarget, &jumpTargetBlank, &deploymentVersion)
 	if err != nil {
 		logger.LogError("获取配置失败: %s", err)
 		return types.Setting{
@@ -34,6 +45,7 @@ func GetSetting() types.Setting {
 			HideGithub:           false,
 			HideToggleJumpTarget: false,
 			JumpTargetBlank:      true,
+			DeploymentVersion:    "v1.13.1.1",
 		}
 	}
 	if hideGithub == nil {
@@ -74,6 +86,8 @@ func GetSetting() types.Setting {
 			setting.JumpTargetBlank = true
 		}
 	}
+
+	setting.DeploymentVersion = deploymentVersion
 
 	return setting
 }

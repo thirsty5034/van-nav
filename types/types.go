@@ -12,6 +12,7 @@ type Setting struct {
 	HideGithub           bool   `json:"hideGithub"`
 	HideToggleJumpTarget bool   `json:"hideToggleJumpTarget"`
 	JumpTargetBlank      bool   `json:"jumpTargetBlank"`
+	DeploymentVersion    string `json:"deploymentVersion"`
 }
 
 type Token struct {

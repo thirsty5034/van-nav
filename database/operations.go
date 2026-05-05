@@ -1,6 +1,12 @@
 package database
 
-import "github.com/mereith/nav/types"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/mereith/nav/types"
+)
 
 func HasApiToken(token string) bool {
 	sql := `SELECT value FROM nav_api_token WHERE value = ? and disabled = 0`
@@ -507,4 +513,55 @@ func UpdateSiteConfigFromMap(cfg map[string]interface{}) error {
 
 	_, err := DB.Exec(sql, noImageMode, compactMode, faviconApiEnabled, faviconApiTemplate)
 	return err
+}
+
+// ==================== 部署版本相关操作 ====================
+
+// GetDeploymentVersion 获取当前部署版本号
+func GetDeploymentVersion() string {
+	var version string
+	err := DB.QueryRow(`SELECT COALESCE(deployment_version, 'v1.13.1.1') FROM nav_setting ORDER BY id ASC LIMIT 1`).Scan(&version)
+	if err != nil {
+		return "v1.13.1.1"
+	}
+	if version == "" {
+		return "v1.13.1.1"
+	}
+	return version
+}
+
+// IncrementDeploymentVersion 递增部署版本号（构建号 +1）
+func IncrementDeploymentVersion() (string, error) {
+	current := GetDeploymentVersion()
+
+	// 解析版本号 v主版本.次版本.修订版本.构建号
+	// 格式: v1.13.1.1 -> parts: [v1, 13, 1, 1]
+	if !strings.HasPrefix(current, "v") {
+		// 格式异常，重置为初始版本
+		current = "v1.13.1.1"
+	}
+
+	parts := strings.Split(current, ".")
+	if len(parts) != 4 {
+		// 格式异常，重置为初始版本
+		current = "v1.13.1.1"
+		parts = strings.Split(current, ".")
+	}
+
+	// 递增构建号（最后一部分）
+	buildNum, err := strconv.Atoi(parts[3])
+	if err != nil {
+		buildNum = 1
+	}
+	buildNum++
+
+	newVersion := fmt.Sprintf("%s.%s.%s.%d", parts[0], parts[1], parts[2], buildNum)
+
+	// 更新数据库
+	_, err = DB.Exec(`UPDATE nav_setting SET deployment_version = ? WHERE id = (SELECT id FROM nav_setting ORDER BY id ASC LIMIT 1)`, newVersion)
+	if err != nil {
+		return current, err
+	}
+
+	return newVersion, nil
 }

@@ -1329,3 +1329,33 @@ func ImportConfigHandler(c *gin.Context) {
 		"data":    result,
 	})
 }
+
+// GetDeploymentVersionHandler 获取当前部署版本号
+func GetDeploymentVersionHandler(c *gin.Context) {
+	version := service.GetDeploymentVersion()
+	c.JSON(200, gin.H{
+		"success": true,
+		"data": gin.H{
+			"version": version,
+		},
+	})
+}
+
+// IncrementDeploymentVersionHandler 递增部署版本号（供部署 agent 调用）
+func IncrementDeploymentVersionHandler(c *gin.Context) {
+	newVersion, err := service.IncrementDeploymentVersion()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"success": true,
+		"data": gin.H{
+			"version": newVersion,
+		},
+		"message": "版本号已递增",
+	})
+}

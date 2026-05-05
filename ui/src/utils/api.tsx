@@ -235,3 +235,17 @@ export const fetchImportConfig = async (payload: any) => {
     const { data } = await axios.post(`/api/admin/importConfig`, payload);
     return data;
 };
+
+// ==================== 部署版本接口 ====================
+
+// 获取部署版本号
+export const fetchGetDeploymentVersion = async () => {
+    const { data } = await axios.get(`/api/admin/deploymentVersion`);
+    return data?.data?.version || "v1.13.1.1";
+};
+
+// 递增部署版本号（供部署 agent 调用）
+export const fetchIncrementDeploymentVersion = async () => {
+    const { data } = await axios.post(`/api/admin/deploymentVersion/increment`);
+    return data?.data?.version || "v1.13.1.1";
+};

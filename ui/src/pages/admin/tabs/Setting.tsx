@@ -1,6 +1,6 @@
 import { Button, Card, Form, Input, message, Modal, Select, Spin, Switch, Table, Upload } from "antd";
 import { useCallback, useEffect, useState } from "react";
-import { fetchUpdateSetting, fetchUpdateUser, fetchUpdateSiteConfig, fetchExportConfig, fetchImportConfig } from "../../../utils/api";
+import { fetchUpdateSetting, fetchUpdateUser, fetchUpdateSiteConfig, fetchExportConfig, fetchImportConfig, fetchGetDeploymentVersion } from "../../../utils/api";
 import { useData } from "../hooks/useData";
 import { CloudDownloadOutlined, CloudUploadOutlined, ExclamationCircleOutlined, WarningOutlined } from "@ant-design/icons";
 export interface SettingProps { }
@@ -13,6 +13,20 @@ export const Setting: React.FC<SettingProps> = (props) => {
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [importPreview, setImportPreview] = useState<any>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [deploymentVersion, setDeploymentVersion] = useState<string>("v1.13.1.1");
+
+  // 获取部署版本号
+  useEffect(() => {
+    const loadVersion = async () => {
+      try {
+        const version = await fetchGetDeploymentVersion();
+        setDeploymentVersion(version);
+      } catch (e) {
+        console.error("获取版本号失败:", e);
+      }
+    };
+    loadVersion();
+  }, []);
   useEffect(() => {
     userForm.setFieldsValue(store?.user ?? {})
     settingForm.setFieldsValue(store?.setting ?? {})
@@ -206,7 +220,7 @@ export const Setting: React.FC<SettingProps> = (props) => {
             配置导入导出
           </span>
         }
-        style={{ marginBottom: 32, border: '2px solid #1890ff' }}
+        style={{ marginBottom: 32 }}
         extra={
           <span style={{ fontSize: 12, color: '#999' }}>
             <ExclamationCircleOutlined style={{ marginRight: 4 }} />
@@ -444,6 +458,19 @@ export const Setting: React.FC<SettingProps> = (props) => {
             </Form.Item>
           </Form>
         </Spin>
+      </Card>
+
+      {/* 部署版本信息 */}
+      <Card title="部署版本信息" style={{ marginTop: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <span style={{ fontSize: 16, color: "#666" }}>当前版本：</span>
+          <span style={{ fontSize: 20, fontWeight: 600, color: "#1890ff", fontFamily: "monospace" }}>
+            {deploymentVersion}
+          </span>
+          <span style={{ fontSize: 13, color: "#999", marginLeft: "auto" }}>
+            版本号格式：v主版本.次版本.修订版本.构建号
+          </span>
+        </div>
       </Card>
     </div>
   );

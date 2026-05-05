@@ -124,10 +124,14 @@ func main() {
 			// 分类排序路由
 			admin.PUT("/catelogs/sort", handler.UpdateCatelogSortHandler)
 			
-			// 导入导出路由
-			admin.GET("/exportConfig", handler.ExportConfigHandler)
-			admin.POST("/importConfig", handler.ImportConfigHandler)
-		}
+		// 导入导出路由
+		admin.GET("/exportConfig", handler.ExportConfigHandler)
+		admin.POST("/importConfig", handler.ImportConfigHandler)
+
+		// 部署版本
+		admin.GET("/deploymentVersion", handler.GetDeploymentVersionHandler)
+		admin.POST("/deploymentVersion/increment", handler.IncrementDeploymentVersionHandler)
+	}
 	}
 	logger.LogInfo("应用启动成功，网址: http://localhost:%s", *port)
 	listen := fmt.Sprintf("%s:%s", *addr, *port)

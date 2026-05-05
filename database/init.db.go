@@ -47,6 +47,11 @@ func InitDB() {
 	if !columnExists("nav_setting", "hideGithub") { DB.Exec(`ALTER TABLE nav_setting ADD COLUMN hideGithub BOOLEAN;`) }
 	if !columnExists("nav_setting", "hideToggleJumpTarget") { DB.Exec(`ALTER TABLE nav_setting ADD COLUMN hideToggleJumpTarget BOOLEAN;`) }
 
+	// 部署版本号字段
+	if !columnExists("nav_setting", "deployment_version") {
+		DB.Exec(`ALTER TABLE nav_setting ADD COLUMN deployment_version TEXT DEFAULT 'v1.13.1.1';`)
+	}
+
 	sql_create_table = `CREATE TABLE IF NOT EXISTS nav_table (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, url TEXT, logo TEXT, catelog TEXT, desc TEXT);`
 	_, err = DB.Exec(sql_create_table)
 	utils.CheckErr(err)
