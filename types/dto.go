@@ -63,6 +63,31 @@ type UpdateToolsSortDto struct {
 	Sort int `json:"sort"`
 }
 
+// ==================== 网站健康检测相关 ====================
+
+// 单条链接检测结果
+type LinkCheckResult struct {
+	Id         int    `json:"id"`
+	Url        string `json:"url"`
+	Title      string `json:"title"`
+	StatusCode int    `json:"status_code,omitempty"`
+	Alive      bool   `json:"alive"`
+	Error      string `json:"error,omitempty"`
+}
+
+// 检测响应
+type LinkCheckResponse struct {
+	Total   int                `json:"total"`
+	Alive   int                `json:"alive"`
+	Dead    int                `json:"dead"`
+	Results []LinkCheckResult  `json:"results"`
+}
+
+// 整理失效链接响应
+type OrganizeDeadLinksResponse struct {
+	Affected int `json:"affected"`
+}
+
 // ==================== 导入导出相关 ====================
 
 // 导出配置响应

@@ -249,3 +249,17 @@ export const fetchIncrementDeploymentVersion = async () => {
     const { data } = await axios.post(`/api/admin/deploymentVersion/increment`);
     return data?.data?.version || "v1.13.1.1";
 };
+
+// ==================== 网站健康检测接口 ====================
+
+// 检测所有链接的存活状态
+export const fetchCheckLinks = async () => {
+    const { data } = await axios.post(`/api/admin/check-links`, {}, { timeout: 120000 });
+    return data;
+};
+
+// 整理失效链接（移至末尾）
+export const fetchOrganizeDeadLinks = async () => {
+    const { data } = await axios.post(`/api/admin/organize-dead-links`);
+    return data;
+};

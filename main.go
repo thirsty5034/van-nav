@@ -128,6 +128,10 @@ func main() {
 		admin.GET("/exportConfig", handler.ExportConfigHandler)
 		admin.POST("/importConfig", handler.ImportConfigHandler)
 
+		// 网站健康检测路由
+		admin.POST("/check-links", handler.CheckLinksHandler)
+		admin.POST("/organize-dead-links", handler.OrganizeDeadLinksHandler)
+
 		// 部署版本
 		admin.GET("/deploymentVersion", handler.GetDeploymentVersionHandler)
 		admin.POST("/deploymentVersion/increment", handler.IncrementDeploymentVersionHandler)
@@ -138,9 +142,9 @@ func main() {
 	srv := &http.Server{
 		Addr:         listen,
 		Handler:      router,
-		ReadTimeout:  3 * time.Second, // 可根据实际需要调整
-		WriteTimeout: 3 * time.Second, // 可根据实际需要调整
-		IdleTimeout:  3 * time.Second, // 建议设置为 10s 或更短
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 60 * time.Second, // 较长以支持批量链接检测
+		IdleTimeout:  10 * time.Second,
 	}
 
 	err := srv.ListenAndServe()

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mereith/nav/types"
 )
@@ -516,6 +517,69 @@ func UpdateSiteConfigFromMap(cfg map[string]interface{}) error {
 }
 
 // ==================== 部署版本相关操作 ====================
+
+// ==================== 网站健康检测相关操作 ====================
+
+// GetAllToolsForCheck 获取所有工具的 id、url、title（用于健康检测）
+func GetAllToolsForCheck() ([]struct {
+	Id    int
+	Url   string
+	Title string
+}, error) {
+	rows, err := DB.Query(`SELECT id, url, name FROM nav_table`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tools []struct {
+		Id    int
+		Url   string
+		Title string
+	}
+	for rows.Next() {
+		var t struct {
+			Id    int
+			Url   string
+			Title string
+		}
+		if err := rows.Scan(&t.Id, &t.Url, &t.Title); err != nil {
+			return nil, err
+		}
+		tools = append(tools, t)
+	}
+	return tools, nil
+}
+
+// UpdateLinkHealth 更新单条链接的健康状态
+func UpdateLinkHealth(id int, alive bool) error {
+	now := time.Now().Format("2006-01-02 15:04:05")
+	aliveInt := 0
+	if alive {
+		aliveInt = 1
+	}
+	_, err := DB.Exec(`UPDATE nav_table SET is_alive = ?, last_checked = ? WHERE id = ?`, aliveInt, now, id)
+	return err
+}
+
+// OrganizeDeadLinks 将失效链接的 sort 值设为最大值，使其排在末尾
+func OrganizeDeadLinks() (int, error) {
+	var maxSort int
+	err := DB.QueryRow(`SELECT COALESCE(MAX(sort), 0) FROM nav_table`).Scan(&maxSort)
+	if err != nil {
+		return 0, err
+	}
+	newSort := maxSort + 100000
+	result, err := DB.Exec(`UPDATE nav_table SET sort = ? WHERE is_alive = 0`, newSort)
+	if err != nil {
+		return 0, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return int(affected), nil
+}
 
 // GetDeploymentVersion 获取当前部署版本号
 func GetDeploymentVersion() string {

@@ -57,6 +57,8 @@ func InitDB() {
 	utils.CheckErr(err)
 	if !columnExists("nav_table", "sort") { DB.Exec(`ALTER TABLE nav_table ADD COLUMN sort INTEGER;`) }
 	if !columnExists("nav_table", "hide") { DB.Exec(`ALTER TABLE nav_table ADD COLUMN hide BOOLEAN;`) }
+	if !columnExists("nav_table", "is_alive") { DB.Exec(`ALTER TABLE nav_table ADD COLUMN is_alive BOOLEAN DEFAULT 1;`) }
+	if !columnExists("nav_table", "last_checked") { DB.Exec(`ALTER TABLE nav_table ADD COLUMN last_checked DATETIME;`) }
 
 	sql_create_table = `CREATE TABLE IF NOT EXISTS nav_catelog (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT);`
 	_, err = DB.Exec(sql_create_table)

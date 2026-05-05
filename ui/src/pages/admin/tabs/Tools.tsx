@@ -13,9 +13,13 @@ import {
   Upload,
   message,
   Tooltip,
-  Switch
+  Switch,
+  Tag,
+  Statistic,
+  Row,
+  Col,
 } from "antd";
-import { HolderOutlined, DragOutlined, QuestionCircleOutlined, CloudDownloadOutlined } from '@ant-design/icons';
+import { HolderOutlined, DragOutlined, QuestionCircleOutlined, CloudDownloadOutlined, HeartOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import React, { useCallback, useState, useEffect, useContext, useMemo } from "react";
 import { getFilter, getOptions, mutiSearch } from "../../../utils/admin";
 import {
@@ -29,6 +33,8 @@ import {
   fetchPageInfo,
   fetchMaxSort,
   fetchUpdateToolDesc,
+  fetchCheckLinks,
+  fetchOrganizeDeadLinks,
 } from "../../../utils/api";
 import { useData } from "../hooks/useData";
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -124,6 +130,20 @@ export const Tools: React.FC<ToolsProps> = (props) => {
   const [dataSource, setDataSource] = useState<DataType[]>([]);
   const [gettingFavicon, setGettingFavicon] = useState(false);
   const [gettingDesc, setGettingDesc] = useState(false);
+
+  // ==================== 网站健康检测状态 ====================
+  interface LinkCheckResultItem {
+    id: number;
+    url: string;
+    title: string;
+    status_code: number;
+    alive: boolean;
+    error?: string;
+  }
+  const [checkResults, setCheckResults] = useState<LinkCheckResultItem[]>([]);
+  const [checkSummary, setCheckSummary] = useState<{ total: number; alive: number; dead: number } | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [organizing, setOrganizing] = useState(false);
 
   // 获取 favicon 的函数
   const handleGetFavicon = async (form: any, formInstance: 'add' | 'update') => {
@@ -372,6 +392,50 @@ export const Tools: React.FC<ToolsProps> = (props) => {
     reload();
   }, [reload]);
 
+  // ==================== 网站健康检测 ====================
+  const handleCheckLinks = useCallback(async () => {
+    setChecking(true);
+    setCheckResults([]);
+    setCheckSummary(null);
+    try {
+      const res = await fetchCheckLinks();
+      if (res.success && res.data) {
+        setCheckResults(res.data.results || []);
+        setCheckSummary({
+          total: res.data.total,
+          alive: res.data.alive,
+          dead: res.data.dead,
+        });
+        // 检测完成后刷新工具列表（因为 is_alive 字段已更新）
+        reload();
+        message.success(`检测完成：${res.data.alive} 个正常，${res.data.dead} 个失效`);
+      } else {
+        message.error(res.errorMessage || "检测失败");
+      }
+    } catch (err: any) {
+      message.error("检测请求失败：" + (err.message || "网络错误"));
+    } finally {
+      setChecking(false);
+    }
+  }, [reload]);
+
+  const handleOrganizeDeadLinks = useCallback(async () => {
+    setOrganizing(true);
+    try {
+      const res = await fetchOrganizeDeadLinks();
+      if (res.success) {
+        message.success(res.message || `已整理 ${res.data?.affected || 0} 条失效链接`);
+        reload();
+      } else {
+        message.error(res.errorMessage || "整理失败");
+      }
+    } catch (err: any) {
+      message.error("整理请求失败：" + (err.message || "网络错误"));
+    } finally {
+      setOrganizing(false);
+    }
+  }, [reload]);
+
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (active.id !== over?.id) {
       setDataSource((previous) => {
@@ -422,6 +486,7 @@ export const Tools: React.FC<ToolsProps> = (props) => {
   }, [store?.tools, searchString, catelogName]);
 
   return (
+    <>
     <Card
       title={
         <Space>
@@ -947,5 +1012,134 @@ export const Tools: React.FC<ToolsProps> = (props) => {
         </Spin>
       </Modal>}
     </Card>
+
+    {/* ==================== 网站健康检测 ==================== */}
+    <Card
+      title={
+        <Space>
+          <HeartOutlined />
+          <span>网站健康检测</span>
+        </Space>
+      }
+      style={{ marginTop: 16 }}
+      extra={
+        <Space>
+          <Button
+            type="primary"
+            loading={checking}
+            onClick={handleCheckLinks}
+          >
+            {checking ? "检测中..." : "开始检测"}
+          </Button>
+          {checkSummary && checkSummary.dead > 0 && (
+            <Popconfirm
+              title={`确定将 ${checkSummary.dead} 条失效链接移至列表末尾？`}
+              onConfirm={handleOrganizeDeadLinks}
+            >
+              <Button loading={organizing}>
+                整理失效链接
+              </Button>
+            </Popconfirm>
+          )}
+        </Space>
+      }
+    >
+      {checkSummary && (
+        <Row gutter={16} style={{ marginBottom: 16 }}>
+          <Col span={8}>
+            <Statistic
+              title="总数"
+              value={checkSummary.total}
+              prefix={<ExclamationCircleOutlined />}
+            />
+          </Col>
+          <Col span={8}>
+            <Statistic
+              title="正常"
+              value={checkSummary.alive}
+              valueStyle={{ color: '#3f8600' }}
+              prefix={<CheckCircleOutlined />}
+            />
+          </Col>
+          <Col span={8}>
+            <Statistic
+              title="失效"
+              value={checkSummary.dead}
+              valueStyle={{ color: checkSummary.dead > 0 ? '#cf1322' : undefined }}
+              prefix={<CloseCircleOutlined />}
+            />
+          </Col>
+        </Row>
+      )}
+
+      {checkResults.length > 0 && (
+        <Table
+          dataSource={checkResults}
+          rowKey="id"
+          size="small"
+          pagination={{
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50'],
+            defaultPageSize: 10,
+            showTotal: (total) => `共 ${total} 条`,
+          }}
+        >
+          <Table.Column
+            title="名称"
+            dataIndex="title"
+            width={120}
+          />
+          <Table.Column
+            title="网址"
+            dataIndex="url"
+            width={200}
+            render={(url: string) => (
+              <div style={{ wordBreak: 'break-all', whiteSpace: 'normal' }}>{url}</div>
+            )}
+          />
+          <Table.Column
+            title="状态码"
+            dataIndex="status_code"
+            width={80}
+            align="center"
+            render={(code: number) => code || '-'}
+          />
+          <Table.Column
+            title="状态"
+            dataIndex="alive"
+            width={80}
+            align="center"
+            render={(alive: boolean, record: LinkCheckResultItem) => (
+              alive ? (
+                <Tag color="success">正常</Tag>
+              ) : (
+                <Tooltip title={record.error || '无法访问'}>
+                  <Tag color="error">失效</Tag>
+                </Tooltip>
+              )
+            )}
+          />
+          <Table.Column
+            title="错误信息"
+            dataIndex="error"
+            width={150}
+            render={(err: string) => err || '-'}
+          />
+        </Table>
+      )}
+
+      {!checkSummary && !checking && (
+        <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+          点击"开始检测"按钮，检测所有已收录网站的可用性
+        </div>
+      )}
+
+      {checking && (
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <Spin tip="正在检测所有链接，请稍候..." />
+        </div>
+      )}
+    </Card>
+    </>
   );
 };
