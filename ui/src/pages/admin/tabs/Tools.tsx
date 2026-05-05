@@ -118,7 +118,7 @@ const Row = ({ children, ...props }: RowProps) => {
 
 export interface ToolsProps { }
 export const Tools: React.FC<ToolsProps> = (props) => {
-  const { store, loading, reload } = useData();
+  const { store, loading, reload, setStoreData } = useData();
   const [showEdit, setShowEdit] = useState(false);
   const [requestLoading, setRequestLoading] = useState(false);
   const [showAddModel, setShowAddModel] = useState(false);
@@ -424,8 +424,13 @@ export const Tools: React.FC<ToolsProps> = (props) => {
     try {
       const res = await fetchOrganizeDeadLinks();
       if (res.success) {
+        // 直接用 POST 响应中的数据更新 store，不依赖 GET reload（避免 SW 缓存）
+        if (res.data?.tools) {
+          setStoreData(res.data);
+        } else {
+          reload();
+        }
         message.success(res.message || `已整理 ${res.data?.affected || 0} 条失效链接`);
-        reload();
       } else {
         message.error(res.errorMessage || "整理失败");
       }

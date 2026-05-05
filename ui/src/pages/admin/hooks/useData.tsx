@@ -21,5 +21,6 @@ export const useData = () => {
     store,
     loading,
     reload: fetchData,
+    setStoreData: setState,
   }
 }

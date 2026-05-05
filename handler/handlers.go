@@ -1495,10 +1495,20 @@ func OrganizeDeadLinksHandler(c *gin.Context) {
 		return
 	}
 
+	// 返回整理后的完整工具列表，前端直接使用，不依赖 GET reload
+	tools := service.GetAllTool()
+	catelogs := service.GetAllCatelog()
+	setting := service.GetSetting()
+	siteConfig := service.GetSiteConfig()
+
 	c.JSON(200, gin.H{
 		"success": true,
-		"data": types.OrganizeDeadLinksResponse{
-			Affected: affected,
+		"data": gin.H{
+			"affected":  affected,
+			"tools":     tools,
+			"catelogs":  catelogs,
+			"setting":   setting,
+			"siteConfig": siteConfig,
 		},
 		"message": fmt.Sprintf("已整理，%d 条失效链接已移至末尾", affected),
 	})
