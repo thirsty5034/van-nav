@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -1335,16 +1334,8 @@ func ImportConfigHandler(c *gin.Context) {
 
 // CheckLinksHandler 并发检测所有链接的存活状态
 func CheckLinksHandler(c *gin.Context) {
-	tools, err := database.GetAllToolsForCheck()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success":      false,
-			"errorMessage": "获取工具列表失败: " + err.Error(),
-		})
-		return
-	}
-
-	if len(tools) == 0 {
+	results, aliveCount, deadCount := service.CheckAllLinks()
+	if results == nil {
 		c.JSON(200, gin.H{
 			"success": true,
 			"data": types.LinkCheckResponse{
@@ -1357,105 +1348,6 @@ func CheckLinksHandler(c *gin.Context) {
 		return
 	}
 
-	// 并发检测，最多 10 个 goroutine
-	concurrency := 10
-	if len(tools) < concurrency {
-		concurrency = len(tools)
-	}
-
-	type checkResult struct {
-		Id         int
-		Url        string
-		Title      string
-		StatusCode int
-		Alive      bool
-		Error      string
-	}
-
-	results := make([]checkResult, len(tools))
-	sem := make(chan struct{}, concurrency)
-	var wg sync.WaitGroup
-
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
-			MaxIdleConns:        concurrency,
-			MaxIdleConnsPerHost: concurrency,
-		},
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) >= 5 {
-				return fmt.Errorf("too many redirects")
-			}
-			return nil
-		},
-	}
-
-	for i, tool := range tools {
-		wg.Add(1)
-		go func(idx int, id int, urlStr, title string) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-
-			res := checkResult{Id: id, Url: urlStr, Title: title}
-
-			// 只处理 http/https 协议
-			if !strings.HasPrefix(urlStr, "http://") && !strings.HasPrefix(urlStr, "https://") {
-				res.Alive = true // 非 HTTP 链接默认视为正常
-				results[idx] = res
-				return
-			}
-
-			req, err := http.NewRequest("HEAD", urlStr, nil)
-			if err != nil {
-				res.Error = "构建请求失败"
-				res.Alive = false
-				results[idx] = res
-				return
-			}
-			req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
-
-			resp, err := client.Do(req)
-			if err != nil {
-				// HEAD 失败时尝试 GET
-				reqGet, errGet := http.NewRequest("GET", urlStr, nil)
-				if errGet != nil {
-					res.Error = err.Error()
-					res.Alive = false
-					results[idx] = res
-					return
-				}
-				reqGet.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-				respGet, errGet := client.Do(reqGet)
-				if errGet != nil {
-					res.Error = errGet.Error()
-					res.Alive = false
-					results[idx] = res
-					return
-				}
-				respGet.Body.Close()
-				res.StatusCode = respGet.StatusCode
-				res.Alive = respGet.StatusCode >= 200 && respGet.StatusCode < 400
-				// 更新数据库
-				database.UpdateLinkHealth(id, res.Alive)
-				results[idx] = res
-				return
-			}
-			resp.Body.Close()
-
-			res.StatusCode = resp.StatusCode
-			res.Alive = resp.StatusCode >= 200 && resp.StatusCode < 400
-			// 更新数据库
-			database.UpdateLinkHealth(id, res.Alive)
-			results[idx] = res
-		}(i, tool.Id, tool.Url, tool.Title)
-	}
-
-	wg.Wait()
-
-	// 汇总结果
-	var aliveCount, deadCount int
 	linkResults := make([]types.LinkCheckResult, len(results))
 	for i, r := range results {
 		linkResults[i] = types.LinkCheckResult{
@@ -1465,11 +1357,6 @@ func CheckLinksHandler(c *gin.Context) {
 			StatusCode: r.StatusCode,
 			Alive:      r.Alive,
 			Error:      r.Error,
-		}
-		if r.Alive {
-			aliveCount++
-		} else {
-			deadCount++
 		}
 	}
 
@@ -1484,8 +1371,11 @@ func CheckLinksHandler(c *gin.Context) {
 	})
 }
 
-// OrganizeDeadLinksHandler 将失效链接移至列表末尾
+// OrganizeDeadLinksHandler 先刷新检测，再将失效链接移至末尾，最后返回更新后的完整数据
 func OrganizeDeadLinksHandler(c *gin.Context) {
+	// 先检测所有链接刷新 is_alive，确保数据一致
+	service.CheckAllLinks()
+
 	affected, err := database.OrganizeDeadLinks()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -1495,7 +1385,7 @@ func OrganizeDeadLinksHandler(c *gin.Context) {
 		return
 	}
 
-	// 返回整理后的完整工具列表，前端直接使用，不依赖 GET reload
+	// 返回整理后的完整工具列表，前端直接用 POST 响应更新 UI（绕过 SW 缓存）
 	tools := service.GetAllTool()
 	catelogs := service.GetAllCatelog()
 	setting := service.GetSetting()
@@ -1504,10 +1394,10 @@ func OrganizeDeadLinksHandler(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"success": true,
 		"data": gin.H{
-			"affected":  affected,
-			"tools":     tools,
-			"catelogs":  catelogs,
-			"setting":   setting,
+			"affected":   affected,
+			"tools":      tools,
+			"catelogs":   catelogs,
+			"setting":    setting,
 			"siteConfig": siteConfig,
 		},
 		"message": fmt.Sprintf("已整理，%d 条失效链接已移至末尾", affected),
