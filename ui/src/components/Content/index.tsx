@@ -41,6 +41,12 @@ const Content = (props: any) => {
       setLoading(true);
       const r = await FetchList();
       setData(r);
+      // 成功时缓存到 localStorage，断网时可恢复
+      try {
+        window.localStorage.setItem("van-nav-cache", JSON.stringify(r));
+      } catch (e) {
+        // localStorage 满或不可用时忽略
+      }
       const tagInLocalStorage = window.localStorage.getItem("tag");
       if (tagInLocalStorage && tagInLocalStorage !== "") {
         if (r?.catelogs && r?.catelogs.includes(tagInLocalStorage)) {
@@ -48,7 +54,17 @@ const Content = (props: any) => {
         }
       }
     } catch (e) {
-      console.log(e);
+      console.log("网络请求失败，尝试从本地缓存恢复", e);
+      try {
+        const cached = window.localStorage.getItem("van-nav-cache");
+        if (cached) {
+          const r = JSON.parse(cached);
+          setData(r);
+          console.log("已从本地缓存恢复工具数据");
+        }
+      } catch (cacheErr) {
+        console.log("本地缓存恢复失败", cacheErr);
+      }
     } finally {
       setLoading(false);
     }
