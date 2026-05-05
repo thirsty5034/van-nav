@@ -71,6 +71,11 @@ func main() {
 	router.GET("/manifest.json", handler.ManifastHanlder)
 	router.Use(Serve("/", BinaryFileSystem(fs, "public")))
 	api := router.Group("/api")
+	api.Use(func(c *gin.Context) {
+		c.Header("Cache-Control", "no-store, no-cache, must-revalidate")
+		c.Header("Pragma", "no-cache")
+		c.Next()
+	})
 	{
 		// 获取数据的路由
 		api.GET("/", handler.GetAllHandler)

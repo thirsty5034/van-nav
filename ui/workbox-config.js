@@ -7,6 +7,9 @@ module.exports = {
   skipWaiting: true,
   clientsClaim: true,
   runtimeCaching: [{
+    urlPattern: /^https?.*\/api\//,
+    handler: 'NetworkOnly',
+  }, {
     urlPattern: /^https?.*/,
     handler: 'NetworkFirst',
     options: {
