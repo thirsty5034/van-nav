@@ -455,3 +455,15 @@ body.dark-mode .ant-statistic-content {
 body.dark-mode .ant-statistic-content-prefix {
   color: rgba(255, 255, 255, 0.65) !important;
 }
+
+/* ===== 修复：@dnd-kit 拖拽排序在暗色模式下的行变白 ===== */
+/* 暗色模式下所有 <tr> 行设置背景色，防止 @dnd-kit 的 transform transition 导致合成层丢失背景 */
+body.dark-mode .ant-table-tbody > tr {
+  background-color: #1a1a1a;
+}
+
+/* 暗色模式下所有 <td> 单元格强制保持背景色，防止浏览器合成层覆盖 */
+body.dark-mode .ant-table-tbody > tr > td {
+  background-color: #1a1a1a !important;
+  border-bottom-color: #2a2a2a !important;
+}

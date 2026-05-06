@@ -41,11 +41,14 @@ func ImportToolsHandler(c *gin.Context) {
 		})
 		return
 	}
-	// 导入所有工具
-	service.ImportTools(tools)
+	// 导入所有工具，返回统计信息
+	result := service.ImportTools(tools)
 	c.JSON(200, gin.H{
-		"success": true,
-		"message": "导入工具成功",
+		"success":        true,
+		"message":        "导入工具成功",
+		"tools_imported": result.Imported,
+		"tools_skipped":  result.Skipped,
+		"categories":     result.Categories,
 	})
 }
 

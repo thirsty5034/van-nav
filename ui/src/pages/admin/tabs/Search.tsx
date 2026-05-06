@@ -44,11 +44,15 @@ const DraggableRow = ({ children, ...props }: any) => {
     id: props['data-row-key'],
   });
 
+  // 暗色模式下，只要存在 transform（拖拽中或动画过渡中），就显式设置背景色
+  // 防止浏览器合成层（compositing layer）导致 <td> 背景色短暂丢失
+  const isDarkMode = typeof document !== 'undefined' && document.body.classList.contains('dark-mode');
   const style = {
     ...props.style,
     transform: CSS.Transform.toString(transform),
     transition,
     ...(isDragging ? { zIndex: 9999 } : {}),
+    ...(isDarkMode ? { backgroundColor: '#1a1a1a' } : {}),
   };
 
   const modifiedListeners = {

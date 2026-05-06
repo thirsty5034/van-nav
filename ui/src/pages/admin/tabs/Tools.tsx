@@ -95,11 +95,15 @@ const Row = ({ children, ...props }: RowProps) => {
     id: props['data-row-key']?.toString() || '',
   });
 
+  // 暗色模式下，只要存在 transform（拖拽中或动画过渡中），就显式设置背景色
+  // 防止浏览器合成层（compositing layer）导致 <td> 背景色短暂丢失
+  const isDarkMode = typeof document !== 'undefined' && document.body.classList.contains('dark-mode');
   const style: React.CSSProperties = {
     ...props.style,
     transform: CSS.Translate.toString(transform),
     transition,
     ...(isDragging ? { position: 'relative', zIndex: 9999 } : {}),
+    ...(isDarkMode ? { backgroundColor: '#1a1a1a' } : {}),
   };
 
   const contextValue = useMemo<RowContextProps>(
@@ -258,18 +262,25 @@ export const Tools: React.FC<ToolsProps> = (props) => {
   );
   const handleImport = useCallback(
     async (data: any) => {
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        message.warning("导入数据为空");
+        return;
+      }
+      const loadingMsg = message.loading(`正在导入 ${data.length} 条工具数据...`, 0);
       try {
-        await fetchImportTools(data);
-        message.success("导入成功! 正在刷新图标缓存...");
-        // 触发缓存刷新：逐个更新工具触发图标缓存
-        if (data && Array.isArray(data)) {
-          for (const tool of data) {
-            try {
-              await fetchUpdateTool({ ...tool });
-            } catch (e) { }
-          }
+        const res = await fetchImportTools(data);
+        loadingMsg();
+        if (res.success) {
+          const imported = res.tools_imported ?? 0;
+          const skipped = res.tools_skipped ?? 0;
+          let msg = `导入完成：成功 ${imported} 条`;
+          if (skipped > 0) msg += `，跳过 ${skipped} 条（ID 已存在）`;
+          message.success(msg + "，正在刷新图标缓存...");
+        } else {
+          message.warning(res.errorMessage || "导入失败!");
         }
       } catch (err) {
+        loadingMsg();
         message.warning("导入失败!");
       } finally {
         reload();
@@ -446,22 +457,17 @@ export const Tools: React.FC<ToolsProps> = (props) => {
       setDataSource((previous) => {
         const activeIndex = previous.findIndex((i) => i.id.toString() === active.id);
         const overIndex = previous.findIndex((i) => i.id.toString() === over?.id);
-
-        // 计算新的排序值
         const newData = arrayMove(previous, activeIndex, overIndex);
         const updates = newData.map((item, index) => ({
           id: item.id,
           sort: index + 1,
         }));
-
-        // 调用后端接口更新排序
         fetchUpdateToolsSort(updates).then(() => {
           message.success('排序更新成功');
           reload();
         }).catch(() => {
           message.error('排序更新失败');
         });
-
         return newData;
       });
     }

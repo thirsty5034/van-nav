@@ -90,16 +90,25 @@ func UpdateImg(url1 string) {
 		`
 
 	rows, err := database.DB.Query(sql_get_img, urlEncoded)
-	utils.CheckErr(err)
+	if err != nil {
+		logger.LogError("UpdateImg: query error for %s: %v", url1, err)
+		return
+	}
 	defer rows.Close()
 	if !rows.Next() {
 		sql_add_img := `
-		INSERT INTO nav_img (url, value)
-		VALUES (?, ?);
-		`
+			INSERT INTO nav_img (url, value)
+			VALUES (?, ?);
+			`
 		stmt, err := database.DB.Prepare(sql_add_img)
-		utils.CheckErr(err)
+		if err != nil {
+			logger.LogError("UpdateImg: prepare error for %s: %v", url1, err)
+			return
+		}
+		defer stmt.Close()
 		_, err = stmt.Exec(urlEncoded, base64ImgValue)
-		utils.CheckErr(err)
+		if err != nil {
+			logger.LogError("UpdateImg: exec error for %s: %v", url1, err)
+		}
 	}
 }

@@ -11,36 +11,58 @@ import (
 	"github.com/mereith/nav/utils"
 )
 
-func ImportTools(data []types.Tool) {
+type ImportToolsResult struct {
+	Imported   int
+	Skipped    int
+	Categories []string
+}
+
+func ImportTools(data []types.Tool) ImportToolsResult {
 	var catelogs []string
+	imported := 0
+	skipped := 0
 	for _, v := range data {
 		// 过滤掉空分类，只收集有效的分类名称
 		if v.Catelog != "" && strings.TrimSpace(v.Catelog) != "" && !utils.In(v.Catelog, catelogs) {
 			catelogs = append(catelogs, v.Catelog)
 		}
+		// 使用 INSERT OR IGNORE 避免 ID 冲突导致整个导入失败
+		// 如果 ID 已存在则跳过，同时包含 sort 和 hide 字段以保留完整数据
 		sql_add_tool := `
-			INSERT INTO nav_table (id, name, catelog, url, logo, desc)
-			VALUES (?, ?, ?, ?, ?, ?);
+			INSERT OR IGNORE INTO nav_table (id, name, catelog, url, logo, desc, sort, hide)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 			`
 		stmt, err := database.DB.Prepare(sql_add_tool)
 		utils.CheckErr(err)
-		res, err := stmt.Exec(v.Id, v.Name, v.Catelog, v.Url, v.Logo, v.Desc)
+		res, err := stmt.Exec(v.Id, v.Name, v.Catelog, v.Url, v.Logo, v.Desc, v.Sort, v.Hide)
+		if err != nil {
+			utils.CheckErr(err)
+			skipped++
+			continue
+		}
+		affected, _ := res.RowsAffected()
+		if affected > 0 {
+			imported++
+		} else {
+			skipped++
+		}
 		utils.CheckErr(err)
-		_, err = res.LastInsertId()
-		utils.CheckErr(err)
+		_, _ = res.LastInsertId()
 	}
 	for _, catelog := range catelogs {
 		var addCatelogDto types.AddCatelogDto
 		addCatelogDto.Name = catelog
 		AddCatelog(addCatelogDto)
 	}
-	// 转存所有图片,异步
-	go func(data []types.Tool) {
-		for _, v := range data {
-			UpdateImg(v.Logo)
-		}
-	}(data)
-
+	// 转存所有图片，顺序执行避免 SQLite 锁竞争
+	for _, v := range data {
+		UpdateImg(v.Logo)
+	}
+	return ImportToolsResult{
+		Imported:   imported,
+		Skipped:    skipped,
+		Categories: catelogs,
+	}
 }
 
 func UpdateTool(data types.UpdateToolDto) {
