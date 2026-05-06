@@ -47,6 +47,15 @@ func InitDB() {
 	if !columnExists("nav_setting", "hideGithub") { DB.Exec(`ALTER TABLE nav_setting ADD COLUMN hideGithub BOOLEAN;`) }
 	if !columnExists("nav_setting", "hideToggleJumpTarget") { DB.Exec(`ALTER TABLE nav_setting ADD COLUMN hideToggleJumpTarget BOOLEAN;`) }
 
+	// 搜索引擎显示开关（默认显示）
+	if !columnExists("nav_setting", "showSearchEngine") {
+		DB.Exec(`ALTER TABLE nav_setting ADD COLUMN showSearchEngine BOOLEAN DEFAULT 1;`)
+	}
+	// PC 端标签列数（默认 3）
+	if !columnExists("nav_setting", "pcColumnCount") {
+		DB.Exec(`ALTER TABLE nav_setting ADD COLUMN pcColumnCount INTEGER DEFAULT 3;`)
+	}
+
 	// 部署版本号字段
 	if !columnExists("nav_setting", "deployment_version") {
 		DB.Exec(`ALTER TABLE nav_setting ADD COLUMN deployment_version TEXT DEFAULT 'v1.13.1.1';`)

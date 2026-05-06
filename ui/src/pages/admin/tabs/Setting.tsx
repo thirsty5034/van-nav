@@ -1,4 +1,4 @@
-import { Button, Card, Form, Input, message, Modal, Select, Spin, Switch, Table, Upload } from "antd";
+import { Button, Card, Form, Input, InputNumber, message, Modal, Select, Spin, Switch, Table, Upload } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { fetchUpdateSetting, fetchUpdateUser, fetchUpdateSiteConfig, fetchExportConfig, fetchImportConfig, fetchGetDeploymentVersion } from "../../../utils/api";
 import { useData } from "../hooks/useData";
@@ -29,7 +29,10 @@ export const Setting: React.FC<SettingProps> = (props) => {
   }, []);
   useEffect(() => {
     userForm.setFieldsValue(store?.user ?? {})
-    settingForm.setFieldsValue(store?.setting ?? {})
+    settingForm.setFieldsValue({
+      ...(store?.setting ?? {}),
+      pcColumnCount: store?.setting?.pcColumnCount || 3,
+    })
     siteConfigForm.setFieldsValue(store?.siteConfig ?? {})
   }, [store])
   const handleUpdateUser = useCallback(
@@ -410,6 +413,12 @@ export const Setting: React.FC<SettingProps> = (props) => {
             </Form.Item>
             <Form.Item label="隐藏跳转方式卡片" name="hideToggleJumpTarget" tooltip="默认展示，开启后将在前台隐藏跳转方式卡片" >
               <Switch defaultChecked={Boolean(store?.setting?.hideToggleJumpTarget)} />
+            </Form.Item>
+            <Form.Item label="显示搜索引擎" name="showSearchEngine" tooltip="开启后搜索时显示搜索引擎快捷切换按钮，关闭后仅显示搜索框" >
+              <Switch defaultChecked={store?.setting?.showSearchEngine !== false} />
+            </Form.Item>
+            <Form.Item label="电脑端标签列数" name="pcColumnCount" tooltip="设置首页工具卡片在电脑端的列数（2-8），默认 3 列">
+              <InputNumber min={2} max={8} placeholder="默认 3" style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
               <Button type="primary" htmlType="submit">

@@ -228,12 +228,13 @@ func GetAllCatelogs() ([]types.Catelog, error) {
 
 // 获取所有设置（键值对形式）
 func GetAllSettings() (map[string]string, error) {
-	sql := `SELECT id, favicon, title, govRecord, logo192, logo512, hideAdmin, hideGithub, hideToggleJumpTarget, jumpTargetBlank FROM nav_setting ORDER BY id ASC LIMIT 1`
+	sql := `SELECT id, favicon, title, govRecord, logo192, logo512, hideAdmin, hideGithub, hideToggleJumpTarget, jumpTargetBlank, showSearchEngine, pcColumnCount FROM nav_setting ORDER BY id ASC LIMIT 1`
 	row := DB.QueryRow(sql)
 
 	var setting types.Setting
-	var hideGithub, hideAdmin, hideToggleJumpTarget, jumpTargetBlank interface{}
-	err := row.Scan(&setting.Id, &setting.Favicon, &setting.Title, &setting.GovRecord, &setting.Logo192, &setting.Logo512, &hideAdmin, &hideGithub, &hideToggleJumpTarget, &jumpTargetBlank)
+	var hideGithub, hideAdmin, hideToggleJumpTarget, jumpTargetBlank, showSearchEngine interface{}
+	var pcColumnCount interface{}
+	err := row.Scan(&setting.Id, &setting.Favicon, &setting.Title, &setting.GovRecord, &setting.Logo192, &setting.Logo512, &hideAdmin, &hideGithub, &hideToggleJumpTarget, &jumpTargetBlank, &showSearchEngine, &pcColumnCount)
 	if err != nil {
 		return make(map[string]string), nil
 	}
@@ -280,6 +281,22 @@ func GetAllSettings() (map[string]string, error) {
 		}
 	} else {
 		settings["jumpTargetBlank"] = "true"
+	}
+	// 搜索引擎显示开关
+	if showSearchEngine != nil {
+		if showSearchEngine.(int64) == 1 {
+			settings["showSearchEngine"] = "true"
+		} else {
+			settings["showSearchEngine"] = "false"
+		}
+	} else {
+		settings["showSearchEngine"] = "true"
+	}
+	// PC 端列数
+	if pcColumnCount != nil {
+		settings["pcColumnCount"] = fmt.Sprintf("%d", pcColumnCount.(int64))
+	} else {
+		settings["pcColumnCount"] = "3"
 	}
 
 	return settings, nil
@@ -425,6 +442,10 @@ func UpdateSettingField(key string, value string) error {
 		sql = `UPDATE nav_setting SET hideToggleJumpTarget = ? WHERE id = (SELECT id FROM nav_setting ORDER BY id ASC LIMIT 1)`
 	case "jumpTargetBlank":
 		sql = `UPDATE nav_setting SET jumpTargetBlank = ? WHERE id = (SELECT id FROM nav_setting ORDER BY id ASC LIMIT 1)`
+	case "showSearchEngine":
+		sql = `UPDATE nav_setting SET showSearchEngine = ? WHERE id = (SELECT id FROM nav_setting ORDER BY id ASC LIMIT 1)`
+	case "pcColumnCount":
+		sql = `UPDATE nav_setting SET pcColumnCount = ? WHERE id = (SELECT id FROM nav_setting ORDER BY id ASC LIMIT 1)`
 	default:
 		return nil
 	}

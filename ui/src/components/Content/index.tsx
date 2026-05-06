@@ -28,13 +28,40 @@ const Content = (props: any) => {
   const [searchString, setSearchString] = useState("");
   const [val, setVal] = useState("");
   const [searchEngineCards, setSearchEngineCards] = useState<any[]>([]);
+  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1060 : true);
 
   const filteredDataRef = useRef<any>([]);
+
+  // 监听窗口大小变化
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1060);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const showGithub = useMemo(() => {
     const hide = data?.setting?.hideGithub === true
     return !hide;
   }, [data])
+
+  // 动态计算 PC 端网格列数
+  // 保持卡片大小不变，通过扩大容器 max-width 来容纳更多列
+  // 原版基准: repeat(3, minmax(299.67px, 350px)), gap=20px
+  const gridStyle = useMemo(() => {
+    const pcCols = data?.setting?.pcColumnCount;
+    if (isDesktop && pcCols && pcCols > 0 && pcCols !== 3) {
+      const gap = 20;
+      // 容器最大宽度 = N * 350 + (N-1) * 20
+      const containerMax = pcCols * 350 + (pcCols - 1) * gap;
+      return {
+        gridTemplateColumns: `repeat(${pcCols}, minmax(299.67px, 350px))`,
+        maxWidth: `${containerMax}px`,
+        margin: '0 auto',
+        justifyContent: 'center',
+      } as React.CSSProperties;
+    }
+    return {};
+  }, [isDesktop, data?.setting?.pcColumnCount]);
   
   const loadData = useCallback(async () => {
     try {
@@ -77,6 +104,11 @@ const Content = (props: any) => {
   // 异步加载搜索引擎卡片
   useEffect(() => {
     const loadSearchEngineCards = async () => {
+      // 如果管理员关闭了搜索引擎显示，清空搜索引擎卡片
+      if (data?.setting?.showSearchEngine === false) {
+        setSearchEngineCards([]);
+        return;
+      }
       try {
         const cards = await generateSearchEngineCard(searchString);
         setSearchEngineCards(cards);
@@ -87,7 +119,7 @@ const Content = (props: any) => {
     };
 
     loadSearchEngineCards();
-  }, [searchString]);
+  }, [searchString, data?.setting?.showSearchEngine]);
 
   const handleSetCurrTag = (tag: string) => {
     setCurrTag(tag);
@@ -236,7 +268,7 @@ const Content = (props: any) => {
         </div>
       </div>
       <div className="content-wraper">
-        <div className={`content cards ${data?.siteConfig?.compactMode ? 'compact-grid' : ''}`}>
+        <div className={`content cards ${data?.siteConfig?.compactMode ? 'compact-grid' : ''}`} style={gridStyle}>
           {loading ? <Loading></Loading> : renderCardsV2()}
         </div>
       </div>

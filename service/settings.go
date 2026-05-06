@@ -18,9 +18,9 @@ func IncrementDeploymentVersion() (string, error) {
 
 func GetSetting() types.Setting {
 	sql_get_user := `
-		SELECT id,favicon,title,govRecord,logo192,logo512,hideAdmin,hideGithub,hideToggleJumpTarget,jumpTargetBlank,COALESCE(deployment_version,'v1.13.1.1')
-		FROM nav_setting 
-		ORDER BY id ASC 
+		SELECT id,favicon,title,govRecord,logo192,logo512,hideAdmin,hideGithub,hideToggleJumpTarget,jumpTargetBlank,showSearchEngine,pcColumnCount,COALESCE(deployment_version,'v1.13.1.1')
+		FROM nav_setting
+		ORDER BY id ASC
 		LIMIT 1;
 		`
 	var setting types.Setting
@@ -30,8 +30,10 @@ func GetSetting() types.Setting {
 	var hideAdmin interface{}
 	var hideToggleJumpTarget interface{}
 	var jumpTargetBlank interface{}
+	var showSearchEngine interface{}
+	var pcColumnCount interface{}
 	var deploymentVersion string
-	err := row.Scan(&setting.Id, &setting.Favicon, &setting.Title, &setting.GovRecord, &setting.Logo192, &setting.Logo512, &hideAdmin, &hideGithub, &hideToggleJumpTarget, &jumpTargetBlank, &deploymentVersion)
+	err := row.Scan(&setting.Id, &setting.Favicon, &setting.Title, &setting.GovRecord, &setting.Logo192, &setting.Logo512, &hideAdmin, &hideGithub, &hideToggleJumpTarget, &jumpTargetBlank, &showSearchEngine, &pcColumnCount, &deploymentVersion)
 	if err != nil {
 		logger.LogError("获取配置失败: %s", err)
 		return types.Setting{
@@ -45,6 +47,8 @@ func GetSetting() types.Setting {
 			HideGithub:           false,
 			HideToggleJumpTarget: false,
 			JumpTargetBlank:      true,
+			ShowSearchEngine:     true,
+			PcColumnCount:        3,
 			DeploymentVersion:    "v1.13.1.1",
 		}
 	}
@@ -87,6 +91,24 @@ func GetSetting() types.Setting {
 		}
 	}
 
+	// 搜索引擎显示开关（默认显示）
+	if showSearchEngine == nil {
+		setting.ShowSearchEngine = true
+	} else {
+		if showSearchEngine.(int64) == 0 {
+			setting.ShowSearchEngine = false
+		} else {
+			setting.ShowSearchEngine = true
+		}
+	}
+
+	// PC 端列数（默认 3）
+	if pcColumnCount == nil {
+		setting.PcColumnCount = 3
+	} else {
+		setting.PcColumnCount = int(pcColumnCount.(int64))
+	}
+
 	setting.DeploymentVersion = deploymentVersion
 
 	return setting
@@ -95,7 +117,7 @@ func GetSetting() types.Setting {
 func UpdateSetting(data types.Setting) error {
 	sql_update_setting := `
 		UPDATE nav_setting
-		SET favicon = ?, title = ?, govRecord = ?, logo192 = ?, logo512 = ?, hideAdmin = ?, hideGithub = ?, hideToggleJumpTarget = ?, jumpTargetBlank = ?
+		SET favicon = ?, title = ?, govRecord = ?, logo192 = ?, logo512 = ?, hideAdmin = ?, hideGithub = ?, hideToggleJumpTarget = ?, jumpTargetBlank = ?, showSearchEngine = ?, pcColumnCount = ?
 		WHERE id = (SELECT id FROM nav_setting ORDER BY id ASC LIMIT 1);
 		`
 
@@ -103,7 +125,7 @@ func UpdateSetting(data types.Setting) error {
 	if err != nil {
 		return err
 	}
-	res, err := stmt.Exec(data.Favicon, data.Title, data.GovRecord, data.Logo192, data.Logo512, data.HideAdmin, data.HideGithub, data.HideToggleJumpTarget, data.JumpTargetBlank)
+	res, err := stmt.Exec(data.Favicon, data.Title, data.GovRecord, data.Logo192, data.Logo512, data.HideAdmin, data.HideGithub, data.HideToggleJumpTarget, data.JumpTargetBlank, data.ShowSearchEngine, data.PcColumnCount)
 	if err != nil {
 		return err
 	}

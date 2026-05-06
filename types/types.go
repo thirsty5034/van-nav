@@ -12,6 +12,8 @@ type Setting struct {
 	HideGithub           bool   `json:"hideGithub"`
 	HideToggleJumpTarget bool   `json:"hideToggleJumpTarget"`
 	JumpTargetBlank      bool   `json:"jumpTargetBlank"`
+	ShowSearchEngine     bool   `json:"showSearchEngine"`
+	PcColumnCount        int    `json:"pcColumnCount"`
 	DeploymentVersion    string `json:"deploymentVersion"`
 }
 
