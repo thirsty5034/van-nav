@@ -500,6 +500,155 @@ func parseScheduleTime(timeStr string) (int, int) {
 	return hour, minute
 }
 
+// BackupFileInfo 备份文件信息
+type BackupFileInfo struct {
+	Name    string `json:"name"`
+	Size    int64  `json:"size"`
+	ModTime string `json:"modTime"`
+}
+
+// ListBackupFiles 列出 WebDAV 上的备份文件
+func ListBackupFiles() ([]BackupFileInfo, error) {
+	config, err := getBackupConfigFromDB()
+	if err != nil {
+		return nil, fmt.Errorf("读取备份配置失败: %w", err)
+	}
+
+	if config.WebDAVURL == "" || config.Username == "" || config.Password == "" {
+		return nil, fmt.Errorf("WebDAV 配置不完整")
+	}
+
+	client, err := createWebDAVClient(config)
+	if err != nil {
+		return nil, fmt.Errorf("创建 WebDAV 客户端失败: %w", err)
+	}
+
+	backupDir := config.BackupDir
+	if backupDir == "" || backupDir == "/" {
+		backupDir = "/van-nav-backup"
+	}
+	if !strings.HasSuffix(backupDir, "/") {
+		backupDir += "/"
+	}
+	if !strings.HasPrefix(backupDir, "/") {
+		backupDir = "/" + backupDir
+	}
+
+	files, err := client.ReadDir(backupDir)
+	if err != nil {
+		return nil, fmt.Errorf("读取备份目录失败: %w", err)
+	}
+
+	re := regexp.MustCompile(`nav_backup_(\d{8}_\d{6})\.db`)
+	var result []BackupFileInfo
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		matches := re.FindStringSubmatch(file.Name())
+		if matches == nil {
+			continue
+		}
+		// 解析时间戳用于显示
+		fileTime, err := time.Parse("20060102_150405", matches[1])
+		modTime := ""
+		if err == nil {
+			modTime = fileTime.Format("2006-01-02 15:04:05")
+		}
+		result = append(result, BackupFileInfo{
+			Name:    file.Name(),
+			Size:    file.Size(),
+			ModTime: modTime,
+		})
+	}
+
+	// 按文件名倒序排列（最新的在前）
+	for i := 0; i < len(result); i++ {
+		for j := i + 1; j < len(result); j++ {
+			if result[j].Name > result[i].Name {
+				result[i], result[j] = result[j], result[i]
+			}
+		}
+	}
+
+	return result, nil
+}
+
+// RestoreFromBackup 从 WebDAV 下载备份文件并恢复数据库
+func RestoreFromBackup(filename string) error {
+	logger.LogInfo("开始从 WebDAV 恢复备份: %s", filename)
+
+	// 安全检查：只允许恢复 nav_backup_*.db 文件
+	re := regexp.MustCompile(`^nav_backup_\d{8}_\d{6}\.db$`)
+	if !re.MatchString(filename) {
+		return fmt.Errorf("无效的备份文件名: %s", filename)
+	}
+
+	config, err := getBackupConfigFromDB()
+	if err != nil {
+		return fmt.Errorf("读取备份配置失败: %w", err)
+	}
+
+	if config.WebDAVURL == "" || config.Username == "" || config.Password == "" {
+		return fmt.Errorf("WebDAV 配置不完整")
+	}
+
+	client, err := createWebDAVClient(config)
+	if err != nil {
+		return fmt.Errorf("创建 WebDAV 客户端失败: %w", err)
+	}
+
+	backupDir := config.BackupDir
+	if backupDir == "" || backupDir == "/" {
+		backupDir = "/van-nav-backup"
+	}
+	if !strings.HasSuffix(backupDir, "/") {
+		backupDir += "/"
+	}
+	if !strings.HasPrefix(backupDir, "/") {
+		backupDir = "/" + backupDir
+	}
+
+	remotePath := backupDir + filename
+	remotePath = strings.ReplaceAll(remotePath, "\\", "/")
+
+	// 从 WebDAV 下载备份文件
+	data, err := client.Read(remotePath)
+	if err != nil {
+		return fmt.Errorf("下载备份文件失败: %w", err)
+	}
+
+	// 备份当前数据库文件
+	dbPath := "./data/nav.db"
+	backupPath := dbPath + ".bak." + time.Now().Format("20060102_150405")
+	if _, err := os.Stat(dbPath); err == nil {
+		srcData, err := os.ReadFile(dbPath)
+		if err != nil {
+			logger.LogError("备份当前数据库失败: %s", err)
+		} else {
+			if err := os.WriteFile(backupPath, srcData, 0644); err != nil {
+				logger.LogError("写入备份文件失败: %s", err)
+			} else {
+				logger.LogInfo("已将当前数据库备份到: %s", backupPath)
+			}
+		}
+	}
+
+	// 关闭当前数据库连接
+	if database.DB != nil {
+		database.DB.Close()
+	}
+
+	// 写入恢复的数据库文件
+	err = os.WriteFile(dbPath, data, 0644)
+	if err != nil {
+		return fmt.Errorf("写入数据库文件失败: %w", err)
+	}
+
+	logger.LogInfo("数据库恢复成功: %s -> %s", remotePath, dbPath)
+	return nil
+}
+
 // buildCronExpr 根据调度类型构建 cron 表达式
 func buildCronExpr(config *types.BackupConfig) string {
 	hour, minute := parseScheduleTime(config.ScheduleTime)

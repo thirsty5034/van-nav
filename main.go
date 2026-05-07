@@ -148,6 +148,8 @@ func main() {
 			admin.POST("/backup/test-connection", handler.TestBackupConnectionHandler)
 			admin.POST("/backup/backup-now", handler.BackupNowHandler)
 			admin.GET("/backup/status", handler.GetBackupStatusHandler)
+			admin.GET("/backup/files", handler.ListBackupFilesHandler)
+			admin.POST("/backup/restore", handler.RestoreBackupHandler)
 			
 		// 导入导出路由
 		admin.GET("/exportConfig", handler.ExportConfigHandler)

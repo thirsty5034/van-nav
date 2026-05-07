@@ -1,8 +1,8 @@
 import { Button, Card, Form, Input, InputNumber, message, Modal, Select, Spin, Switch, Table, TimePicker, Upload } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchUpdateSetting, fetchUpdateUser, fetchUpdateSiteConfig, fetchExportConfig, fetchImportConfig, fetchGetDeploymentVersion, fetchGetBackupConfig, fetchSaveBackupConfig, fetchTestBackupConnection, fetchBackupNow, fetchGetBackupStatus } from "../../../utils/api";
+import { fetchUpdateSetting, fetchUpdateUser, fetchUpdateSiteConfig, fetchExportConfig, fetchImportConfig, fetchGetDeploymentVersion, fetchGetBackupConfig, fetchSaveBackupConfig, fetchTestBackupConnection, fetchBackupNow, fetchGetBackupStatus, fetchListBackupFiles, fetchRestoreBackup } from "../../../utils/api";
 import { useData } from "../hooks/useData";
-import { CloudDownloadOutlined, CloudUploadOutlined, CloudServerOutlined, ExclamationCircleOutlined, SyncOutlined, WarningOutlined } from "@ant-design/icons";
+import { CloudDownloadOutlined, CloudUploadOutlined, CloudServerOutlined, ExclamationCircleOutlined, SyncOutlined, WarningOutlined, RollbackOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 
 // 辅助函数：将 "HH:mm" 字符串转为 dayjs 对象（不依赖 customParseFormat 插件）
@@ -33,6 +33,9 @@ export const Setting: React.FC<SettingProps> = (props) => {
   const [scheduleType, setScheduleType] = useState<string>("daily");
   const [retentionType, setRetentionType] = useState<string>("unlimited");
   const [isDark, setIsDark] = useState(() => document.body.classList.contains("dark-mode"));
+  const [backupFiles, setBackupFiles] = useState<{ name: string; size: number; modTime: string }[]>([]);
+  const [backupFilesLoading, setBackupFilesLoading] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState<string | null>(null); // 正在恢复的文件名
 
   // 监听主题变化
   useEffect(() => {
@@ -132,13 +135,14 @@ export const Setting: React.FC<SettingProps> = (props) => {
       const res = await fetchBackupNow();
       if (res?.success) {
         message.success("备份任务已启动，请稍后刷新查看状态");
-        // 延迟后刷新状态
+        // 延迟后刷新状态和文件列表
         setTimeout(async () => {
           try {
             const statusRes = await fetchGetBackupStatus();
             if (statusRes?.success && statusRes?.data) {
               setBackupStatus(statusRes.data);
             }
+            loadBackupFiles();
           } catch (e) {}
         }, 3000);
       } else {
@@ -150,6 +154,60 @@ export const Setting: React.FC<SettingProps> = (props) => {
       setBackupNowLoading(false);
     }
   }, []);
+
+  // 加载备份文件列表
+  const loadBackupFiles = useCallback(async () => {
+    setBackupFilesLoading(true);
+    try {
+      const res = await fetchListBackupFiles();
+      if (res?.success && res?.data) {
+        setBackupFiles(res.data);
+      } else {
+        setBackupFiles([]);
+      }
+    } catch (e) {
+      console.error("获取备份文件列表失败:", e);
+      setBackupFiles([]);
+    } finally {
+      setBackupFilesLoading(false);
+    }
+  }, []);
+
+  // 从备份恢复数据库
+  const handleRestoreBackup = useCallback(async (filename: string) => {
+    Modal.confirm({
+      title: "确认恢复数据库",
+      icon: <WarningOutlined />,
+      content: `即将从备份文件 ${filename} 恢复数据库。当前数据库将被覆盖（会自动备份到 .bak 文件）。恢复完成后服务将自动重启。确认继续？`,
+      okText: "确认恢复",
+      cancelText: "取消",
+      okType: "danger",
+      onOk: async () => {
+        setRestoreLoading(filename);
+        try {
+          const res = await fetchRestoreBackup(filename);
+          if (res?.success) {
+            message.success("数据库恢复成功，服务即将重启...");
+            // 延迟后刷新页面
+            setTimeout(() => {
+              window.location.reload();
+            }, 4000);
+          } else {
+            message.error(res?.errorMessage || "恢复失败");
+          }
+        } catch (err: any) {
+          message.error("恢复失败: " + (err.message || "未知错误"));
+        } finally {
+          setRestoreLoading(null);
+        }
+      },
+    });
+  }, []);
+
+  // 初始加载备份文件列表
+  useEffect(() => {
+    loadBackupFiles();
+  }, [loadBackupFiles]);
 
   // 保存备份配置
   const handleSaveBackupConfig = useCallback(async (values: any) => {
@@ -816,6 +874,85 @@ export const Setting: React.FC<SettingProps> = (props) => {
             </Form.Item>
           </Form>
         </Spin>
+      </Card>
+
+      {/* 备份文件列表 */}
+      <Card
+        title={
+          <span>
+            <RollbackOutlined style={{ marginRight: 8 }} />
+            备份文件管理
+          </span>
+        }
+        style={{ marginTop: 32 }}
+        extra={
+          <Button
+            size="small"
+            icon={<SyncOutlined />}
+            onClick={loadBackupFiles}
+            loading={backupFilesLoading}
+          >
+            刷新列表
+          </Button>
+        }
+      >
+        <div style={{ marginBottom: 16, color: isDark ? 'rgba(255,255,255,0.6)' : '#666' }}>
+          以下是从 WebDAV 云端获取的备份文件，可选择任意文件恢复数据库。恢复后服务将自动重启。
+        </div>
+        <Table
+          dataSource={backupFiles}
+          loading={backupFilesLoading}
+          rowKey="name"
+          pagination={backupFiles.length > 10 ? { pageSize: 10 } : false}
+          columns={[
+            {
+              title: '文件名',
+              dataIndex: 'name',
+              key: 'name',
+              ellipsis: true,
+            },
+            {
+              title: '备份时间',
+              dataIndex: 'modTime',
+              key: 'modTime',
+              width: 200,
+            },
+            {
+              title: '大小',
+              dataIndex: 'size',
+              key: 'size',
+              width: 120,
+              render: (size: number) => {
+                if (size > 1024 * 1024) {
+                  return `${(size / 1024 / 1024).toFixed(2)} MB`;
+                } else if (size > 1024) {
+                  return `${(size / 1024).toFixed(1)} KB`;
+                }
+                return `${size} B`;
+              },
+            },
+            {
+              title: '操作',
+              key: 'action',
+              width: 120,
+              render: (_: any, record: { name: string }) => (
+                <Button
+                  type="link"
+                  danger
+                  icon={<RollbackOutlined />}
+                  loading={restoreLoading === record.name}
+                  disabled={restoreLoading !== null}
+                  onClick={() => handleRestoreBackup(record.name)}
+                >
+                  恢复
+                </Button>
+              ),
+            },
+          ]}
+          locale={{
+            emptyText: backupFilesLoading ? '加载中...' : '暂无备份文件（请先配置 WebDAV 并执行备份）',
+          }}
+        />
       </Card>
 
       {/* 部署版本信息 */}

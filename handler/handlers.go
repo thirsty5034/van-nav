@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -1532,4 +1533,64 @@ func GetBackupStatusHandler(c *gin.Context) {
 		"success": true,
 		"data":    status,
 	})
+}
+
+// ListBackupFilesHandler 列出 WebDAV 上的备份文件
+func ListBackupFilesHandler(c *gin.Context) {
+	files, err := service.ListBackupFiles()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+	if files == nil {
+		files = []service.BackupFileInfo{}
+	}
+	c.JSON(200, gin.H{
+		"success": true,
+		"data":    files,
+	})
+}
+
+// RestoreBackupHandler 从指定备份文件恢复数据库
+func RestoreBackupHandler(c *gin.Context) {
+	var req struct {
+		Filename string `json:"filename"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+	if req.Filename == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": "文件名不能为空",
+		})
+		return
+	}
+
+	err := service.RestoreFromBackup(req.Filename)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"success": true,
+		"message": "数据库恢复成功，服务将在3秒后自动重启",
+	})
+
+	// 异步重启服务
+	go func() {
+		time.Sleep(3 * time.Second)
+		os.Exit(0) // 进程管理器会自动重启
+	}()
 }

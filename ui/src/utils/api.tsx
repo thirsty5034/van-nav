@@ -299,3 +299,15 @@ export const fetchGetBackupStatus = async () => {
     const { data } = await axios.get(`/api/admin/backup/status`);
     return data;
 };
+
+// 获取备份文件列表
+export const fetchListBackupFiles = async () => {
+    const { data } = await axios.get(`/api/admin/backup/files`);
+    return data;
+};
+
+// 从备份文件恢复数据库
+export const fetchRestoreBackup = async (filename: string) => {
+    const { data } = await axios.post(`/api/admin/backup/restore`, { filename });
+    return data;
+};
