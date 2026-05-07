@@ -1,8 +1,9 @@
-import { Button, Card, Form, Input, InputNumber, message, Modal, Select, Spin, Switch, Table, Upload } from "antd";
+import { Button, Card, Form, Input, InputNumber, message, Modal, Select, Spin, Switch, Table, TimePicker, Upload } from "antd";
 import { useCallback, useEffect, useState } from "react";
-import { fetchUpdateSetting, fetchUpdateUser, fetchUpdateSiteConfig, fetchExportConfig, fetchImportConfig, fetchGetDeploymentVersion } from "../../../utils/api";
+import { fetchUpdateSetting, fetchUpdateUser, fetchUpdateSiteConfig, fetchExportConfig, fetchImportConfig, fetchGetDeploymentVersion, fetchGetBackupConfig, fetchSaveBackupConfig, fetchTestBackupConnection, fetchBackupNow, fetchGetBackupStatus } from "../../../utils/api";
 import { useData } from "../hooks/useData";
-import { CloudDownloadOutlined, CloudUploadOutlined, ExclamationCircleOutlined, WarningOutlined } from "@ant-design/icons";
+import { CloudDownloadOutlined, CloudUploadOutlined, CloudServerOutlined, ExclamationCircleOutlined, SyncOutlined, WarningOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 export interface SettingProps { }
 export const Setting: React.FC<SettingProps> = (props) => {
   const { store, loading, reload } = useData();
@@ -14,6 +15,15 @@ export const Setting: React.FC<SettingProps> = (props) => {
   const [importPreview, setImportPreview] = useState<any>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [deploymentVersion, setDeploymentVersion] = useState<string>("v1.13.1.1");
+
+  // 备份相关状态
+  const [backupForm] = Form.useForm();
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [backupTesting, setBackupTesting] = useState(false);
+  const [backupNowLoading, setBackupNowLoading] = useState(false);
+  const [backupStatus, setBackupStatus] = useState<{ lastBackupTime?: string; lastBackupStatus?: string }>({});
+  const [scheduleType, setScheduleType] = useState<string>("daily");
+  const [retentionType, setRetentionType] = useState<string>("unlimited");
 
   // 获取部署版本号
   useEffect(() => {
@@ -27,6 +37,132 @@ export const Setting: React.FC<SettingProps> = (props) => {
     };
     loadVersion();
   }, []);
+
+  // 加载备份配置
+  useEffect(() => {
+    const loadBackupConfig = async () => {
+      try {
+        const res = await fetchGetBackupConfig();
+        if (res?.success && res?.data) {
+          const config = res.data;
+          backupForm.setFieldsValue({
+            webdavUrl: config.webdavUrl || "",
+            username: config.username || "",
+            password: "", // 不回显密码
+            backupDir: config.backupDir || "/",
+            scheduleType: config.scheduleType || "daily",
+            scheduleTime: config.scheduleTime ? dayjs(config.scheduleTime, "HH:mm") : dayjs("02:00", "HH:mm"),
+            cronExpr: config.cronExpr || "",
+            retentionType: config.retentionType || "unlimited",
+            retentionValue: config.retentionValue || 0,
+            enabled: config.enabled !== false,
+          });
+          setScheduleType(config.scheduleType || "daily");
+          setRetentionType(config.retentionType || "unlimited");
+        }
+      } catch (e) {
+        console.error("获取备份配置失败:", e);
+      }
+    };
+    loadBackupConfig();
+  }, [backupForm]);
+
+  // 加载备份状态
+  useEffect(() => {
+    const loadBackupStatus = async () => {
+      try {
+        const res = await fetchGetBackupStatus();
+        if (res?.success && res?.data) {
+          setBackupStatus(res.data);
+        }
+      } catch (e) {
+        console.error("获取备份状态失败:", e);
+      }
+    };
+    loadBackupStatus();
+  }, []);
+
+  // 测试 WebDAV 连接
+  const handleTestConnection = useCallback(async () => {
+    try {
+      const values = await backupForm.validateFields(["webdavUrl", "username", "password"]);
+      setBackupTesting(true);
+      const res = await fetchTestBackupConnection({
+        webdavUrl: values.webdavUrl,
+        username: values.username,
+        password: values.password,
+      });
+      if (res?.success) {
+        message.success("WebDAV 连接成功！");
+      } else {
+        message.error(res?.errorMessage || "连接失败");
+      }
+    } catch (err: any) {
+      if (err.errorFields) {
+        message.warning("请填写必填字段");
+      } else {
+        message.error("连接测试失败: " + (err.message || "未知错误"));
+      }
+    } finally {
+      setBackupTesting(false);
+    }
+  }, [backupForm]);
+
+  // 立即备份
+  const handleBackupNow = useCallback(async () => {
+    setBackupNowLoading(true);
+    try {
+      const res = await fetchBackupNow();
+      if (res?.success) {
+        message.success("备份任务已启动，请稍后刷新查看状态");
+        // 延迟后刷新状态
+        setTimeout(async () => {
+          try {
+            const statusRes = await fetchGetBackupStatus();
+            if (statusRes?.success && statusRes?.data) {
+              setBackupStatus(statusRes.data);
+            }
+          } catch (e) {}
+        }, 3000);
+      } else {
+        message.error(res?.errorMessage || "备份失败");
+      }
+    } catch (err: any) {
+      message.error("备份失败: " + (err.message || "未知错误"));
+    } finally {
+      setBackupNowLoading(false);
+    }
+  }, []);
+
+  // 保存备份配置
+  const handleSaveBackupConfig = useCallback(async (values: any) => {
+    setBackupLoading(true);
+    try {
+      const payload = {
+        ...values,
+        scheduleTime: values.scheduleTime ? values.scheduleTime.format("HH:mm") : "02:00",
+        enabled: values.enabled !== false,
+      };
+      const res = await fetchSaveBackupConfig(payload);
+      if (res?.success) {
+        message.success("备份配置已保存");
+        // 刷新备份状态
+        try {
+          const statusRes = await fetchGetBackupStatus();
+          if (statusRes?.success && statusRes?.data) {
+            setBackupStatus(statusRes.data);
+          }
+        } catch (e) {}
+      } else {
+        message.error(res?.errorMessage || "保存失败");
+      }
+    } catch (err: any) {
+      message.error("保存失败: " + (err.message || "未知错误"));
+    } finally {
+      setBackupLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     userForm.setFieldsValue(store?.user ?? {})
     settingForm.setFieldsValue({
@@ -464,6 +600,202 @@ export const Setting: React.FC<SettingProps> = (props) => {
               <Button type="primary" htmlType="submit">
                 提交
               </Button>
+            </Form.Item>
+          </Form>
+        </Spin>
+      </Card>
+
+      {/* 数据备份卡片 */}
+      <Card
+        title={
+          <span>
+            <CloudServerOutlined style={{ marginRight: 8 }} />
+            数据备份
+          </span>
+        }
+        style={{ marginTop: 32 }}
+        extra={
+          <span style={{ fontSize: 12, color: '#999' }}>
+            配置 WebDAV 云盘，定期自动备份数据库
+          </span>
+        }
+      >
+        {/* 备份状态显示 */}
+        <div style={{ marginBottom: 24, padding: 16, background: 'var(--ant-color-bg-elevated, #fafafa)', borderRadius: 8, border: '1px solid var(--ant-color-border-secondary, #f0f0f0)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span style={{ fontWeight: 500 }}>最近备份状态：</span>
+            {backupStatus.lastBackupTime ? (
+              <>
+                <span>时间：{backupStatus.lastBackupTime}</span>
+                <span style={{ color: backupStatus.lastBackupStatus === '成功' ? '#52c41a' : '#ff4d4f' }}>
+                  状态：{backupStatus.lastBackupStatus || '未知'}
+                </span>
+              </>
+            ) : (
+              <span style={{ color: '#999' }}>暂无备份</span>
+            )}
+            <Button
+              size="small"
+              icon={<SyncOutlined />}
+              onClick={async () => {
+                try {
+                  const res = await fetchGetBackupStatus();
+                  if (res?.success && res?.data) {
+                    setBackupStatus(res.data);
+                  }
+                } catch (e) {}
+              }}
+            >
+              刷新
+            </Button>
+          </div>
+        </div>
+
+        <Spin spinning={backupLoading}>
+          <Form
+            form={backupForm}
+            onFinish={handleSaveBackupConfig}
+            labelCol={{ span: 6 }}
+            initialValues={{
+              backupDir: "/",
+              scheduleType: "daily",
+              scheduleTime: dayjs("02:00", "HH:mm"),
+              retentionType: "unlimited",
+              retentionValue: 0,
+              enabled: true,
+            }}
+          >
+            <Form.Item
+              label="WebDAV 服务地址"
+              name="webdavUrl"
+              required
+              rules={[{ required: true, message: "请输入 WebDAV 服务地址" }]}
+              tooltip="例如：https://dav.jianguoyun.com/dav/"
+            >
+              <Input placeholder="https://dav.jianguoyun.com/dav/" />
+            </Form.Item>
+
+            <Form.Item
+              label="用户名"
+              name="username"
+              required
+              rules={[{ required: true, message: "请输入用户名" }]}
+            >
+              <Input placeholder="请输入 WebDAV 用户名" />
+            </Form.Item>
+
+            <Form.Item
+              label="密码"
+              name="password"
+              required
+              rules={[{ required: true, message: "请输入密码" }]}
+              tooltip="密码将加密存储，不会明文显示"
+            >
+              <Input.Password placeholder="请输入 WebDAV 密码" />
+            </Form.Item>
+
+            <Form.Item
+              label="备份目录"
+              name="backupDir"
+              tooltip="WebDAV 上的备份目录路径，默认为根目录 /"
+            >
+              <Input placeholder="/" />
+            </Form.Item>
+
+            <Form.Item
+              label="启用备份"
+              name="enabled"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+
+            <Form.Item
+              label="备份周期"
+              name="scheduleType"
+              required
+            >
+              <Select
+                onChange={(value) => setScheduleType(value)}
+                options={[
+                  { label: "每天", value: "daily" },
+                  { label: "每周", value: "weekly" },
+                  { label: "每月", value: "monthly" },
+                  { label: "自定义（Cron）", value: "cron" },
+                ]}
+              />
+            </Form.Item>
+
+            {scheduleType !== "cron" && (
+              <Form.Item
+                label="备份时间"
+                name="scheduleTime"
+                required
+              >
+                <TimePicker format="HH:mm" style={{ width: '100%' }} />
+              </Form.Item>
+            )}
+
+            {scheduleType === "cron" && (
+              <Form.Item
+                label="Cron 表达式"
+                name="cronExpr"
+                required
+                rules={[{ required: true, message: "请输入 Cron 表达式" }]}
+                tooltip="标准 Cron 表达式，如：0 2 * * * 表示每天凌晨2点"
+              >
+                <Input placeholder="0 2 * * *" />
+              </Form.Item>
+            )}
+
+            <Form.Item
+              label="备份保留策略"
+              name="retentionType"
+              required
+            >
+              <Select
+                onChange={(value) => setRetentionType(value)}
+                options={[
+                  { label: "不限制", value: "unlimited" },
+                  { label: "保留最近 N 天", value: "days" },
+                  { label: "保留最近 N 周", value: "weeks" },
+                  { label: "保留最近 N 月", value: "months" },
+                ]}
+              />
+            </Form.Item>
+
+            {retentionType !== "unlimited" && (
+              <Form.Item
+                label="保留时长"
+                name="retentionValue"
+                required
+                rules={[{ required: true, message: "请输入保留时长" }]}
+              >
+                <InputNumber min={1} max={999} placeholder="请输入数字" style={{ width: '100%' }} addonAfter={
+                  retentionType === "days" ? "天" : retentionType === "weeks" ? "周" : "月"
+                } />
+              </Form.Item>
+            )}
+
+            <Form.Item wrapperCol={{ offset: 6, span: 18 }}>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <Button
+                  onClick={handleTestConnection}
+                  loading={backupTesting}
+                >
+                  测试连接
+                </Button>
+                <Button
+                  type="default"
+                  onClick={handleBackupNow}
+                  loading={backupNowLoading}
+                >
+                  立即备份
+                </Button>
+                <Button type="primary" htmlType="submit">
+                  保存配置
+                </Button>
+              </div>
             </Form.Item>
           </Form>
         </Spin>

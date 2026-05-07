@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"path"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/mereith/nav/handler"
 	"github.com/mereith/nav/logger"
 	"github.com/mereith/nav/middleware"
+	"github.com/mereith/nav/service"
 
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
@@ -63,6 +65,11 @@ var addr = flag.String("addr", "0.0.0.0", "指定监听地址")
 func main() {
 	flag.Parse()
 	database.InitDB()
+	// 检查备份加密密钥
+	if os.Getenv("BACKUP_ENCRYPTION_KEY") == "" {
+		logger.LogError("警告：环境变量 BACKUP_ENCRYPTION_KEY 未设置，备份密码将以明文存储。建议设置一个32字节的密钥。")
+	}
+	service.InitBackupCron()
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedExtensions([]string{".png", ".jpg", ".jpeg", ".ico", ".svg"})))
@@ -128,6 +135,13 @@ func main() {
 			
 			// 分类排序路由
 			admin.PUT("/catelogs/sort", handler.UpdateCatelogSortHandler)
+			
+			// 数据备份
+			admin.GET("/backup/config", handler.GetBackupConfigHandler)
+			admin.PUT("/backup/config", handler.SaveBackupConfigHandler)
+			admin.POST("/backup/test-connection", handler.TestBackupConnectionHandler)
+			admin.POST("/backup/backup-now", handler.BackupNowHandler)
+			admin.GET("/backup/status", handler.GetBackupStatusHandler)
 			
 		// 导入导出路由
 		admin.GET("/exportConfig", handler.ExportConfigHandler)

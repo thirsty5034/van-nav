@@ -74,3 +74,22 @@ type SiteConfig struct {
 	FaviconApiEnabled   bool   `json:"faviconApiEnabled"`
 	FaviconApiTemplate  string `json:"faviconApiTemplate"`
 }
+
+// WebDAV 备份配置模型
+type BackupConfig struct {
+	ID               int    `json:"id"`
+	WebDAVURL        string `json:"webdavUrl"`
+	Username         string `json:"username"`
+	Password         string `json:"password"`
+	BackupDir        string `json:"backupDir"`
+	ScheduleType     string `json:"scheduleType"`
+	ScheduleTime     string `json:"scheduleTime"`
+	CronExpr         string `json:"cronExpr"`
+	RetentionType    string `json:"retentionType"`
+	RetentionValue   int    `json:"retentionValue"`
+	LastBackupTime   string `json:"lastBackupTime,omitempty"`
+	LastBackupStatus string `json:"lastBackupStatus,omitempty"`
+	Enabled          bool   `json:"enabled"`
+	CreatedAt        string `json:"createdAt"`
+	UpdatedAt        string `json:"updatedAt"`
+}

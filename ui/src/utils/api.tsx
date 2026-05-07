@@ -267,3 +267,35 @@ export const fetchOrganizeDeadLinks = async () => {
     const { data } = await axios.post(`/api/admin/organize-dead-links`);
     return data;
 };
+
+// ==================== WebDAV 备份接口 ====================
+
+// 获取备份配置
+export const fetchGetBackupConfig = async () => {
+    const { data } = await axios.get(`/api/admin/backup/config`);
+    return data;
+};
+
+// 保存备份配置
+export const fetchSaveBackupConfig = async (payload: any) => {
+    const { data } = await axios.put(`/api/admin/backup/config`, payload);
+    return data;
+};
+
+// 测试 WebDAV 连接
+export const fetchTestBackupConnection = async (payload: any) => {
+    const { data } = await axios.post(`/api/admin/backup/test-connection`, payload);
+    return data;
+};
+
+// 立即备份
+export const fetchBackupNow = async () => {
+    const { data } = await axios.post(`/api/admin/backup/backup-now`);
+    return data;
+};
+
+// 获取备份状态
+export const fetchGetBackupStatus = async () => {
+    const { data } = await axios.get(`/api/admin/backup/status`);
+    return data;
+};

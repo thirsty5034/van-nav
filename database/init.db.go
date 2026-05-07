@@ -106,6 +106,27 @@ func InitDB() {
 	if !columnExists("nav_site_config", "faviconApiEnabled") { DB.Exec(`ALTER TABLE nav_site_config ADD COLUMN faviconApiEnabled BOOLEAN NOT NULL DEFAULT 0;`) }
 	if !columnExists("nav_site_config", "faviconApiTemplate") { DB.Exec(`ALTER TABLE nav_site_config ADD COLUMN faviconApiTemplate TEXT DEFAULT 'https://favicon.im/{domain}';`) }
 
+	// WebDAV 备份配置表
+	sql_create_table = `CREATE TABLE IF NOT EXISTS nav_backup_config (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		webdav_url TEXT NOT NULL DEFAULT '',
+		username TEXT NOT NULL DEFAULT '',
+		password TEXT NOT NULL DEFAULT '',
+		backup_dir TEXT NOT NULL DEFAULT '/',
+		schedule_type TEXT NOT NULL DEFAULT 'daily',
+		schedule_time TEXT NOT NULL DEFAULT '02:00',
+		cron_expr TEXT NOT NULL DEFAULT '',
+		retention_type TEXT NOT NULL DEFAULT 'unlimited',
+		retention_value INTEGER NOT NULL DEFAULT 0,
+		last_backup_time TEXT,
+		last_backup_status TEXT,
+		enabled INTEGER NOT NULL DEFAULT 1,
+		created_at TEXT NOT NULL DEFAULT (datetime('now')),
+		updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+	);`
+	_, err = DB.Exec(sql_create_table)
+	utils.CheckErr(err)
+
 	// 初始化默认搜索引擎
 	var searchEngineCount int
 	err = DB.QueryRow(`SELECT COUNT(*) FROM nav_search_engine;`).Scan(&searchEngineCount)
