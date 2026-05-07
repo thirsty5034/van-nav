@@ -468,21 +468,6 @@ body.dark-mode .ant-table-tbody > tr > td {
   border-bottom-color: #2a2a2a !important;
 }
 
-/* 修复：备份状态栏暗色模式 */
-.backup-status-box {
-  background-color: #fafafa;
-  border: 1px solid #f0f0f0;
-}
-
-body.dark-mode .backup-status-box {
-  background-color: #222222;
-  border-color: #333333;
-}
-
-body.dark-mode .backup-status-box span {
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-
 /* 修复：TimePicker 暗色模式 */
 body.dark-mode .ant-picker {
   background-color: #222222;

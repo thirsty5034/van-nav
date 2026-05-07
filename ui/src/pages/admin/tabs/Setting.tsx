@@ -1,5 +1,5 @@
 import { Button, Card, Form, Input, InputNumber, message, Modal, Select, Spin, Switch, Table, TimePicker, Upload } from "antd";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchUpdateSetting, fetchUpdateUser, fetchUpdateSiteConfig, fetchExportConfig, fetchImportConfig, fetchGetDeploymentVersion, fetchGetBackupConfig, fetchSaveBackupConfig, fetchTestBackupConnection, fetchBackupNow, fetchGetBackupStatus } from "../../../utils/api";
 import { useData } from "../hooks/useData";
 import { CloudDownloadOutlined, CloudUploadOutlined, CloudServerOutlined, ExclamationCircleOutlined, SyncOutlined, WarningOutlined } from "@ant-design/icons";
@@ -32,6 +32,15 @@ export const Setting: React.FC<SettingProps> = (props) => {
   const [backupStatus, setBackupStatus] = useState<{ lastBackupTime?: string; lastBackupStatus?: string }>({});
   const [scheduleType, setScheduleType] = useState<string>("daily");
   const [retentionType, setRetentionType] = useState<string>("unlimited");
+  const [isDark, setIsDark] = useState(() => document.body.classList.contains("dark-mode"));
+
+  // 监听主题变化
+  useEffect(() => {
+    const check = () => setIsDark(document.body.classList.contains("dark-mode"));
+    check();
+    window.addEventListener("theme-change", check);
+    return () => window.removeEventListener("theme-change", check);
+  }, []);
 
   // 获取部署版本号
   useEffect(() => {
@@ -629,12 +638,12 @@ export const Setting: React.FC<SettingProps> = (props) => {
         }
       >
         {/* 备份状态显示 */}
-        <div style={{ marginBottom: 24, padding: 16, borderRadius: 8 }} className="backup-status-box">
+        <div style={{ marginBottom: 24, padding: 16, borderRadius: 8, background: isDark ? '#222' : '#fafafa', border: isDark ? '1px solid #333' : '1px solid #f0f0f0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontWeight: 500 }}>最近备份状态：</span>
+            <span style={{ fontWeight: 500, color: isDark ? 'rgba(255,255,255,0.6)' : undefined }}>最近备份状态：</span>
             {backupStatus.lastBackupTime ? (
               <>
-                <span>时间：{backupStatus.lastBackupTime}</span>
+                <span style={{ color: isDark ? 'rgba(255,255,255,0.6)' : undefined }}>时间：{backupStatus.lastBackupTime}</span>
                 <span style={{ color: backupStatus.lastBackupStatus === '成功' ? '#52c41a' : '#ff4d4f' }}>
                   状态：{backupStatus.lastBackupStatus || '未知'}
                 </span>
