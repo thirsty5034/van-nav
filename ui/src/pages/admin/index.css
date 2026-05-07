@@ -479,6 +479,10 @@ body.dark-mode .backup-status-box {
   border-color: #333333;
 }
 
+body.dark-mode .backup-status-box span {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
 /* 修复：TimePicker 暗色模式 */
 body.dark-mode .ant-picker {
   background-color: #222222;
