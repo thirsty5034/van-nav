@@ -19,6 +19,7 @@
     "@types/react-dom": "^18.2.0",
     "antd": "^5.15.0",
     "axios": "^1.7.9",
+    "dayjs": "^1.11.13",
     "pinyin-match": "^1.2.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
