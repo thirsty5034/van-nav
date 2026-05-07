@@ -749,7 +749,7 @@ export const Setting: React.FC<SettingProps> = (props) => {
                 name="scheduleTime"
                 required
               >
-                <TimePicker format="HH:mm" style={{ width: '100%' }} />
+                <TimePicker format="HH:mm" style={{ width: '100%' }} popupClassName={isDark ? "nav-dark-picker-dropdown" : ""} />
               </Form.Item>
             )}
 
