@@ -467,3 +467,99 @@ body.dark-mode .ant-table-tbody > tr > td {
   background-color: #1a1a1a !important;
   border-bottom-color: #2a2a2a !important;
 }
+
+/* 修复：备份状态栏暗色模式 */
+.backup-status-box {
+  background-color: #fafafa;
+  border: 1px solid #f0f0f0;
+}
+
+body.dark-mode .backup-status-box {
+  background-color: #222222;
+  border-color: #333333;
+}
+
+/* 修复：TimePicker 暗色模式 */
+body.dark-mode .ant-picker {
+  background-color: #222222;
+  border-color: #333333;
+}
+
+body.dark-mode .ant-picker:hover,
+body.dark-mode .ant-picker-focused {
+  border-color: #1890ff;
+}
+
+body.dark-mode .ant-picker-input > input {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-mode .ant-picker-input > input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+body.dark-mode .ant-picker-suffix,
+body.dark-mode .ant-picker-clear {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+body.dark-mode .ant-picker-dropdown {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .ant-picker-panel-container {
+  background-color: #1a1a1a;
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .ant-picker-header {
+  border-bottom-color: #2a2a2a;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-mode .ant-picker-header button {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+body.dark-mode .ant-picker-header button:hover {
+  color: #1890ff;
+}
+
+body.dark-mode .ant-picker-content {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-mode .ant-picker-cell .ant-picker-cell-inner {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-mode .ant-picker-cell:hover .ant-picker-cell-inner {
+  background-color: #2a2a2a;
+}
+
+body.dark-mode .ant-picker-cell-selected .ant-picker-cell-inner {
+  background-color: #1890ff;
+}
+
+body.dark-mode .ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner {
+  background-color: #1a3a5c;
+}
+
+body.dark-mode .ant-picker-time-panel-column > li:hover .ant-picker-time-panel-cell-inner {
+  background-color: #2a2a2a;
+}
+
+body.dark-mode .ant-picker-time-panel-cell-inner {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-mode .ant-picker-panel {
+  border-bottom-color: #2a2a2a;
+}
+
+/* 修复：InputNumber 暗色模式 addon 区域 */
+body.dark-mode .ant-input-group-addon {
+  background-color: #1a1a1a;
+  border-color: #333333;
+  color: rgba(255, 255, 255, 0.6);
+}

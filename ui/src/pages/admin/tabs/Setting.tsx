@@ -4,6 +4,14 @@ import { fetchUpdateSetting, fetchUpdateUser, fetchUpdateSiteConfig, fetchExport
 import { useData } from "../hooks/useData";
 import { CloudDownloadOutlined, CloudUploadOutlined, CloudServerOutlined, ExclamationCircleOutlined, SyncOutlined, WarningOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
+
+// 辅助函数：将 "HH:mm" 字符串转为 dayjs 对象（不依赖 customParseFormat 插件）
+const parseTimeStr = (timeStr: string) => {
+  const parts = (timeStr || "02:00").split(":");
+  const hour = parseInt(parts[0] || "2", 10);
+  const minute = parseInt(parts[1] || "0", 10);
+  return dayjs().hour(hour).minute(minute).second(0);
+};
 export interface SettingProps { }
 export const Setting: React.FC<SettingProps> = (props) => {
   const { store, loading, reload } = useData();
@@ -51,7 +59,7 @@ export const Setting: React.FC<SettingProps> = (props) => {
             password: "", // 不回显密码
             backupDir: config.backupDir || "/",
             scheduleType: config.scheduleType || "daily",
-            scheduleTime: config.scheduleTime ? dayjs(config.scheduleTime, "HH:mm") : dayjs("02:00", "HH:mm"),
+            scheduleTime: parseTimeStr(config.scheduleTime),
             cronExpr: config.cronExpr || "",
             retentionType: config.retentionType || "unlimited",
             retentionValue: config.retentionValue || 0,
@@ -621,7 +629,7 @@ export const Setting: React.FC<SettingProps> = (props) => {
         }
       >
         {/* 备份状态显示 */}
-        <div style={{ marginBottom: 24, padding: 16, background: 'var(--ant-color-bg-elevated, #fafafa)', borderRadius: 8, border: '1px solid var(--ant-color-border-secondary, #f0f0f0)' }}>
+        <div style={{ marginBottom: 24, padding: 16, borderRadius: 8 }} className="backup-status-box">
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <span style={{ fontWeight: 500 }}>最近备份状态：</span>
             {backupStatus.lastBackupTime ? (
@@ -659,7 +667,7 @@ export const Setting: React.FC<SettingProps> = (props) => {
             initialValues={{
               backupDir: "/",
               scheduleType: "daily",
-              scheduleTime: dayjs("02:00", "HH:mm"),
+              scheduleTime: parseTimeStr("02:00"),
               retentionType: "unlimited",
               retentionValue: 0,
               enabled: true,
