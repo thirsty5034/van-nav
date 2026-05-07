@@ -67,7 +67,13 @@ func main() {
 	database.InitDB()
 	// 检查备份加密密钥
 	if os.Getenv("BACKUP_ENCRYPTION_KEY") == "" {
-		logger.LogError("警告：环境变量 BACKUP_ENCRYPTION_KEY 未设置，备份密码将以明文存储。建议设置一个32字节的密钥。")
+		logger.LogError("环境变量 BACKUP_ENCRYPTION_KEY 未设置，备份密码无法安全存储，服务启动终止。请设置一个32字节的密钥后重启。")
+		os.Exit(1)
+	}
+	// 验证密钥长度（必须为32字节或64位hex）
+	if _, err := service.GetBackupEncryptionKey(); err != nil {
+		logger.LogError("BACKUP_ENCRYPTION_KEY 校验失败: %s，服务启动终止。", err)
+		os.Exit(1)
 	}
 	service.InitBackupCron()
 	gin.SetMode(gin.ReleaseMode)

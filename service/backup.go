@@ -24,24 +24,21 @@ import (
 func GetBackupEncryptionKey() ([]byte, error) {
 	key := os.Getenv("BACKUP_ENCRYPTION_KEY")
 	if key == "" {
-		return nil, fmt.Errorf("环境变量 BACKUP_ENCRYPTION_KEY 未设置")
+		return nil, fmt.Errorf("环境变量 BACKUP_ENCRYPTION_KEY 未设置，服务无法安全存储备份密码")
 	}
-	// 如果是hex编码的，解码
+	// 如果是hex编码的64字符（即32字节），解码
 	if len(key) == 64 {
 		decoded, err := hex.DecodeString(key)
 		if err == nil {
 			return decoded, nil
 		}
 	}
-	// 否则直接使用原始字节，确保32字节
+	// 直接使用原始字节，必须恰好32字节
 	keyBytes := []byte(key)
-	if len(keyBytes) < 32 {
-		// 填充到32字节
-		padded := make([]byte, 32)
-		copy(padded, keyBytes)
-		return padded, nil
+	if len(keyBytes) != 32 {
+		return nil, fmt.Errorf("BACKUP_ENCRYPTION_KEY 长度必须为32字节（或64位hex编码），当前为%d字节", len(keyBytes))
 	}
-	return keyBytes[:32], nil
+	return keyBytes, nil
 }
 
 // encryptPassword 使用 AES-256-GCM 加密密码
