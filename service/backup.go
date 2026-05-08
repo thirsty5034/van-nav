@@ -20,12 +20,42 @@ import (
 	"github.com/studio-b12/gowebdav"
 )
 
-// GetBackupEncryptionKey 从环境变量获取加密密钥（32字节用于AES-256）
+// GetBackupEncryptionKey 获取加密密钥（32字节用于AES-256）
+// 优先使用环境变量 BACKUP_ENCRYPTION_KEY，否则从数据库读取或自动生成
 func GetBackupEncryptionKey() ([]byte, error) {
-	key := os.Getenv("BACKUP_ENCRYPTION_KEY")
-	if key == "" {
-		return nil, fmt.Errorf("环境变量 BACKUP_ENCRYPTION_KEY 未设置，服务无法安全存储备份密码")
+	// 1. 优先使用环境变量
+	envKey := os.Getenv("BACKUP_ENCRYPTION_KEY")
+	if envKey != "" {
+		return parseEncryptionKey(envKey)
 	}
+
+	// 2. 从数据库读取
+	dbKey, err := getEncryptionKeyFromDB()
+	if err != nil {
+		return nil, fmt.Errorf("读取数据库加密密钥失败: %w", err)
+	}
+
+	// 3. 数据库中有密钥则使用
+	if dbKey != "" {
+		return hex.DecodeString(dbKey)
+	}
+
+	// 4. 自动生成新密钥并存储
+	newKey := make([]byte, 32)
+	if _, err := rand.Read(newKey); err != nil {
+		return nil, fmt.Errorf("生成随机密钥失败: %w", err)
+	}
+
+	if err := saveEncryptionKeyToDB(hex.EncodeToString(newKey)); err != nil {
+		return nil, fmt.Errorf("保存加密密钥到数据库失败: %w", err)
+	}
+
+	logger.LogInfo("已自动生成备份加密密钥并存储到数据库")
+	return newKey, nil
+}
+
+// parseEncryptionKey 解析密钥字符串为32字节
+func parseEncryptionKey(key string) ([]byte, error) {
 	// 如果是hex编码的64字符（即32字节），解码
 	if len(key) == 64 {
 		decoded, err := hex.DecodeString(key)
@@ -39,6 +69,44 @@ func GetBackupEncryptionKey() ([]byte, error) {
 		return nil, fmt.Errorf("BACKUP_ENCRYPTION_KEY 长度必须为32字节（或64位hex编码），当前为%d字节", len(keyBytes))
 	}
 	return keyBytes, nil
+}
+
+// getEncryptionKeyFromDB 从数据库获取加密密钥
+func getEncryptionKeyFromDB() (string, error) {
+	var key string
+	err := database.DB.QueryRow(
+		`SELECT encryption_key FROM nav_backup_config ORDER BY id ASC LIMIT 1;`,
+	).Scan(&key)
+	if err != nil {
+		// 表为空或字段不存在
+		return "", nil
+	}
+	return key, nil
+}
+
+// saveEncryptionKeyToDB 保存加密密钥到数据库
+func saveEncryptionKeyToDB(key string) error {
+	// 检查是否已有配置记录
+	var count int
+	err := database.DB.QueryRow("SELECT COUNT(*) FROM nav_backup_config;").Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		// 插入新记录
+		_, err = database.DB.Exec(
+			`INSERT INTO nav_backup_config (encryption_key, created_at, updated_at) VALUES (?, datetime('now'), datetime('now'));`,
+			key,
+		)
+	} else {
+		// 更新已有记录
+		_, err = database.DB.Exec(
+			`UPDATE nav_backup_config SET encryption_key = ?, updated_at = datetime('now') WHERE id = (SELECT id FROM nav_backup_config ORDER BY id ASC LIMIT 1);`,
+			key,
+		)
+	}
+	return err
 }
 
 // encryptPassword 使用 AES-256-GCM 加密密码

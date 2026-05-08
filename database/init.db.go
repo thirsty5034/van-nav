@@ -121,11 +121,17 @@ func InitDB() {
 		last_backup_time TEXT,
 		last_backup_status TEXT,
 		enabled INTEGER NOT NULL DEFAULT 1,
+		encryption_key TEXT NOT NULL DEFAULT '',
 		created_at TEXT NOT NULL DEFAULT (datetime('now')),
 		updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 	);`
 	_, err = DB.Exec(sql_create_table)
 	utils.CheckErr(err)
+
+	// 兼容旧表：添加 encryption_key 字段
+	if !columnExists("nav_backup_config", "encryption_key") {
+		DB.Exec(`ALTER TABLE nav_backup_config ADD COLUMN encryption_key TEXT NOT NULL DEFAULT '';`)
+	}
 
 	// 初始化默认搜索引擎
 	var searchEngineCount int

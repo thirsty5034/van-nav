@@ -65,14 +65,9 @@ var addr = flag.String("addr", "0.0.0.0", "指定监听地址")
 func main() {
 	flag.Parse()
 	database.InitDB()
-	// 检查备份加密密钥
-	if os.Getenv("BACKUP_ENCRYPTION_KEY") == "" {
-		logger.LogError("环境变量 BACKUP_ENCRYPTION_KEY 未设置，备份密码无法安全存储，服务启动终止。请设置一个32字节的密钥后重启。")
-		os.Exit(1)
-	}
-	// 验证密钥长度（必须为32字节或64位hex）
+	// 初始化备份加密密钥（自动生成或从环境变量/数据库读取）
 	if _, err := service.GetBackupEncryptionKey(); err != nil {
-		logger.LogError("BACKUP_ENCRYPTION_KEY 校验失败: %s，服务启动终止。", err)
+		logger.LogError("初始化备份加密密钥失败: %s", err)
 		os.Exit(1)
 	}
 	service.InitBackupCron()
