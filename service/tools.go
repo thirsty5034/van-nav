@@ -11,6 +11,9 @@ import (
 	"github.com/mereith/nav/utils"
 )
 
+// addToolMutex 保护 AddTool 操作的并发安全
+var addToolMutex sync.Mutex
+
 type ImportToolsResult struct {
 	Imported   int
 	Skipped    int
@@ -21,19 +24,24 @@ func ImportTools(data []types.Tool) ImportToolsResult {
 	var catelogs []string
 	imported := 0
 	skipped := 0
+
+	// 准备 SQL 语句，避免循环内重复 Prepare
+	sql_add_tool := `
+		INSERT OR IGNORE INTO nav_table (id, name, catelog, url, logo, desc, sort, hide)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+		`
+	stmt, err := database.DB.Prepare(sql_add_tool)
+	if err != nil {
+		utils.CheckErr(err)
+		return ImportToolsResult{Imported: 0, Skipped: len(data), Categories: nil}
+	}
+	defer stmt.Close()
+
 	for _, v := range data {
 		// 过滤掉空分类，只收集有效的分类名称
 		if v.Catelog != "" && strings.TrimSpace(v.Catelog) != "" && !utils.In(v.Catelog, catelogs) {
 			catelogs = append(catelogs, v.Catelog)
 		}
-		// 使用 INSERT OR IGNORE 避免 ID 冲突导致整个导入失败
-		// 如果 ID 已存在则跳过，同时包含 sort 和 hide 字段以保留完整数据
-		sql_add_tool := `
-			INSERT OR IGNORE INTO nav_table (id, name, catelog, url, logo, desc, sort, hide)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-			`
-		stmt, err := database.DB.Prepare(sql_add_tool)
-		utils.CheckErr(err)
 		res, err := stmt.Exec(v.Id, v.Name, v.Catelog, v.Url, v.Logo, v.Desc, v.Sort, v.Hide)
 		if err != nil {
 			utils.CheckErr(err)
@@ -45,10 +53,6 @@ func ImportTools(data []types.Tool) ImportToolsResult {
 			imported++
 		} else {
 			skipped++
-		}
-		// 仅在成功插入时调用 LastInsertId，避免 INSERT OR IGNORE 跳过时产生错误日志
-		if affected > 0 {
-			_, _ = res.LastInsertId()
 		}
 	}
 	for _, catelog := range catelogs {
@@ -87,10 +91,9 @@ func UpdateTool(data types.UpdateToolDto) {
 }
 
 func AddTool(data types.AddToolDto) (int64, error) {
-	// 创建一个互斥锁来保护数据库操作
-	var mu sync.Mutex
-	mu.Lock()
-	defer mu.Unlock()
+	// 使用包级互斥锁保护数据库操作
+	addToolMutex.Lock()
+	defer addToolMutex.Unlock()
 
 	tx, err := database.DB.Begin()
 	if err != nil {
@@ -142,7 +145,11 @@ func GetAllTool() []types.Tool {
 		`
 	results := make([]types.Tool, 0)
 	rows, err := database.DB.Query(sql_get_all)
-	utils.CheckErr(err)
+	if err != nil {
+		utils.CheckErr(err)
+		return results
+	}
+	defer rows.Close()
 	for rows.Next() {
 		var tool types.Tool
 		var hide interface{}
@@ -182,7 +189,6 @@ func GetAllTool() []types.Tool {
 		utils.CheckErr(err)
 		results = append(results, tool)
 	}
-	defer rows.Close()
 	return results
 }
 
@@ -191,14 +197,16 @@ func GetToolLogoUrlById(id int) string {
 		SELECT logo FROM nav_table WHERE id=?;
 		`
 	rows, err := database.DB.Query(sql_get_tool, id)
-	utils.CheckErr(err)
+	if err != nil {
+		utils.CheckErr(err)
+		return ""
+	}
+	defer rows.Close()
 	var tool types.Tool
 	for rows.Next() {
 		err = rows.Scan(&tool.Logo)
 		utils.CheckErr(err)
-
 	}
-	defer rows.Close()
 	return tool.Logo
 }
 

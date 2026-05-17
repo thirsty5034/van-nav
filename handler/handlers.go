@@ -17,6 +17,7 @@ import (
 	"github.com/mereith/nav/service"
 	"github.com/mereith/nav/types"
 	"github.com/mereith/nav/utils"
+	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
@@ -184,11 +185,12 @@ func GetAllHandler(c *gin.Context) {
 	tools := service.GetAllTool()
 	// 获取全部数据
 	catelogs := service.GetAllCatelog()
-	if !utils.IsLogin(c) {
+	isLogin := utils.IsLogin(c)
+	if !isLogin {
 		// 过滤掉隐藏工具
 		tools = utils.FilterHideTools(tools, catelogs)
 	}
-	if !utils.IsLogin(c) {
+	if !isLogin {
 		// 过滤掉隐藏分类
 		catelogs = utils.FilterHideCates(catelogs)
 	}
@@ -231,6 +233,13 @@ func GetLogoImgHandler(c *gin.Context) {
 		return
 	}
 	l := strings.Split(url, ".")
+	if len(l) == 0 || (len(l) == 1 && l[0] == "") {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": "无效的URL格式",
+		})
+		return
+	}
 	suffix := l[len(l)-1]
 	t := "image/x-icon"
 	if suffix == "svg" || strings.Contains(url, ".svg") {
@@ -292,11 +301,14 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 	if user.Password != data.Password {
-		c.JSON(200, gin.H{
-			"success":      false,
-			"errorMessage": "密码错误",
-		})
-		return
+		// 尝试 bcrypt 比较（兼容新哈希格式）
+		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(data.Password)); err != nil {
+			c.JSON(200, gin.H{
+				"success":      false,
+				"errorMessage": "密码错误",
+			})
+			return
+		}
 	}
 	// 生成 token
 	token, err := utils.SignJWT(user)

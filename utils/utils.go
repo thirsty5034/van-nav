@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"crypto/rand"
 	"crypto/tls"
 	"database/sql"
 	"encoding/base64"
@@ -91,8 +92,18 @@ func PathExistsOrCreate(path string) {
 }
 
 func GenerateId() int {
-	// 生成一个随机 id
-	id := int(time.Now().Unix())
+	// 生成一个随机 id，避免时间戳冲突
+	b := make([]byte, 4)
+	_, err := rand.Read(b)
+	if err != nil {
+		// 回退到时间戳（极少数情况）
+		return int(time.Now().Unix())
+	}
+	// 确保正数
+	id := int(b[0])<<24 | int(b[1])<<16 | int(b[2])<<8 | int(b[3])
+	if id < 0 {
+		id = -id
+	}
 	return id
 }
 

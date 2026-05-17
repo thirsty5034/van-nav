@@ -12,14 +12,17 @@ func GetApiTokens() []types.Token {
 		`
 	results := make([]types.Token, 0)
 	rows, err := database.DB.Query(sql_get_api_tokens)
-	utils.CheckErr(err)
+	if err != nil {
+		utils.CheckErr(err)
+		return results
+	}
+	defer rows.Close()
 	for rows.Next() {
 		var token types.Token
 		err = rows.Scan(&token.Id, &token.Name, &token.Value, &token.Disabled)
 		utils.CheckErr(err)
 		results = append(results, token)
 	}
-	defer rows.Close()
 	return results
 }
 
@@ -49,6 +52,13 @@ func AddApiTokenInDB(data types.Token) {
 }
 
 func UpdateUser(data types.UpdateUserDto) {
+	// 对密码进行哈希处理
+	hashedPassword, err := utils.HashPassword(data.Password)
+	if err != nil {
+		utils.CheckErr(err)
+		return
+	}
+
 	sql_update_user := `
 		UPDATE nav_user
 		SET name = ?, password = ?
@@ -56,7 +66,7 @@ func UpdateUser(data types.UpdateUserDto) {
 		`
 	stmt, err := database.DB.Prepare(sql_update_user)
 	utils.CheckErr(err)
-	res, err := stmt.Exec(data.Name, data.Password, data.Id)
+	res, err := stmt.Exec(data.Name, hashedPassword, data.Id)
 	utils.CheckErr(err)
 	_, err = res.RowsAffected()
 	utils.CheckErr(err)

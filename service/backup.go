@@ -10,8 +10,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mereith/nav/database"
@@ -19,6 +21,9 @@ import (
 	"github.com/mereith/nav/types"
 	"github.com/studio-b12/gowebdav"
 )
+
+// dbMutex 保护数据库连接的关闭和重新初始化操作
+var dbMutex sync.Mutex
 
 // GetBackupEncryptionKey 获取加密密钥（32字节用于AES-256）
 // 优先使用环境变量 BACKUP_ENCRYPTION_KEY，否则从数据库读取或自动生成
@@ -631,13 +636,9 @@ func ListBackupFiles() ([]BackupFileInfo, error) {
 	}
 
 	// 按文件名倒序排列（最新的在前）
-	for i := 0; i < len(result); i++ {
-		for j := i + 1; j < len(result); j++ {
-			if result[j].Name > result[i].Name {
-				result[i], result[j] = result[j], result[i]
-			}
-		}
-	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Name > result[j].Name
+	})
 
 	return result, nil
 }
@@ -701,6 +702,10 @@ func RestoreFromBackup(filename string) error {
 			}
 		}
 	}
+
+	// 使用互斥锁保护数据库连接的关闭和重新初始化
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
 
 	// 关闭当前数据库连接
 	if database.DB != nil {

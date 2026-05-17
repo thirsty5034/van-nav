@@ -84,13 +84,16 @@ func GetAllCatelog() []types.Catelog {
 	`
 	results := make([]types.Catelog, 0)
 	rows, err := database.DB.Query(sql_get_all)
-	utils.CheckErr(err)
+	if err != nil {
+		utils.CheckErr(err)
+		return results
+	}
+	defer rows.Close()
 	for rows.Next() {
 		var catelog types.Catelog
 		err = rows.Scan(&catelog.Id, &catelog.Name, &catelog.Sort, &catelog.Hide)
 		utils.CheckErr(err)
 		results = append(results, catelog)
 	}
-	defer rows.Close()
 	return results
 }
