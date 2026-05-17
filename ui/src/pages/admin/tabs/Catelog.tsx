@@ -252,6 +252,12 @@ export const Catelog: React.FC<CatelogProps> = (props) => {
                   setSelectRows(selectedRows);
                 },
               }}
+              pagination={{
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50'],
+                defaultPageSize: 10,
+                showTotal: (total) => `共 ${total} 条`,
+              }}
             >
               <Table.Column
                 title={<div style={{ textAlign: 'center' }}>排序</div>}

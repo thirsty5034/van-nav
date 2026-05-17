@@ -705,6 +705,7 @@ func RestoreFromBackup(filename string) error {
 	// 关闭当前数据库连接
 	if database.DB != nil {
 		database.DB.Close()
+		database.DB = nil
 	}
 
 	// 写入恢复的数据库文件
@@ -714,6 +715,10 @@ func RestoreFromBackup(filename string) error {
 	}
 
 	logger.LogInfo("数据库恢复成功: %s -> %s", remotePath, dbPath)
+
+	// 重新初始化数据库连接
+	database.InitDB()
+
 	return nil
 }
 

@@ -67,7 +67,12 @@ export const ApiToken: React.FC<ApiTokenProps> = (props) => {
       }
     >
       <Spin spinning={loading}>
-        <Table dataSource={store?.tokens || []} rowKey="id" size="small">
+        <Table dataSource={store?.tokens || []} rowKey="id" size="small" pagination={{
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50'],
+            defaultPageSize: 10,
+            showTotal: (total) => `共 ${total} 条`,
+          }}>
           <Table.Column title="序号" dataIndex="id" width={30} />
           <Table.Column
             title="名称"

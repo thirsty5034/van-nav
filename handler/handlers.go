@@ -1,5 +1,4 @@
 package handler
-
 import (
 	"crypto/tls"
 	"encoding/base64"
@@ -7,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -1585,12 +1583,6 @@ func RestoreBackupHandler(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"success": true,
-		"message": "数据库恢复成功，服务将在3秒后自动重启",
+		"message": "数据库恢复成功，请刷新页面以查看最新数据",
 	})
-
-	// 异步重启服务
-	go func() {
-		time.Sleep(3 * time.Second)
-		os.Exit(0) // 进程管理器会自动重启
-	}()
 }
