@@ -46,8 +46,10 @@ func ImportTools(data []types.Tool) ImportToolsResult {
 		} else {
 			skipped++
 		}
-		utils.CheckErr(err)
-		_, _ = res.LastInsertId()
+		// 仅在成功插入时调用 LastInsertId，避免 INSERT OR IGNORE 跳过时产生错误日志
+		if affected > 0 {
+			_, _ = res.LastInsertId()
+		}
 	}
 	for _, catelog := range catelogs {
 		var addCatelogDto types.AddCatelogDto

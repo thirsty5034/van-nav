@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
@@ -20,6 +21,11 @@ func JWTMiddleware() gin.HandlerFunc {
 			})
 			c.Abort()
 			return
+		}
+
+		// 剥离 Bearer 前缀
+		if strings.HasPrefix(rawToken, "Bearer ") {
+			rawToken = strings.TrimPrefix(rawToken, "Bearer ")
 		}
 
 		if database.HasApiToken(rawToken) {

@@ -97,7 +97,7 @@ export const fetchAdminData: () => Promise<any> = async () => {
 };
 export const fetchImportTools = async (payload: any) => {
     const { data } = await axios.post(`/api/admin/importTools`, payload);
-    return data?.data || {};
+    return data || {};
 };
 export const fetchExportTools = async () => {
     const { data } = await axios.get(`/api/admin/exportTools`);

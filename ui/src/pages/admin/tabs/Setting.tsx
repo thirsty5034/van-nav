@@ -178,7 +178,7 @@ export const Setting: React.FC<SettingProps> = (props) => {
     Modal.confirm({
       title: "确认恢复数据库",
       icon: <WarningOutlined />,
-      content: `即将从备份文件 ${filename} 恢复数据库。当前数据库将被覆盖（会自动备份到 .bak 文件）。恢复完成后服务将自动重启。确认继续？`,
+      content: `即将从备份文件 ${filename} 恢复数据库。当前数据库将被覆盖（会自动备份到 .bak 文件）。恢复完成后请刷新页面以查看最新数据。确认继续？`,
       okText: "确认恢复",
       cancelText: "取消",
       okType: "danger",
@@ -187,11 +187,11 @@ export const Setting: React.FC<SettingProps> = (props) => {
         try {
           const res = await fetchRestoreBackup(filename);
           if (res?.success) {
-            message.success("数据库恢复成功，服务即将重启...");
+            message.success("数据库恢复成功，请刷新页面以查看最新数据");
             // 延迟后刷新页面
             setTimeout(() => {
               window.location.reload();
-            }, 4000);
+            }, 1500);
           } else {
             message.error(res?.errorMessage || "恢复失败");
           }
@@ -897,13 +897,18 @@ export const Setting: React.FC<SettingProps> = (props) => {
         }
       >
         <div style={{ marginBottom: 16, color: isDark ? 'rgba(255,255,255,0.6)' : '#666' }}>
-          以下是从 WebDAV 云端获取的备份文件，可选择任意文件恢复数据库。恢复后服务将自动重启。
+          以下是从 WebDAV 云端获取的备份文件，可选择任意文件恢复数据库。恢复后请刷新页面以查看最新数据。
         </div>
         <Table
           dataSource={backupFiles}
           loading={backupFilesLoading}
           rowKey="name"
-          pagination={backupFiles.length > 10 ? { pageSize: 10 } : false}
+          pagination={{
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50'],
+            defaultPageSize: 10,
+            showTotal: (total) => `共 ${total} 条`,
+          }}
           columns={[
             {
               title: '文件名',

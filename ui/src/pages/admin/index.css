@@ -314,8 +314,7 @@ body.dark-mode .ant-input-affix-wrapper:focus-within {
 
 /* 修复：操作成功/失败弹窗背景白色 */
 body.dark-mode .ant-message {
-  background-color: #1a1a1a !important;
-  color: rgba(255, 255, 255, 0.8) !important;
+  background-color: transparent !important;
 }
 
 body.dark-mode .ant-message-notice-content {
