@@ -160,9 +160,16 @@ func InitDB() {
 	rows, err := DB.Query(`SELECT * FROM nav_user;`)
 	utils.CheckErr(err)
 	if !rows.Next() {
+		// 使用 bcrypt 哈希默认密码
+		hashedPassword, err := utils.HashPassword("admin")
+		if err != nil {
+			logger.LogError("哈希默认密码失败: %v", err)
+			// 回退到明文（仅用于初始化）
+			hashedPassword = "admin"
+		}
 		stmt, err := DB.Prepare(`INSERT INTO nav_user (id, name, password) VALUES (?, ?, ?);`)
 		utils.CheckErr(err)
-		_, err = stmt.Exec(utils.GenerateId(), "admin", "admin")
+		_, err = stmt.Exec(utils.GenerateId(), "admin", hashedPassword)
 		utils.CheckErr(err)
 	}
 	rows.Close()

@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,7 +16,8 @@ func RandomJWTKey() string {
 	bytes := make([]byte, 32)
 	if _, err := rand.Read(bytes); err != nil {
 		logger.LogError("生成随机密钥失败: %v", err)
-		return "fallback_secret_key_12345"
+		// 使用更安全的回退方案：组合多个随机源
+		panic("无法生成安全的 JWT 密钥，请检查系统随机数生成器")
 	}
 	return hex.EncodeToString(bytes)
 }
@@ -63,6 +65,8 @@ func IsLogin(c *gin.Context) bool {
 	if rawToken == "" {
 		return false
 	}
+	// 处理 Bearer 前缀
+	rawToken = strings.TrimPrefix(rawToken, "Bearer ")
 	token, err := ParseJWT(rawToken)
 	return err == nil && token.Valid
 }
