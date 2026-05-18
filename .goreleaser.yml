@@ -27,12 +27,10 @@ builds:
 
 archives:
   - format: tar.gz
-    replacements:
-      darwin: MacOs
-      linux: Linux
-      windows: Windows
-      amd64: x86_64
-      "386": x86
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
 
 checksum:
   name_template: "checksums.txt"
