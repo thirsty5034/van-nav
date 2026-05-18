@@ -3,7 +3,7 @@ import "./index.css";
 import { getLogoUrl } from "../../utils/check";
 import { getJumpTarget } from "../../utils/setting";
 
-const Card = ({ title, url, des, logo, catelog, onClick, index, isSearching, noImageMode, compactMode }) => {
+const Card = ({ title, url, des, logo, catelog, onClick, index, isSearching, noImageMode, compactMode, jumpTargetBlank }: any) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [showLoading, setShowLoading] = useState(true);
@@ -82,7 +82,7 @@ const Card = ({ title, url, des, logo, catelog, onClick, index, isSearching, noI
       onClick={() => {
         onClick();
       }}
-      target={getJumpTarget() === "blank" ? "_blank" : "_self"}
+      target={getJumpTarget(jumpTargetBlank) === "blank" ? "_blank" : "_self"}
       rel="noreferrer"
       className="card-box"
     >

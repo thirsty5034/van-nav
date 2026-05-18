@@ -11,7 +11,7 @@ import GithubLink from "../GithubLink";
 import DarkSwitch from "../DarkSwitch";
 import { isLogin } from "../../utils/check";
 import { generateSearchEngineCard } from "../../utils/serachEngine";
-import { toggleJumpTarget } from "../../utils/setting";
+import { toggleJumpTarget, syncJumpTargetFromServer } from "../../utils/setting";
 
 const mutiSearch = (s, t) => {
   const source = (s as string).toLowerCase();
@@ -68,6 +68,8 @@ const Content = (props: any) => {
       setLoading(true);
       const r = await FetchList();
       setData(r);
+      // 同步服务器跳转设置到 localStorage（仅当用户未手动设置时）
+      syncJumpTargetFromServer(r?.setting?.jumpTargetBlank);
       // 成功时缓存到 localStorage，断网时可恢复
       try {
         window.localStorage.setItem("van-nav-cache", JSON.stringify(r));
@@ -203,10 +205,11 @@ const Content = (props: any) => {
           isSearching={searchString.trim() !== ""}
           noImageMode={data?.siteConfig?.noImageMode || false}
           compactMode={data?.siteConfig?.compactMode || false}
+          jumpTargetBlank={data?.setting?.jumpTargetBlank}
           onClick={() => {
             resetSearch();
             if (item.url === "toggleJumpTarget") {
-              toggleJumpTarget();
+              toggleJumpTarget(data?.setting?.jumpTargetBlank);
               loadData();
             }
           }}

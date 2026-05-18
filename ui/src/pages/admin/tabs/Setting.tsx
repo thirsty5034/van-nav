@@ -240,8 +240,11 @@ export const Setting: React.FC<SettingProps> = (props) => {
 
   useEffect(() => {
     userForm.setFieldsValue(store?.user ?? {})
+    // settingForm 的 initialValues 已处理类型转换，这里只需处理动态加载的数据
     settingForm.setFieldsValue({
       ...(store?.setting ?? {}),
+      // 将布尔值转为数字，与 Select 的 value 类型一致
+      jumpTargetBlank: store?.setting?.jumpTargetBlank ? 1 : 0,
       pcColumnCount: store?.setting?.pcColumnCount || 3,
     })
     siteConfigForm.setFieldsValue(store?.siteConfig ?? {})
@@ -262,7 +265,12 @@ export const Setting: React.FC<SettingProps> = (props) => {
   const handleUpdateWebSite = useCallback(
     async (values: any) => {
       try {
-        await fetchUpdateSetting(values);
+        // 将 jumpTargetBlank 从数字转为布尔值（Ant Design Select 对 false 处理有问题）
+        const payload = {
+          ...values,
+          jumpTargetBlank: values.jumpTargetBlank === 1 || values.jumpTargetBlank === true,
+        };
+        await fetchUpdateSetting(payload);
         message.success("修改成功!");
       } catch (err) {
         message.warning("修改失败!");
@@ -547,7 +555,12 @@ export const Setting: React.FC<SettingProps> = (props) => {
         <Spin spinning={loading}>
           <Form
             onFinish={handleUpdateWebSite}
-            initialValues={store?.setting ?? {}}
+            initialValues={{
+              ...(store?.setting ?? {}),
+              // 将布尔值转为数字，与 Select 的 value 类型一致
+              jumpTargetBlank: store?.setting?.jumpTargetBlank ? 1 : 0,
+              pcColumnCount: store?.setting?.pcColumnCount || 3,
+            }}
             labelCol={{ span: 6 }}
             form={settingForm}
           >
@@ -581,15 +594,15 @@ export const Setting: React.FC<SettingProps> = (props) => {
 
             <Form.Item label="默认跳转方式" name="jumpTargetBlank" rules={[{ required: true, message: "这是必填项" }]}
               tooltip="选择点击卡片后默认的跳转方式"
-            >
+                          >
               <Select options={[
                 {
                   label: "原地跳转",
-                  value: false,
+                  value: 0,
                 },
                 {
                   label: "新标签页",
-                  value: true,
+                  value: 1,
                 },
               ]}>
 

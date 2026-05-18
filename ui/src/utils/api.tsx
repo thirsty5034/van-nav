@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getJumpTarget, initServerJumpTargetConfig } from "./setting";
+import { getJumpTarget, syncJumpTargetFromServer } from "./setting";
 
 axios.interceptors.request.use(
     (config) => {
@@ -62,10 +62,10 @@ export const FetchList = async () => {
         })
     }
     if (data.setting) {
-        initServerJumpTargetConfig(data.setting)
+        syncJumpTargetFromServer(data.setting?.jumpTargetBlank)
     }
 
-    const jumpTarget = getJumpTarget();
+    const jumpTarget = getJumpTarget(data.setting?.jumpTargetBlank);
     if (!data.setting?.hideToggleJumpTarget) {
         data.tools.push({
             id: 999099999978,
