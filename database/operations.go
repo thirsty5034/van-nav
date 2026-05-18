@@ -605,12 +605,12 @@ func OrganizeDeadLinks() (int, error) {
 // GetDeploymentVersion 获取当前部署版本号
 func GetDeploymentVersion() string {
 	var version string
-	err := DB.QueryRow(`SELECT COALESCE(deployment_version, 'v1.13.1.1') FROM nav_setting ORDER BY id ASC LIMIT 1`).Scan(&version)
+	err := DB.QueryRow(`SELECT COALESCE(deployment_version, '') FROM nav_setting ORDER BY id ASC LIMIT 1`).Scan(&version)
 	if err != nil {
-		return "v1.13.1.1"
+		return ""
 	}
 	if version == "" {
-		return "v1.13.1.1"
+		return ""
 	}
 	return version
 }
@@ -621,8 +621,8 @@ func IncrementDeploymentVersion() (string, error) {
 
 	// 解析版本号 v主版本.次版本.修订版本.构建号
 	// 格式: v1.13.1.1 -> parts: [v1, 13, 1, 1]
-	if !strings.HasPrefix(current, "v") {
-		// 格式异常，重置为初始版本
+	if current == "" || !strings.HasPrefix(current, "v") {
+		// 无版本信息或格式异常，使用默认版本
 		current = "v1.13.1.1"
 	}
 

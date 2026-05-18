@@ -22,6 +22,10 @@ import (
 
 const INDEX = "index.html"
 
+// Build-time version, overridden by ldflags during compilation
+// Usage: go build -ldflags "-X main.Version=v2.0.0.0"
+var Version = "v2.0.0.0"
+
 //go:embed public
 var fs embed.FS
 
@@ -62,9 +66,39 @@ func BinaryFileSystem(data embed.FS, root string) *binaryFileSystem {
 var port = flag.String("port", "6412", "指定监听端口")
 var addr = flag.String("addr", "0.0.0.0", "指定监听地址")
 
+// syncDeploymentVersion 启动时同步部署版本号到数据库
+// 确保新部署和更新部署都能获得一致的版本号（来自编译包）
+func syncDeploymentVersion() {
+	var dbVersion string
+	err := database.DB.QueryRow(`SELECT deployment_version FROM nav_setting WHERE id = 1`).Scan(&dbVersion)
+	
+	if err != nil || dbVersion == "" {
+		// 字段不存在或为空 → 写入编译版本
+		_, err := database.DB.Exec(`UPDATE nav_setting SET deployment_version = ? WHERE id = 1`, Version)
+		if err != nil {
+			logger.LogError("同步部署版本号失败: %s", err)
+		} else {
+			logger.LogInfo("部署版本号已初始化: %s", Version)
+		}
+		return
+	}
+	
+	if dbVersion != Version {
+		// 版本不一致 → 更新为编译版本（更新部署场景）
+		_, err := database.DB.Exec(`UPDATE nav_setting SET deployment_version = ? WHERE id = 1`, Version)
+		if err != nil {
+			logger.LogError("更新部署版本号失败: %s", err)
+		} else {
+			logger.LogInfo("部署版本号已更新: %s → %s", dbVersion, Version)
+		}
+	}
+}
+
 func main() {
 	flag.Parse()
 	database.InitDB()
+	// 同步部署版本号到数据库（确保新部署/更新部署版本一致）
+	syncDeploymentVersion()
 	// 初始化备份加密密钥（自动生成或从环境变量/数据库读取）
 	if _, err := service.GetBackupEncryptionKey(); err != nil {
 		logger.LogError("初始化备份加密密钥失败: %s", err)

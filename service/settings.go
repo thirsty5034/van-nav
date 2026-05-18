@@ -18,7 +18,7 @@ func IncrementDeploymentVersion() (string, error) {
 
 func GetSetting() types.Setting {
 	sql_get_user := `
-		SELECT id,favicon,title,govRecord,logo192,logo512,hideAdmin,hideGithub,hideToggleJumpTarget,jumpTargetBlank,showSearchEngine,pcColumnCount,COALESCE(deployment_version,'v1.13.1.1')
+		SELECT id,favicon,title,govRecord,logo192,logo512,hideAdmin,hideGithub,hideToggleJumpTarget,jumpTargetBlank,showSearchEngine,pcColumnCount,COALESCE(deployment_version,'')
 		FROM nav_setting
 		ORDER BY id ASC
 		LIMIT 1;
@@ -49,7 +49,7 @@ func GetSetting() types.Setting {
 			JumpTargetBlank:      true,
 			ShowSearchEngine:     true,
 			PcColumnCount:        3,
-			DeploymentVersion:    "v1.13.1.1",
+			DeploymentVersion:    "",
 		}
 	}
 	if hideGithub == nil {
