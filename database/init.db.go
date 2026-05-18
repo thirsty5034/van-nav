@@ -58,7 +58,7 @@ func InitDB() {
 
 	// 部署版本号字段
 	if !columnExists("nav_setting", "deployment_version") {
-		DB.Exec(`ALTER TABLE nav_setting ADD COLUMN deployment_version TEXT DEFAULT 'v1.13.1.1';`)
+		DB.Exec(`ALTER TABLE nav_setting ADD COLUMN deployment_version TEXT DEFAULT 'v2.0.0.0';`)
 	}
 
 	sql_create_table = `CREATE TABLE IF NOT EXISTS nav_table (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, url TEXT, logo TEXT, catelog TEXT, desc TEXT);`
