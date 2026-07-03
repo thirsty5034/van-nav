@@ -1,6 +1,6 @@
 module github.com/mereith/nav
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/gin-contrib/gzip v1.2.3
@@ -8,9 +8,9 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/studio-b12/gowebdav v0.12.0
-	golang.org/x/crypto v0.45.0
-	golang.org/x/net v0.47.0
-	golang.org/x/text v0.31.0
+	golang.org/x/crypto v0.51.0
+	golang.org/x/net v0.55.0
+	golang.org/x/text v0.37.0
 	modernc.org/sqlite v1.37.1
 )
 
@@ -39,7 +39,7 @@ require (
 	github.com/ugorji/go/codec v1.2.14 // indirect
 	golang.org/x/arch v0.17.0 // indirect
 	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6 // indirect
-	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	modernc.org/libc v1.65.8 // indirect
