@@ -39,6 +39,33 @@ func In(target string, str_array []string) bool {
 	return false
 }
 
+func DetectImageMIME(data []byte) string {
+	if len(data) >= 8 && data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47 {
+		return "image/png"
+	}
+	if len(data) >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF {
+		return "image/jpeg"
+	}
+	if len(data) >= 12 && string(data[0:4]) == "RIFF" && string(data[8:12]) == "WEBP" {
+		return "image/webp"
+	}
+	if len(data) >= 6 && (string(data[0:6]) == "GIF87a" || string(data[0:6]) == "GIF89a") {
+		return "image/gif"
+	}
+	if len(data) >= 4 && data[0] == 0x00 && data[1] == 0x00 && (data[2] == 0x01 || data[2] == 0x02) && data[3] == 0x00 {
+		return "image/x-icon"
+	}
+	head := data
+	if len(head) > 256 {
+		head = head[:256]
+	}
+	s := strings.TrimSpace(string(head))
+	if strings.HasPrefix(s, "<svg") || strings.Contains(s, "<svg") {
+		return "image/svg+xml"
+	}
+	return ""
+}
+
 func GetImgBase64FromUrl(url string) string {
 	imgUrl := url
 	//获取远端图片
@@ -61,12 +88,22 @@ func GetImgBase64FromUrl(url string) string {
 	}
 	defer res.Body.Close()
 
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		logger.LogError("图片下载状态码异常: %s %d", url, res.StatusCode)
+		return ""
+	}
+
 	// 读取获取的[]byte数据（限制 5MB 防止 OOM）
 	const maxImageSize = 5 * 1024 * 1024
 	limitedReader := io.LimitReader(res.Body, maxImageSize+1)
 	data, err := io.ReadAll(limitedReader)
 	if err != nil || len(data) > maxImageSize {
 		logger.LogError("图片过大或读取失败: %s", url)
+		return ""
+	}
+
+	if DetectImageMIME(data) == "" {
+		logger.LogError("远端内容不是图片: %s", url)
 		return ""
 	}
 

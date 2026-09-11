@@ -1,11 +1,11 @@
 package handler
+
 import (
 	"crypto/tls"
-	"encoding/base64"
 	"fmt"
 	"io"
-	"net/http"
 	"net"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -234,41 +234,15 @@ func GetLogoImgHandler(c *gin.Context) {
 	}
 	img, err := service.GetImgFromDB(url)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "errorMessage": err.Error()})
+		c.Data(http.StatusOK, "image/png", service.DefaultLogoPNG())
 		return
 	}
-	if img.Value == "" {
-		c.JSON(http.StatusNotFound, gin.H{
-			"success":      false,
-			"errorMessage": "未找到图片",
-		})
+	body, mime, ok := service.ImageBytesFromCacheValue(img.Value)
+	if !ok {
+		c.Data(http.StatusOK, "image/png", service.DefaultLogoPNG())
 		return
 	}
-	imgBuffer, err := base64.StdEncoding.DecodeString(img.Value)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success":      false,
-			"errorMessage": "图片解码失败",
-		})
-		return
-	}
-	l := strings.Split(url, ".")
-	if len(l) == 0 || (len(l) == 1 && l[0] == "") {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success":      false,
-			"errorMessage": "无效的URL格式",
-		})
-		return
-	}
-	suffix := l[len(l)-1]
-	t := "image/x-icon"
-	if suffix == "svg" || strings.Contains(url, ".svg") {
-		t = "image/svg+xml"
-	} else if suffix == "png" {
-		t = "image/png"
-	}
-	// 直接输出二进制数据，避免string转换导致的内存多分配
-	c.Data(http.StatusOK, t, imgBuffer)
+	c.Data(http.StatusOK, mime, body)
 }
 
 func GetAdminAllDataHandler(c *gin.Context) {
@@ -669,7 +643,7 @@ func AddSearchEngineHandler(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	id, err := service.AddSearchEngine(engine)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -699,7 +673,7 @@ func UpdateSearchEngineHandler(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	// 从URL参数获取ID
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -711,7 +685,7 @@ func UpdateSearchEngineHandler(c *gin.Context) {
 		return
 	}
 	engine.Id = id
-	
+
 	err = service.UpdateSearchEngine(engine)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -738,7 +712,7 @@ func DeleteSearchEngineHandler(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	err = service.DeleteSearchEngine(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -747,7 +721,7 @@ func DeleteSearchEngineHandler(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "删除搜索引擎成功",
@@ -768,7 +742,7 @@ func UpdateSearchEngineSortHandler(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	err = service.UpdateSearchEngineSort(sortData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -860,9 +834,9 @@ func GetFaviconFromApiHandler(c *gin.Context) {
 	logoUrl := replaceDomain(apiTemplate, domain)
 
 	c.JSON(200, gin.H{
-		"success":  true,
-		"logoUrl":  logoUrl,
-		"message":  "获取成功",
+		"success": true,
+		"logoUrl": logoUrl,
+		"message": "获取成功",
 	})
 }
 
@@ -1542,7 +1516,7 @@ func GetThemeConfigHandler(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	c.JSON(200, gin.H{
 		"success": true,
 		"data":    config,
@@ -1559,7 +1533,7 @@ func UpdateThemeConfigHandler(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	if err := service.SaveThemeConfig(config); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success":      false,
@@ -1567,7 +1541,7 @@ func UpdateThemeConfigHandler(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "主题配置已保存",
@@ -1583,7 +1557,7 @@ func ResetThemeConfigHandler(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "已重置为默认主题",
