@@ -6,3 +6,4 @@ Entries are workspace records, not authoritative runtime decisions.
 | Date | Kind | Path | Title |
 | --- | --- | --- | --- |
 | 2026-09-11 | spec | docs/aegis/specs/2026-09-11-logo-upload-and-img-fallback-brief.md | 工具 Logo 上传与 /api/img 失败回退 |
+| 2026-09-11 | plan | docs/aegis/plans/2026-09-11-logo-upload-and-img-fallback.md | 工具 Logo 上传与 /api/img 失败回退实现计划 |
