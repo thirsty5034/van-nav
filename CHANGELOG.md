@@ -3,6 +3,27 @@
 本文件记录本项目（[thirsty5034/van-nav](https://github.com/thirsty5034/van-nav)）的更新日志。上游项目（[Mereithhh/van-nav](https://github.com/Mereithhh/van-nav)）的历史记录附在末尾。
 
 
+## [2.4.5] - 2026-09-11
+
+### 🚀 New Features
+
+- **工具 Logo 上传**：后台可为单个工具上传 png/jpeg/webp/ico（≤200KB），保存为 `data:` URI
+
+### 🐛 Bug Fixes
+
+- **`/api/img` 失败破图**：未命中/坏缓存返回 200 默认 PNG，不再 500 JSON
+- **非图片写入缓存**：下载校验状态码与魔数
+- **管理列表 Logo 查询串截断**：统一编码
+- **非法 data URI**：服务端校验；更新接口不再吞掉错误
+- **handler 登录直连 database**：改为 service 封装
+
+### ⚙️ Changed
+
+- 失败占位图改为 Van Nav 导航格图标
+- `assert_architecture.sh` 路径与 Go cache 适配沙箱
+
+---
+
 ## [2.4.4] - 2026-07-29
 
 ### 🔒 Security
