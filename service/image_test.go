@@ -13,6 +13,12 @@ func TestDefaultLogoPNGIsPNG(t *testing.T) {
 	if utils.DetectImageMIME(b) != "image/png" {
 		t.Fatalf("default logo mime=%q len=%d", utils.DetectImageMIME(b), len(b))
 	}
+	if len(b) < 200 {
+		t.Fatalf("default logo too small to be the styled fallback: %d", len(b))
+	}
+	if len(b) < 24 || b[16] != 0 || b[17] != 0 || b[18] != 0 || b[19] != 128 {
+		t.Fatalf("expected 128px IHDR width, got %v", b[16:24])
+	}
 }
 
 func TestImageBytesFromCacheValueRejectsHTML(t *testing.T) {

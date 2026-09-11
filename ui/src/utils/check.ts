@@ -17,7 +17,7 @@ export const getLogoUrl = (url: string) => {
   return '/' + url;
 }
 
-export const DEFAULT_LOGO_SRC = "/logo192.png";
+export const DEFAULT_LOGO_SRC = "/logo-fallback.png";
 export const LOGO_MAX_BYTES = 200 * 1024;
 const LOGO_FILE_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/x-icon", "image/vnd.microsoft.icon"]);
 
