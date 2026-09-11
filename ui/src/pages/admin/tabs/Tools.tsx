@@ -19,9 +19,10 @@ import {
   Row as AntRow,
   Col,
 } from "antd";
-import { HolderOutlined, DragOutlined, QuestionCircleOutlined, CloudDownloadOutlined, HeartOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { HolderOutlined, DragOutlined, QuestionCircleOutlined, CloudDownloadOutlined, HeartOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, UploadOutlined } from '@ant-design/icons';
 import React, { useCallback, useState, useEffect, useContext, useMemo } from "react";
 import { getFilter, getOptions, mutiSearch } from "../../../utils/admin";
+import { getLogoUrl, handleLogoImgError, fileToLogoDataURI } from "../../../utils/check";
 import {
   fetchAddTool,
   fetchDeleteTool,
@@ -172,6 +173,18 @@ export const Tools: React.FC<ToolsProps> = (props) => {
     } finally {
       setGettingFavicon(false);
     }
+  };
+
+  const applyLogoFile = async (form: any, file: File) => {
+    try {
+      const dataUri = await fileToLogoDataURI(file);
+      form.setFieldsValue({ logo: dataUri });
+    } catch (e: any) {
+      if (e?.message === "too-large") message.error(t("admin.tools.msg.logoTooLarge"));
+      else if (e?.message === "bad-type") message.error(t("admin.tools.msg.logoBadType"));
+      else message.error(t("admin.tools.msg.logoReadFailed"));
+    }
+    return false;
   };
 
   // 获取描述的函数
@@ -681,11 +694,13 @@ export const Tools: React.FC<ToolsProps> = (props) => {
                     }}>
                       {" "}
                         <img
-                          src={`/api/img?url=${record.logo}`}
+                          src={getLogoUrl(record.logo)}
+                          alt={record.name}
                           width={32}
                           height={32}
                           loading="lazy"
                           style={{ objectFit: 'cover' }}
+                          onError={handleLogoImgError}
                         ></img>
                       <span style={{ marginLeft: 8 }}>{record.name}</span>
                     </div>
@@ -845,6 +860,19 @@ export const Tools: React.FC<ToolsProps> = (props) => {
                 }
               />
             </Form.Item>
+            <Form.Item label={t("admin.tools.form.logoUpload")} labelCol={{ span: 4 }}>
+              <Upload
+                accept="image/png,image/jpeg,image/webp,image/x-icon,.png,.jpg,.jpeg,.webp,.ico"
+                showUploadList={false}
+                maxCount={1}
+                beforeUpload={(file) => applyLogoFile(addForm, file)}
+              >
+                <Button icon={<UploadOutlined />}>{t("admin.tools.form.logoUpload")}</Button>
+              </Upload>
+              <div style={{ color: "rgba(0,0,0,0.45)", marginTop: 4 }}>
+                {t("admin.tools.form.logoUploadHint")}
+              </div>
+            </Form.Item>
             <Form.Item
               name="catelog"
               required
@@ -971,6 +999,19 @@ export const Tools: React.FC<ToolsProps> = (props) => {
                   </Tooltip>
                 }
               />
+            </Form.Item>
+            <Form.Item label={t("admin.tools.form.logoUpload")} labelCol={{ span: 4 }}>
+              <Upload
+                accept="image/png,image/jpeg,image/webp,image/x-icon,.png,.jpg,.jpeg,.webp,.ico"
+                showUploadList={false}
+                maxCount={1}
+                beforeUpload={(file) => applyLogoFile(updateForm, file)}
+              >
+                <Button icon={<UploadOutlined />}>{t("admin.tools.form.logoUpload")}</Button>
+              </Upload>
+              <div style={{ color: "rgba(0,0,0,0.45)", marginTop: 4 }}>
+                {t("admin.tools.form.logoUploadHint")}
+              </div>
             </Form.Item>
             <Form.Item
               name="catelog"

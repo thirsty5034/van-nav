@@ -105,6 +105,11 @@ const zhCN: Record<string, string> = {
   "admin.tools.form.logo": "Logo",
   "admin.tools.form.logoUrl": "Logo 网址",
   "admin.tools.form.logoPlaceholder": "请输入 Logo 网址",
+  "admin.tools.form.logoUpload": "上传图标",
+  "admin.tools.form.logoUploadHint": "png/jpeg/webp/ico，最大 200KB",
+  "admin.tools.msg.logoTooLarge": "图标不能超过 200KB",
+  "admin.tools.msg.logoBadType": "仅支持 png/jpeg/webp/ico",
+  "admin.tools.msg.logoReadFailed": "读取图标失败",
 
   // 分类筛选
   "admin.tools.filter.category": "分类筛选",

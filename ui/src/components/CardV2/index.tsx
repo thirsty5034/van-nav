@@ -1,6 +1,6 @@
 import { memo, useMemo } from "react";
 import "./index.css";
-import { getLogoUrl } from "../../utils/check";
+import { getLogoUrl, handleLogoImgError } from "../../utils/check";
 import { getJumpTarget } from "../../utils/setting";
 import { recordClick } from "../../utils/clickTracker";
 import { useTranslation } from "../../i18n";
@@ -42,6 +42,7 @@ const Card = memo(({ id, title, url, des, logo, catelog, onClick, index, isSearc
               alt={title}
               loading="lazy"
               decoding="async"
+              onError={handleLogoImgError}
             />
           </div>
         )}
