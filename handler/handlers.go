@@ -14,7 +14,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mereith/nav/database"
 	"github.com/mereith/nav/logger"
 	"github.com/mereith/nav/service"
 	"github.com/mereith/nav/types"
@@ -335,7 +334,7 @@ func LoginHandler(c *gin.Context) {
 		}
 	}
 	// 生成 token（嵌入当前 token_version，密码修改后旧 token 失效）
-	tokenVersion := database.GetUserTokenVersion(user.Id)
+	tokenVersion := service.GetUserTokenVersion(user.Id)
 	token, err := utils.SignJWT(user, tokenVersion)
 	utils.CheckErr(err)
 

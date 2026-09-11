@@ -1,11 +1,18 @@
 #!/bin/bash
-# van-nav 编译期架构合规断路器 v2.0
+# van-nav 编译期架构合规断路器 v2.1
 # 检查范围：handler/ → database/、main.go → database.DB、service/ → database.DB
+# 本环境适配：路径自适应 + workspace-scoped Go cache（DSH 沙箱要求）
+
+set -u
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+export GOPATH="$ROOT/.cache/gopath"
+export GOCACHE="$ROOT/.cache/go-build"
+mkdir -p "$GOPATH" "$GOCACHE"
 
 EXIT_CODE=0
 
 echo "🔍 [1/3] 扫描 handler/ 控制层是否存在私通 database/ 数据层的违规行为..."
-HANDLER_VIOLATIONS=$(go list -f '{{.Dir}}: {{.Imports}}' /workspaces/van-nav/handler/... 2>/dev/null | grep "github.com/mereith/nav/database")
+HANDLER_VIOLATIONS=$(go list -f '{{.Dir}}: {{.Imports}}' "$ROOT/handler/..." 2>/dev/null | grep "github.com/mereith/nav/database")
 if [ ! -z "$HANDLER_VIOLATIONS" ]; then
     echo -e "\n🚨 [严重架构违规] 以下 Handler 文件违法跨层导入了 database 包："
     echo "$HANDLER_VIOLATIONS"
@@ -17,7 +24,7 @@ fi
 
 echo ""
 echo "🔍 [2/3] 扫描 main.go 入口层是否存在越级 database.DB 操作..."
-MAIN_VIOLATIONS=$(grep -n 'database\.DB\.' /workspaces/van-nav/main.go 2>/dev/null)
+MAIN_VIOLATIONS=$(grep -n 'database\.DB\.' "$ROOT/main.go" 2>/dev/null)
 if [ ! -z "$MAIN_VIOLATIONS" ]; then
     echo -e "\n🚨 [架构违规] main.go 存在越级 DB 操作："
     echo "$MAIN_VIOLATIONS"
@@ -29,7 +36,7 @@ fi
 
 echo ""
 echo "🔍 [3/3] 扫描 service/ 业务层是否存在绕过封装直接操作 database.DB 的行为..."
-SVN_VIOLATIONS=$(grep -rn 'database\.DB\.' /workspaces/van-nav/service/ --include="*.go" 2>/dev/null | grep -v '_test.go')
+SVN_VIOLATIONS=$(grep -rn 'database\.DB\.' "$ROOT/service/" --include="*.go" 2>/dev/null | grep -v '_test.go')
 if [ ! -z "$SVN_VIOLATIONS" ]; then
     echo -e "\n🚨 [架构违规] service/ 存在越级 DB 操作（应调用 database/operations.go 封装函数）："
     echo "$SVN_VIOLATIONS"

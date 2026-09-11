@@ -57,3 +57,8 @@ func ResetAdminPassword(newPassword string) error {
 	}
 	return database.ResetAdminPassword(hashed)
 }
+
+// GetUserTokenVersion 获取用户当前 token_version（handler 生成 JWT 时使用）
+func GetUserTokenVersion(uid int) int {
+	return database.GetUserTokenVersion(uid)
+}
