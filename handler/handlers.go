@@ -418,7 +418,14 @@ func UpdateToolHandler(c *gin.Context) {
 		})
 		return
 	}
-	service.UpdateTool(data)
+	if err := service.UpdateTool(data); err != nil {
+		utils.CheckErr(err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": err.Error(),
+		})
+		return
+	}
 	if data.Logo == "" {
 		logger.LogInfo("%s 获取 logo: %s", data.Name, data.Logo)
 		go service.LazyFetchLogo(data.Url, int64(data.Id))
