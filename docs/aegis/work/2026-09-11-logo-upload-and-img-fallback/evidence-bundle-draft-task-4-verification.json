@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "data-uri-api",
+  "type": "command",
+  "source": "POST /api/admin/tool",
+  "summary": "PNG data URI add 200 stored; SVG add/update 400; token not printed",
+  "verifier": "agent",
+  "sliceId": "task-4-verification",
+  "evidenceStatus": "evidence-finalized",
+  "updatedAt": "2026-09-11"
+}

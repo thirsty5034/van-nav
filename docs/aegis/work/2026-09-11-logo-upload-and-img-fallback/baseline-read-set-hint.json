@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "candidateDocs": [
+    "docs/aegis/specs/2026-09-11-logo-upload-and-img-fallback-brief.md",
+    "docs/aegis/plans/2026-09-11-logo-upload-and-img-fallback.md",
+    "ARCH_CONTRACT.md"
+  ],
+  "whyRelevant": "已批准 brief/plan 定义主人、兼容与验收",
+  "missingAuthority": []
+}

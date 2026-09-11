@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "baselineRefs": [
+    "docs/aegis/specs/2026-09-11-logo-upload-and-img-fallback-brief.md"
+  ],
+  "impactStatement": "docs/aegis/work/2026-09-11-logo-upload-and-img-fallback/impact-statement-draft.json",
+  "compatPlan": "http(s) logo、favicon API、相对路径、导入导出保持；缺 url 仍 400",
+  "retirementPlan": "禁止符 SVG 占位与损坏 PNG 占位已退役为单一默认 PNG",
+  "evidenceBundle": [
+    "docs/aegis/work/2026-09-11-logo-upload-and-img-fallback/evidence-bundle-draft-task-4-verification.json"
+  ]
+}

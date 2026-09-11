@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "taskId": "2026-09-11-logo-upload-and-img-fallback",
+  "requiredBaselineRefs": [
+    "docs/aegis/specs/2026-09-11-logo-upload-and-img-fallback-brief.md",
+    "docs/aegis/plans/2026-09-11-logo-upload-and-img-fallback.md",
+    "ARCH_CONTRACT.md"
+  ],
+  "deliveredContextRefs": [],
+  "acknowledgedBeforePlanRefs": [],
+  "citedInPlanRefs": [],
+  "missingRefs": [
+    "docs/aegis/specs/2026-09-11-logo-upload-and-img-fallback-brief.md",
+    "docs/aegis/plans/2026-09-11-logo-upload-and-img-fallback.md",
+    "ARCH_CONTRACT.md"
+  ],
+  "decision": "needs-baseline-readback"
+}

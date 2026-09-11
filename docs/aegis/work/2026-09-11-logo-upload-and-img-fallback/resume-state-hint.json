@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "taskId": "2026-09-11-logo-upload-and-img-fallback",
+  "lastCheckpointRef": "docs/aegis/work/2026-09-11-logo-upload-and-img-fallback/todo-checkpoint-draft.json",
+  "resumeInstruction": "代码已在 master 提交 e42c76d c2ea444 e67f791；测试口 51738 已嵌入前端。不要把 assert_architecture.sh/auth.go 预先脏改动塞进本功能提交。",
+  "knownPartialWork": [
+    "Task 1 图片合同",
+    "Task 2 data URI 校验",
+    "Task 3 前端上传",
+    "Task 4 编译重启与 Brief 验收"
+  ],
+  "mustReadBeforeContinuing": [
+    "docs/aegis/work/2026-09-11-logo-upload-and-img-fallback/10-intent.md",
+    "docs/aegis/work/2026-09-11-logo-upload-and-img-fallback/20-checkpoint.md",
+    "docs/aegis/work/2026-09-11-logo-upload-and-img-fallback/todo-checkpoint-draft.json"
+  ],
+  "unsafeToAssume": [
+    "管理员密码固定为 admin",
+    "浏览器手动上传 UI 已由架构师点过"
+  ]
+}

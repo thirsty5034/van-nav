@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "taskId": "2026-09-11-logo-upload-and-img-fallback",
+  "currentTodo": "Task 4 总验收已完成，等待完成收口",
+  "completedTodos": [
+    "Task 1 图片合同",
+    "Task 2 data URI 校验",
+    "Task 3 前端上传",
+    "Task 4 编译重启与 Brief 验收"
+  ],
+  "activeSlice": "task-4-verification",
+  "evidenceRefs": [
+    "e42c76d /api/img default PNG",
+    "c2ea444 ValidateToolLogo",
+    "e67f791 frontend upload",
+    "curl 51738 Brief 1-4,6,7"
+  ],
+  "blockedOn": null,
+  "nextStep": "verification-before-completion 收口；浏览器上传路径需架构师点一次",
+  "updatedAt": "2026-09-11"
+}

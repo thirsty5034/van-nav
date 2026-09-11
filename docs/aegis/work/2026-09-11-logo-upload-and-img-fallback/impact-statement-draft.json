@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "affectedLayers": [
+    "handler",
+    "service",
+    "ui"
+  ],
+  "owners": [
+    "service/image.go",
+    "service/tools.go"
+  ],
+  "invariants": [
+    "handler 不导入 database",
+    "公开 GET /api/img 不出网"
+  ],
+  "compatBoundary": "http(s) logo、favicon API、相对路径、导入导出保持；缺 url 仍 400",
+  "nonGoals": [
+    "搜索引擎/站点 logo 上传",
+    "multipart 新接口或磁盘 logos",
+    "SVG 上传或公开代理任意 URL"
+  ]
+}
