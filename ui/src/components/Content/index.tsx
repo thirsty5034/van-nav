@@ -14,7 +14,7 @@ import { generateSearchEngineCard } from "../../utils/serachEngine";
 import { toggleJumpTarget, syncJumpTargetFromServer } from "../../utils/setting";
 import { useTranslation } from "../../i18n";
 import { batchGetTotalScores } from "../../utils/clickTracker";
-import { getSearchRelevanceScore } from "../../utils/searchScore";
+import { buildSearchOrderedList } from "../../utils/searchOrder";
 
 // 系统内置工具名称翻译映射（仅限前端硬编码的系统工具，不翻译用户数据）
 const systemToolTranslations: Record<string, Record<string, string>> = {
@@ -318,29 +318,22 @@ const Content = (props: any) => {
     return q;
   }, []);
 
-  // 与 filteredData 搜索分支同构：用当前 q 同步挑出首条可打开结果
+  // 与 filteredData 搜索分支同构（共用 buildSearchOrderedList）：取首条可打开结果
   // 注意：搜索引擎卡片依赖异步 generateSearchEngineCard，Enter 瞬时可能尚未就绪；
-  // 此时优先打开工具匹配；若工具无匹配则退回 filteredDataRef 中已有引擎卡。
+  // 工具无命中时仅回退 filteredDataRef 中的引擎卡（id 段 8800880000+），
+  // 并把 query 参数重写为当前词；不再兜底任意 cards[0]，
+  // 杜绝把「上一轮搜索/非搜索态」的无关工具当作回车目标。
   const pickFirstMatchUrl = useCallback((q: string): string | null => {
     if (!q) return null;
     const tools: any[] = dataRef.current?.tools || [];
-    let best: any = null;
-    let bestScore = 0;
-    for (const item of tools) {
-      const score = getSearchRelevanceScore(item, q);
-      if (score > bestScore) {
-        bestScore = score;
-        best = item;
-      }
-    }
-    if (best?.url) return best.url;
+    const sortByClicks = dataRef.current?.siteConfig?.sortByClicks;
+    const ordered = buildSearchOrderedList(tools, q, sortByClicks);
+    if (ordered[0]?.url) return ordered[0].url;
 
-    // 工具无命中：若当前 ref 里已有基于同一/旧 query 的引擎卡，用其首张兜底
-    // （引擎卡 id 段 8800880000+）；flush 后 effect 会很快用正确汉字重建
+    // 工具无命中：仅回退引擎卡，query 重写为当前 q
     const cards = filteredDataRef.current || [];
     for (const c of cards) {
       if (c?.url && typeof c.id === 'number' && c.id >= 8800880000) {
-        // 若 url 里仍是旧 query，尽量用当前 q 替换常见 query 参数
         try {
           const u = new URL(c.url);
           if (u.searchParams.has('wd')) u.searchParams.set('wd', q);
@@ -352,8 +345,6 @@ const Content = (props: any) => {
         }
       }
     }
-    // 最后：若 filteredDataRef 有任意可打开项（含上一轮引擎卡）
-    if (cards[0]?.url) return cards[0].url;
     return null;
   }, []);
 
@@ -421,27 +412,11 @@ const Content = (props: any) => {
 
     const sortByClicks = data?.siteConfig?.sortByClicks;
 
-    // 2. 搜索状态：Schwartzian Transform 一体化链路
+    // 2. 搜索状态：统一排序 owner（与 Enter / Ctrl+N 打开选择共用同一规则，
+    //    保证「回车打开的」就是「页面显示的第一张」）
     if (searchString !== '') {
-      // O(N)：一次 map 完成拼音匹配 + 得分缓存，严格 N 次 getSearchRelevanceScore 调用
-      const scoredList = categoryFiltered
-        .map((item: any) => ({ item, relevanceScore: getSearchRelevanceScore(item, searchString) }))
-        .filter((node: any) => node.relevanceScore > 0);
-
-      // O(N log N)：纯数字标量比对，零拼音开销
-      if (sortByClicks) {
-        // P2: 一次性批量计算点击分，避免 sort 中 N·log(N) 次 localStorage 读取
-        const scoreMap = batchGetTotalScores(scoredList.map((n: any) => n.item));
-        scoredList.sort((a: any, b: any) => {
-          if (a.relevanceScore !== b.relevanceScore) {
-            return b.relevanceScore - a.relevanceScore;
-          }
-          return (scoreMap.get(b.item.id) || 0) - (scoreMap.get(a.item.id) || 0);
-        });
-      }
-
-      // 还原为原生数据结构供渲染
-      return [...scoredList.map((node: any) => node.item), ...searchEngineCards];
+      const orderedTools = buildSearchOrderedList(categoryFiltered, searchString, sortByClicks);
+      return [...orderedTools, ...searchEngineCards];
     }
 
     // 3. 非搜索 + 全部工具 + 智能排序开启 → 按综合得分
@@ -612,17 +587,13 @@ const Content = (props: any) => {
       const q = flushSearch(valRef.current);
       if (!q) return;
       ev.preventDefault();
-      // 同步重建与 filteredData 搜索分支一致的列表（不含异步引擎卡，引擎卡仍读 ref）
+      // 同步重建与 filteredData 搜索分支一致的列表（共用统一排序；引擎卡仍读 ref）
       const tools: any[] = dataRef.current?.tools || [];
-      const scored = tools
-        .map((item: any) => ({ item, relevanceScore: getSearchRelevanceScore(item, q) }))
-        .filter((node: any) => node.relevanceScore > 0)
-        .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
-        .map((node: any) => node.item);
+      const ordered = buildSearchOrderedList(tools, q, dataRef.current?.siteConfig?.sortByClicks);
       const engineCards = (filteredDataRef.current || []).filter(
         (c: any) => typeof c?.id === 'number' && c.id >= 8800880000
       );
-      const cards = [...scored, ...engineCards];
+      const cards = [...ordered, ...engineCards];
       const index = Number(ev.key) - 1;
       if (index >= 0 && index < cards.length && cards[index]?.url) {
         window.open(cards[index].url, "_blank");
