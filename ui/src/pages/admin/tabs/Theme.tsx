@@ -982,8 +982,20 @@ export const Theme: React.FC<ThemeProps> = () => {
           const res = await fetchResetTheme();
           if (res?.success) {
             message.success("已重置为默认主题");
+            // 站点图标一并恢复系统默认（清空后由后端回退 favicon.ico / logo192.png / logo512.png）
+            try {
+              await fetchUpdateSetting({
+                ...(store?.setting ?? {}),
+                favicon: "",
+                logo192: "",
+                logo512: "",
+              });
+            } catch (iconErr: any) {
+              console.error("重置站点图标失败:", iconErr);
+            }
             clearThemeVars();
             loadThemeConfig();
+            reload();
           } else {
             message.error(res?.errorMessage || "重置失败");
           }
@@ -992,7 +1004,7 @@ export const Theme: React.FC<ThemeProps> = () => {
         }
       },
     });
-  }, [loadThemeConfig]);
+  }, [loadThemeConfig, store, reload]);
 
   // 应用预设主题（仅填充表单，不写入数据库）
   const handleApplyPreset = useCallback((presetName: string) => {
