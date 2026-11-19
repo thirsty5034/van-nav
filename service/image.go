@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -11,6 +12,55 @@ import (
 	"github.com/mereith/nav/types"
 	"github.com/mereith/nav/utils"
 )
+
+// data:URI 图片白名单：站点图标（favicon/logo）允许位图 + ico；背景图仅允许位图
+var (
+	webIconImageMIMEs = map[string]bool{"image/png": true, "image/jpeg": true, "image/jpg": true, "image/webp": true, "image/x-icon": true, "image/vnd.microsoft.icon": true}
+	bitmapImageMIMEs  = map[string]bool{"image/png": true, "image/jpeg": true, "image/jpg": true, "image/webp": true}
+)
+
+// ValidateDataURLImage 校验 data:URI 图片：MIME 白名单、解码后大小上限、魔数一致性。
+// 空值或非 data: 协议直接放行（历史 URL / 站内文件名兼容，由调用方决定是否另行限制）。
+func ValidateDataURLImage(field, value, formatsHint string, maxKB int, allowed map[string]bool) error {
+	if value == "" || !strings.HasPrefix(value, "data:") {
+		return nil
+	}
+	if !strings.HasPrefix(value, "data:image/") {
+		return fmt.Errorf("%s 仅支持图片 data:URI（%s）", field, formatsHint)
+	}
+	header, payload, ok := strings.Cut(value[len("data:"):], ",")
+	if !ok || payload == "" {
+		return fmt.Errorf("%s 图片数据为空", field)
+	}
+	mime := strings.TrimSpace(strings.Split(header, ";")[0])
+	if !allowed[mime] {
+		return fmt.Errorf("%s 仅支持 %s 格式", field, formatsHint)
+	}
+	raw, err := base64.StdEncoding.DecodeString(payload)
+	if err != nil {
+		return fmt.Errorf("%s 图片数据解码失败", field)
+	}
+	if len(raw) > maxKB*1024 {
+		return fmt.Errorf("%s 大小不能超过 %dKB", field, maxKB)
+	}
+	got := utils.DetectImageMIME(raw)
+	if got == "" {
+		return fmt.Errorf("%s 不是有效图片", field)
+	}
+	if mime == "image/jpg" {
+		mime = "image/jpeg"
+	}
+	if mime == "image/vnd.microsoft.icon" {
+		mime = "image/x-icon"
+	}
+	if got == "image/x-icon" && mime == "image/x-icon" {
+		return nil
+	}
+	if got != mime {
+		return fmt.Errorf("%s 声明类型与图片内容不一致", field)
+	}
+	return nil
+}
 
 func getIcon(url string) string {
 	logger.LogInfo("getIcon: %s", url)

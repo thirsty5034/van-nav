@@ -318,6 +318,67 @@ const colorToHex = (color: any, defaultVal: string): string => {
   return defaultVal;
 };
 
+// ===== px 数值与表单数字互转 =====
+// 控件一律只填数字，单位 px 由系统拼接，用户不可输入单位
+const pxToNum = (v: any): any => {
+  if (v === undefined || v === null || v === "") return v;
+  if (typeof v === "number") return v;
+  const s = String(v).trim();
+  if (s === "") return "";
+  const m = s.match(/^(-?\d+(?:\.\d+)?)\s*px$/i);
+  if (m) return parseFloat(m[1]);
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : v;
+};
+const numToPx = (v: any, def: string): string => {
+  if (v === undefined || v === null || v === "") return def;
+  if (typeof v === "number") return Number.isFinite(v) ? `${v}px` : def;
+  const s = String(v).trim();
+  if (s === "") return def;
+  if (/px$/i.test(s)) return s;
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? `${n}px` : def;
+};
+const numToPxOrEmpty = (v: any): string => {
+  if (v === undefined || v === null || v === "") return "";
+  if (typeof v === "number") return Number.isFinite(v) ? `${v}px` : "";
+  const s = String(v).trim();
+  if (s === "") return "";
+  if (/px$/i.test(s)) return s;
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? `${n}px` : "";
+};
+// 后端返回的 px 字符串归一化为数字，供 InputNumber 展示；"transparent" 顶栏背景交由开关表达
+const normalizeThemeFormValues = (d: any) => {
+  if (!d) return d;
+  if (d.layout) {
+    d.layout.cardBorderRadius = pxToNum(d.layout.cardBorderRadius);
+    d.layout.cardPadding = pxToNum(d.layout.cardPadding);
+    d.layout.cardGap = pxToNum(d.layout.cardGap);
+  }
+  if (d.typography) {
+    d.typography.titleFontSize = pxToNum(d.typography.titleFontSize);
+    d.typography.descFontSize = pxToNum(d.typography.descFontSize);
+  }
+  if (d.font) d.font.baseFontSize = pxToNum(d.font.baseFontSize);
+  if (d.topbar) {
+    if (d.topbar.background === "transparent") d.topbar.background = "";
+    d.topbar.height = pxToNum(d.topbar.height);
+  }
+  if (d.cardExtra) {
+    d.cardExtra.logoSize = pxToNum(d.cardExtra.logoSize);
+    d.cardExtra.logoRadius = pxToNum(d.cardExtra.logoRadius);
+    d.cardExtra.height = pxToNum(d.cardExtra.height);
+  }
+  if (d.linkBtn) d.linkBtn.buttonRadius = pxToNum(d.linkBtn.buttonRadius);
+  if (d.search) {
+    d.search.height = pxToNum(d.search.height);
+    d.search.radius = pxToNum(d.search.radius);
+  }
+  if (d.tag) d.tag.radius = pxToNum(d.tag.radius);
+  return d;
+};
+
 // 由表单值构建提交配置（保存 / 存为方案 共用同一转换）
 const buildConfigFromValues = (values: any) => ({
   ...values,
@@ -330,12 +391,16 @@ const buildConfigFromValues = (values: any) => ({
     border: colorToHex(values.colors?.border, "#d9d9d9"),
   },
   layout: {
-    cardBorderRadius: values.layout?.cardBorderRadius || "8px",
+    cardBorderRadius: numToPx(values.layout?.cardBorderRadius, "8px"),
     cardShadow: values.layout?.cardShadow || "0 1px 2px rgba(0,0,0,0.03), 0 1px 6px rgba(0,0,0,0.02)",
-    cardPadding: values.layout?.cardPadding || "16px",
-    cardGap: values.layout?.cardGap || "16px",
+    cardPadding: numToPx(values.layout?.cardPadding, "16px"),
+    cardGap: numToPx(values.layout?.cardGap, "16px"),
   },
-  typography: values.typography || {},
+  typography: {
+    titleFontSize: numToPx(values.typography?.titleFontSize, "15px"),
+    titleFontWeight: values.typography?.titleFontWeight || "600",
+    descFontSize: numToPx(values.typography?.descFontSize, "13px"),
+  },
   customCSS: values.customCSS || "",
   nightMode: {
     mode: values.nightMode?.mode || "system",
@@ -355,14 +420,14 @@ const buildConfigFromValues = (values: any) => ({
   },
   font: {
     family: values.font?.family || "",
-    baseFontSize: values.font?.baseFontSize || "14px",
+    baseFontSize: numToPx(values.font?.baseFontSize, "14px"),
   },
   radius: { style: values.radius?.style || "small" },
   topbar: {
     background: values.topbar?.transparent ? "transparent" : colorToHex(values.topbar?.background, ""),
     textColor: colorToHex(values.topbar?.textColor, ""),
     blur: !!values.topbar?.blur,
-    height: values.topbar?.height || "",
+    height: numToPxOrEmpty(values.topbar?.height),
   },
   pageBg: {
     gradientTo: colorToHex(values.pageBg?.gradientTo, ""),
@@ -370,12 +435,12 @@ const buildConfigFromValues = (values: any) => ({
     dimOpacity: values.pageBg?.dim ? "0.35" : "",
   },
   cardExtra: {
-    logoRadius: values.cardExtra?.logoRadius || "",
-    logoSize: values.cardExtra?.logoSize || "",
+    logoRadius: numToPxOrEmpty(values.cardExtra?.logoRadius),
+    logoSize: numToPxOrEmpty(values.cardExtra?.logoSize),
     titleColor: colorToHex(values.cardExtra?.titleColor, ""),
     hoverLift: values.cardExtra?.hoverLift !== false,
     outline: !!values.cardExtra?.outline,
-    height: values.cardExtra?.height || "",
+    height: numToPxOrEmpty(values.cardExtra?.height),
     showLogo: values.cardExtra?.showLogo !== false,
     showTitle: values.cardExtra?.showTitle !== false,
     showDesc: values.cardExtra?.showDesc !== false,
@@ -384,7 +449,7 @@ const buildConfigFromValues = (values: any) => ({
   },
   linkBtn: {
     linkColor: colorToHex(values.linkBtn?.linkColor, ""),
-    buttonRadius: values.linkBtn?.buttonRadius || "",
+    buttonRadius: numToPxOrEmpty(values.linkBtn?.buttonRadius),
   },
   footer: {
     textColor: colorToHex(values.footer?.textColor, ""),
@@ -396,8 +461,8 @@ const buildConfigFromValues = (values: any) => ({
     position: values.search?.position || "center",
     width: values.search?.width || "60%",
     vertical: values.search?.vertical || "top",
-    height: values.search?.height || "40px",
-    radius: values.search?.radius || "8px",
+    height: numToPx(values.search?.height, "40px"),
+    radius: numToPx(values.search?.radius, "8px"),
     transparent: !!values.search?.transparent,
     textColor: colorToHex(values.search?.textColor, ""),
     placeholderColor: colorToHex(values.search?.placeholderColor, ""),
@@ -410,7 +475,7 @@ const buildConfigFromValues = (values: any) => ({
     bg: colorToHex(values.tag?.bg, ""),
     activeBg: colorToHex(values.tag?.activeBg, ""),
     textColor: colorToHex(values.tag?.textColor, ""),
-    radius: values.tag?.radius || "",
+    radius: numToPxOrEmpty(values.tag?.radius),
   },
 });
 
@@ -653,7 +718,7 @@ export const Theme: React.FC<ThemeProps> = () => {
           if (typeof data.nightMode.start === "string") data.nightMode.start = dayjs(data.nightMode.start, "HH:mm");
           if (typeof data.nightMode.end === "string") data.nightMode.end = dayjs(data.nightMode.end, "HH:mm");
         }
-        form.setFieldsValue(data);
+        form.setFieldsValue(normalizeThemeFormValues(data));
       }
     } catch (err) {
       console.error("加载主题配置失败:", err);
@@ -872,7 +937,8 @@ export const Theme: React.FC<ThemeProps> = () => {
   const handleApplyPreset = useCallback((presetName: string) => {
     const preset = presetThemes[presetName];
     if (preset) {
-      form.setFieldsValue(preset.config);
+      // 深拷贝后再归一化，避免污染预设常量；预设里的 px 字符串转为数字供 InputNumber 展示
+      form.setFieldsValue(normalizeThemeFormValues(JSON.parse(JSON.stringify(preset.config))));
       message.info(`已应用「${preset.name}」预设主题，请点击「保存配置」生效`);
       syncPreview();
     }
@@ -896,28 +962,28 @@ export const Theme: React.FC<ThemeProps> = () => {
                 border: "#d9d9d9",
               },
               layout: {
-                cardBorderRadius: "8px",
+                cardBorderRadius: 8,
                 cardShadow: "0 1px 2px rgba(0,0,0,0.03), 0 1px 6px rgba(0,0,0,0.02)",
-                cardPadding: "16px",
-                cardGap: "16px",
+                cardPadding: 16,
+                cardGap: 16,
               },
               typography: {
-                titleFontSize: "15px",
+                titleFontSize: 15,
                 titleFontWeight: "600",
-                descFontSize: "13px",
+                descFontSize: 13,
               },
               customCSS: "",
               nightMode: { mode: "system", start: null, end: null },
               darkTheme: { customCSS: "" },
-              font: { family: "", baseFontSize: "14px" },
+              font: { family: "", baseFontSize: 14 },
               radius: { style: "small" },
-              topbar: { transparent: false, blur: false, height: "" },
+              topbar: { transparent: false, blur: false, height: null },
               pageBg: { image: "", dimOpacity: "", dim: false },
-              cardExtra: { hoverLift: true, outline: false, height: "", showLogo: true, showTitle: true, showDesc: true, showTag: true, bgOpacity: "" },
-              linkBtn: { buttonRadius: "" },
+              cardExtra: { hoverLift: true, outline: false, height: null, showLogo: true, showTitle: true, showDesc: true, showTag: true, bgOpacity: "" },
+              linkBtn: { buttonRadius: null },
               footer: { hidden: false, text: "" },
-              search: { hidden: false, position: "center", width: "60%", vertical: "top", height: "40px", radius: "8px", transparent: false, textColor: "", placeholderColor: "", placeholder: "" },
-              tag: { hidden: false, position: "top", transparent: false, bg: "", activeBg: "", textColor: "", radius: "" },
+              search: { hidden: false, position: "center", width: "60%", vertical: "top", height: 40, radius: 8, transparent: false, textColor: "", placeholderColor: "", placeholder: "" },
+              tag: { hidden: false, position: "top", transparent: false, bg: "", activeBg: "", textColor: "", radius: null },
               siteSetting: { title: "", favicon: "", logo192: "", logo512: "", govRecord: "", jumpTargetBlank: 0, pcColumnCount: 3, showSearchEngine: true },
               siteConfig: { noImageMode: false, compactMode: false, sortByClicks: false },
             }}
@@ -977,110 +1043,191 @@ export const Theme: React.FC<ThemeProps> = () => {
                   ),
                 },
                 {
-                  key: "brand",
-                  label: "品牌与图标",
-                  children: (
-                    <Card title="品牌与图标" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>站点名称与图标（原「站点设置」项，存储位置不变，随「保存配置」一并提交）</span>}>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-                        <Form.Item name={["siteSetting", "title"]} label="站点标题" required rules={[{ required: true, message: "请填写站点标题" }]}>
-                          <Input placeholder="站点标题" />
-                        </Form.Item>
-                        <Form.Item name={["siteSetting", "favicon"]} label="Favicon" rules={[{ required: true, message: "请上传或填写 Favicon" }]}>
-                          <Upload accept="image/png,image/jpeg,image/webp,image/x-icon" maxCount={1} showUploadList={false}
-                            beforeUpload={(file) => {
-                              const ok = ["image/png", "image/jpeg", "image/webp", "image/x-icon"].includes(file.type);
-                              if (!ok) { message.error("仅支持 png/jpeg/webp/ico"); return false; }
-                              if (file.size > 200 * 1024) { message.error("图片不能超过 200KB"); return false; }
-                              const reader = new FileReader();
-                              reader.onload = () => form.setFieldsValue({ siteSetting: { favicon: reader.result } });
-                              reader.readAsDataURL(file);
-                              return false;
-                            }}>
-                            <Button icon={<UploadOutlined />}>上传图片</Button>
-                          </Upload>
-                        </Form.Item>
-                        <Form.Item name={["siteSetting", "logo192"]} label="Logo 192" rules={[{ required: true, message: "请上传或填写 192px Logo" }]}>
-                          <Upload accept="image/png,image/jpeg,image/webp" maxCount={1} showUploadList={false}
-                            beforeUpload={(file) => {
-                              const ok = ["image/png", "image/jpeg", "image/webp"].includes(file.type);
-                              if (!ok) { message.error("仅支持 png/jpeg/webp"); return false; }
-                              if (file.size > 200 * 1024) { message.error("图片不能超过 200KB"); return false; }
-                              const reader = new FileReader();
-                              reader.onload = () => form.setFieldsValue({ siteSetting: { logo192: reader.result } });
-                              reader.readAsDataURL(file);
-                              return false;
-                            }}>
-                            <Button icon={<UploadOutlined />}>上传图片</Button>
-                          </Upload>
-                        </Form.Item>
-                        <Form.Item name={["siteSetting", "logo512"]} label="Logo 512" rules={[{ required: true, message: "请上传或填写 512px Logo" }]}>
-                          <Upload accept="image/png,image/jpeg,image/webp" maxCount={1} showUploadList={false}
-                            beforeUpload={(file) => {
-                              const ok = ["image/png", "image/jpeg", "image/webp"].includes(file.type);
-                              if (!ok) { message.error("仅支持 png/jpeg/webp"); return false; }
-                              if (file.size > 200 * 1024) { message.error("图片不能超过 200KB"); return false; }
-                              const reader = new FileReader();
-                              reader.onload = () => form.setFieldsValue({ siteSetting: { logo512: reader.result } });
-                              reader.readAsDataURL(file);
-                              return false;
-                            }}>
-                            <Button icon={<UploadOutlined />}>上传图片</Button>
-                          </Upload>
-                        </Form.Item>
-                      </div>
-                    </Card>
-                  ),
-                },
-                {
-                  key: "pagebg",
-                  label: "页面背景",
+                  key: "basics",
+                  label: "基础设置",
                   children: (
                     <>
+                      {/* 品牌与图标 */}
+                      <Card title="品牌与图标" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>站点名称与图标，点击上传图片（png/jpeg/webp/ico，≤200KB），前后端均做校验</span>}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                          <Form.Item name={["siteSetting", "title"]} label="站点标题" required rules={[{ required: true, message: "请填写站点标题" }]}>
+                            <Input placeholder="站点标题" />
+                          </Form.Item>
+                          <Form.Item name={["siteSetting", "favicon"]} label="Favicon" rules={[{ required: true, message: "请上传或填写 Favicon" }]}>
+                            <Upload accept="image/png,image/jpeg,image/webp,image/x-icon" maxCount={1} showUploadList={false}
+                              beforeUpload={(file) => {
+                                const ok = ["image/png", "image/jpeg", "image/webp", "image/x-icon"].includes(file.type);
+                                if (!ok) { message.error("仅支持 png/jpeg/webp/ico"); return false; }
+                                if (file.size > 200 * 1024) { message.error("图片不能超过 200KB"); return false; }
+                                const reader = new FileReader();
+                                reader.onload = () => form.setFieldsValue({ siteSetting: { favicon: reader.result } });
+                                reader.readAsDataURL(file);
+                                return false;
+                              }}>
+                              <Button icon={<UploadOutlined />}>上传图片</Button>
+                            </Upload>
+                          </Form.Item>
+                          <Form.Item name={["siteSetting", "logo192"]} label="Logo 192" rules={[{ required: true, message: "请上传或填写 192px Logo" }]}>
+                            <Upload accept="image/png,image/jpeg,image/webp" maxCount={1} showUploadList={false}
+                              beforeUpload={(file) => {
+                                const ok = ["image/png", "image/jpeg", "image/webp"].includes(file.type);
+                                if (!ok) { message.error("仅支持 png/jpeg/webp"); return false; }
+                                if (file.size > 200 * 1024) { message.error("图片不能超过 200KB"); return false; }
+                                const reader = new FileReader();
+                                reader.onload = () => form.setFieldsValue({ siteSetting: { logo192: reader.result } });
+                                reader.readAsDataURL(file);
+                                return false;
+                              }}>
+                              <Button icon={<UploadOutlined />}>上传图片</Button>
+                            </Upload>
+                          </Form.Item>
+                          <Form.Item name={["siteSetting", "logo512"]} label="Logo 512" rules={[{ required: true, message: "请上传或填写 512px Logo" }]}>
+                            <Upload accept="image/png,image/jpeg,image/webp" maxCount={1} showUploadList={false}
+                              beforeUpload={(file) => {
+                                const ok = ["image/png", "image/jpeg", "image/webp"].includes(file.type);
+                                if (!ok) { message.error("仅支持 png/jpeg/webp"); return false; }
+                                if (file.size > 200 * 1024) { message.error("图片不能超过 200KB"); return false; }
+                                const reader = new FileReader();
+                                reader.onload = () => form.setFieldsValue({ siteSetting: { logo512: reader.result } });
+                                reader.readAsDataURL(file);
+                                return false;
+                              }}>
+                              <Button icon={<UploadOutlined />}>上传图片</Button>
+                            </Upload>
+                          </Form.Item>
+                        </div>
+                      </Card>
                       {/* 页面背景 */}
-          <Card title="页面背景" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["colors", "bgBase"]} label="背景颜色">
-                <ColorPicker showText />
-              </Form.Item>
-              <Form.Item name={["pageBg", "gradientTo"]} label="渐变第二色" tooltip="留空为纯色；填写后与背景颜色形成纵向渐变">
-                <ColorPicker showText allowClear />
-              </Form.Item>
-              <Form.Item name={["pageBg", "dim"]} label="背景压暗" valuePropName="checked" tooltip="开启后背景图上叠加一层暗色遮罩，让文字更清晰">
-                <Switch />
-              </Form.Item>
-              <Form.Item
-                name={["pageBg", "image"]}
-                label="背景图片"
-                tooltip="上传后以 data: 协议存储；也可填写站内路径（如 /bg.webp），禁止外链"
-              >
-                <Upload
-                  accept="image/png,image/jpeg,image/webp"
-                  maxCount={1}
-                  showUploadList={false}
-                  beforeUpload={(file) => {
-                    const ok = ["image/png", "image/jpeg", "image/webp"].includes(file.type);
-                    if (!ok) {
-                      message.error("仅支持 png/jpeg/webp 图片");
-                      return false;
-                    }
-                    if (file.size > 500 * 1024) {
-                      message.error("背景图片不能超过 500KB");
-                      return false;
-                    }
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                      form.setFieldsValue({ pageBg: { image: reader.result } });
-                      syncPreview();
-                    };
-                    reader.readAsDataURL(file);
-                    return false;
-                  }}
-                >
-                  <Button icon={<UploadOutlined />}>上传背景图片</Button>
-                </Upload>
-              </Form.Item>
-            </div>
-          </Card>
+                      <Card title="页面背景" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>背景相关颜色集中在此，图片上传后以 data: 协议存储（png/jpeg/webp，≤500KB）</span>}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                          <Form.Item name={["colors", "bgBase"]} label="背景颜色">
+                            <ColorPicker showText />
+                          </Form.Item>
+                          <Form.Item name={["pageBg", "gradientTo"]} label="渐变第二色" tooltip="留空为纯色；选择后与背景颜色形成纵向渐变">
+                            <ColorPicker showText allowClear />
+                          </Form.Item>
+                          <Form.Item name={["pageBg", "dim"]} label="背景压暗" valuePropName="checked" tooltip="开启后背景图上叠加一层暗色遮罩，让文字更清晰">
+                            <Switch />
+                          </Form.Item>
+                          <Form.Item
+                            name={["pageBg", "image"]}
+                            label="背景图片"
+                            tooltip="点击上传图片（png/jpeg/webp，≤500KB）；也可填写站内路径（如 /bg.webp），禁止外链"
+                          >
+                            <Upload
+                              accept="image/png,image/jpeg,image/webp"
+                              maxCount={1}
+                              showUploadList={false}
+                              beforeUpload={(file) => {
+                                const ok = ["image/png", "image/jpeg", "image/webp"].includes(file.type);
+                                if (!ok) {
+                                  message.error("仅支持 png/jpeg/webp 图片");
+                                  return false;
+                                }
+                                if (file.size > 500 * 1024) {
+                                  message.error("背景图片不能超过 500KB");
+                                  return false;
+                                }
+                                const reader = new FileReader();
+                                reader.onload = () => {
+                                  form.setFieldsValue({ pageBg: { image: reader.result } });
+                                  syncPreview();
+                                };
+                                reader.readAsDataURL(file);
+                                return false;
+                              }}
+                            >
+                              <Button icon={<UploadOutlined />}>上传背景图片</Button>
+                            </Upload>
+                          </Form.Item>
+                        </div>
+                      </Card>
+                      {/* 字体与文字颜色 */}
+                      <Card title="字体" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>字号只填数字，单位 px 由系统处理</span>}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                          <Form.Item name={["font", "family"]} label="字体" tooltip="选择浏览器可用字体，留空使用系统默认字体栈">
+                            <Select
+                              allowClear
+                              placeholder="系统默认"
+                              options={[
+                                { label: "系统默认", value: "" },
+                                { label: "微软雅黑", value: "'Microsoft YaHei', sans-serif" },
+                                { label: "苹方", value: "'PingFang SC', sans-serif" },
+                                { label: "思源黑体", value: "'Source Han Sans SC', 'Noto Sans SC', sans-serif" },
+                                { label: "宋体", value: "SimSun, serif" },
+                                { label: "Georgia（衬线）", value: "Georgia, serif" },
+                                { label: "Arial", value: "Arial, Helvetica, sans-serif" },
+                                { label: "等宽字体", value: "'Courier New', monospace" },
+                              ]}
+                            />
+                          </Form.Item>
+                          <Form.Item name={["font", "baseFontSize"]} label="正文字号" tooltip="只填数字，单位 px">
+                            <InputNumber min={10} max={32} addonAfter="px" style={{ width: '100%' }} placeholder="14" />
+                          </Form.Item>
+                          <Form.Item name={["colors", "textPrimary"]} label="正文字色" tooltip="留空使用默认">
+                            <ColorPicker showText allowClear />
+                          </Form.Item>
+                          <Form.Item name={["colors", "textSecondary"]} label="次级文字色" tooltip="留空使用默认">
+                            <ColorPicker showText allowClear />
+                          </Form.Item>
+                        </div>
+                      </Card>
+                      <Card title="标题与简介文字" style={{ marginBottom: 24 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+                          <Form.Item name={["typography", "titleFontSize"]} label="标题字号" tooltip="只填数字，单位 px">
+                            <InputNumber min={10} max={40} addonAfter="px" style={{ width: '100%' }} placeholder="16" />
+                          </Form.Item>
+                          <Form.Item name={["typography", "titleFontWeight"]} label="标题字重">
+                            <Select
+                              options={[
+                                { label: "正常 (400)", value: "400" },
+                                { label: "中等 (500)", value: "500" },
+                                { label: "半粗 (600)", value: "600" },
+                                { label: "粗体 (700)", value: "700" },
+                              ]}
+                            />
+                          </Form.Item>
+                          <Form.Item name={["typography", "descFontSize"]} label="简介字号" tooltip="只填数字，单位 px">
+                            <InputNumber min={10} max={30} addonAfter="px" style={{ width: '100%' }} placeholder="13" />
+                          </Form.Item>
+                        </div>
+                      </Card>
+                      {/* 链接与打开方式 */}
+                      <Card title="链接与打开方式" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>工具卡片即链接；此处控制链接颜色与点击打开方式</span>}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                          <Form.Item name={["colors", "primary"]} label="主题色" tooltip="影响链接、选中标签等强调元素的颜色">
+                            <ColorPicker showText />
+                          </Form.Item>
+                          <Form.Item name={["linkBtn", "linkColor"]} label="链接颜色" tooltip="留空跟随主题色">
+                            <ColorPicker showText allowClear />
+                          </Form.Item>
+                          <Form.Item name={["siteSetting", "jumpTargetBlank"]} label="链接打开方式" tooltip="点击工具卡片时，在新窗口还是当前页打开">
+                            <Select
+                              options={[
+                                { label: "当前窗口打开", value: 0 },
+                                { label: "新窗口打开", value: 1 },
+                              ]}
+                            />
+                          </Form.Item>
+                        </div>
+                      </Card>
+                      {/* 页脚与备案 */}
+                      <Card title="页脚与备案" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>备案文案为原「站点设置」项，存储位置不变，随「保存配置」一并提交</span>}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                          <Form.Item name={["footer", "text"]} label="页脚文案" tooltip="留空则显示默认版权信息">
+                            <Input placeholder="留空使用默认文案" />
+                          </Form.Item>
+                          <Form.Item name={["footer", "textColor"]} label="页脚文字颜色" tooltip="留空跟随次级文字色">
+                            <ColorPicker showText allowClear />
+                          </Form.Item>
+                          <Form.Item name={["footer", "hidden"]} label="隐藏页脚" valuePropName="checked">
+                            <Switch />
+                          </Form.Item>
+                          <Form.Item name={["siteSetting", "govRecord"]} label="备案文案">
+                            <Input placeholder="如：京ICP备XXXXXXXX号" />
+                          </Form.Item>
+                        </div>
+                      </Card>
                     </>
                   ),
                 },
@@ -1123,11 +1270,11 @@ export const Theme: React.FC<ThemeProps> = () => {
                   <Radio.Button value="bottom">页面底部</Radio.Button>
                 </Radio.Group>
               </Form.Item>
-              <Form.Item name={["search", "height"]} label="高矮（高度）" tooltip="单位 px，填写数字即可">
-                <Input addonAfter="px" placeholder="40" />
+              <Form.Item name={["search", "height"]} label="高矮（高度）" tooltip="只填数字，单位 px">
+                <InputNumber min={10} max={200} addonAfter="px" style={{ width: '100%' }} placeholder="40" />
               </Form.Item>
-              <Form.Item name={["search", "radius"]} label="形状：方形↔圆形" tooltip="单位 px，填写数字即可">
-                <Input addonAfter="px" placeholder="8" />
+              <Form.Item name={["search", "radius"]} label="形状：方形↔圆形" tooltip="只填数字，0 为方形，数值越大越圆润，单位 px">
+                <InputNumber min={0} max={100} addonAfter="px" style={{ width: '100%' }} placeholder="8" />
               </Form.Item>
               <Form.Item name={["search", "transparent"]} label="透明无框" valuePropName="checked" tooltip="开启后搜索框无底色无边框，融入背景">
                 <Switch />
@@ -1153,13 +1300,13 @@ export const Theme: React.FC<ThemeProps> = () => {
                 <Checkbox>背景模糊</Checkbox>
               </Form.Item>
               <Form.Item name={["topbar", "background"]} label="顶栏背景色" tooltip="留空跟随页面背景；勾选顶栏融入背景时忽略此项">
-                <Input placeholder="#1677ff / 留空跟随页面" />
+                <ColorPicker showText allowClear />
               </Form.Item>
-              <Form.Item name={["topbar", "textColor"]} label="顶栏文字色">
-                <Input placeholder="留空跟随文字主色" />
+              <Form.Item name={["topbar", "textColor"]} label="顶栏文字色" tooltip="留空跟随文字主色">
+                <ColorPicker showText allowClear />
               </Form.Item>
-              <Form.Item name={["topbar", "height"]} label="顶栏最小高度">
-                <Input placeholder="默认（由内容撑开）" />
+              <Form.Item name={["topbar", "height"]} label="顶栏最小高度" tooltip="只填数字，留空由内容撑开，单位 px">
+                <InputNumber min={20} max={200} addonAfter="px" style={{ width: '100%' }} placeholder="默认" />
               </Form.Item>
             </div>
           </Card>
@@ -1197,8 +1344,8 @@ export const Theme: React.FC<ThemeProps> = () => {
                         <Form.Item name={["tag", "textColor"]} label="文字颜色" tooltip="留空跟随正文字色">
                           <ColorPicker showText allowClear />
                         </Form.Item>
-                        <Form.Item name={["tag", "radius"]} label="形状：方形↔圆形" tooltip="单位 px，填写数字即可">
-                          <Input addonAfter="px" placeholder="8" />
+                        <Form.Item name={["tag", "radius"]} label="形状：方形↔圆形" tooltip="只填数字，0 为方形，数值越大越圆润，单位 px">
+                          <InputNumber min={0} max={100} addonAfter="px" style={{ width: '100%' }} placeholder="8" />
                         </Form.Item>
                       </div>
                     </Card>
@@ -1223,16 +1370,22 @@ export const Theme: React.FC<ThemeProps> = () => {
               </Form.Item>
             </div>
           </Card>{/* 布局配置 */}
-          <Card title="布局调整" style={{ marginBottom: 24 }}>
+          <Card title="布局调整" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>尺寸只填数字，单位 px 由系统处理</span>}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-              <Form.Item name={["layout", "cardBorderRadius"]} label="形状：方形↔圆形" tooltip="卡片四角的圆角程度，0 为方形；单位 px，填写数字即可">
-                <Input addonAfter="px" placeholder="8" />
+              <Form.Item name={["colors", "bgCard"]} label="卡片背景色">
+                <ColorPicker showText />
               </Form.Item>
-              <Form.Item name={["layout", "cardPadding"]} label="卡片内部留白" tooltip="单位 px，填写数字即可">
-                <Input addonAfter="px" placeholder="16" />
+              <Form.Item name={["colors", "border"]} label="边框颜色" tooltip="卡片描边、搜索框与标签边框；留空使用默认">
+                <ColorPicker showText allowClear />
               </Form.Item>
-              <Form.Item name={["layout", "cardGap"]} label="卡片之间的距离" tooltip="单位 px，填写数字即可">
-                <Input addonAfter="px" placeholder="12" />
+              <Form.Item name={["layout", "cardBorderRadius"]} label="形状：方形↔圆形" tooltip="卡片四角的圆角程度，0 为方形，数值越大越圆，单位 px">
+                <InputNumber min={0} max={50} addonAfter="px" style={{ width: '100%' }} placeholder="8" />
+              </Form.Item>
+              <Form.Item name={["layout", "cardPadding"]} label="卡片内部留白" tooltip="只填数字，单位 px">
+                <InputNumber min={0} max={100} addonAfter="px" style={{ width: '100%' }} placeholder="16" />
+              </Form.Item>
+              <Form.Item name={["layout", "cardGap"]} label="卡片之间的距离" tooltip="只填数字，单位 px">
+                <InputNumber min={0} max={100} addonAfter="px" style={{ width: '100%' }} placeholder="16" />
               </Form.Item>
             </div>
             <Form.Item name={["layout", "cardShadow"]} label="卡片阴影">
@@ -1248,11 +1401,11 @@ export const Theme: React.FC<ThemeProps> = () => {
           </Card>{/* 卡片细项 */}
           <Card title="卡片细项" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["cardExtra", "logoSize"]} label="Logo 大小" tooltip="单位 px，填写数字即可">
-                <Input addonAfter="px" placeholder="32" />
+              <Form.Item name={["cardExtra", "logoSize"]} label="Logo 大小" tooltip="只填数字，单位 px">
+                <InputNumber min={8} max={128} addonAfter="px" style={{ width: '100%' }} placeholder="32" />
               </Form.Item>
-              <Form.Item name={["cardExtra", "logoRadius"]} label="Logo 形状：方正↔圆润" tooltip="0 为方形，50% 为圆形；填写数字（px 或 %）">
-                <Input placeholder="0 / 8 / 50%" />
+              <Form.Item name={["cardExtra", "logoRadius"]} label="Logo 形状：方正↔圆润" tooltip="只填数字，0 为方形，数值越大越圆润，超过 Logo 半径即为圆形，单位 px">
+                <InputNumber min={0} max={50} addonAfter="px" style={{ width: '100%' }} placeholder="0" />
               </Form.Item>
               <Form.Item name={["cardExtra", "titleColor"]} label="标题颜色" tooltip="留空跟随正文字色">
                 <ColorPicker showText allowClear />
@@ -1267,8 +1420,8 @@ export const Theme: React.FC<ThemeProps> = () => {
           </Card>{/* 卡片内容与尺寸 */}
           <Card title="卡片内容与尺寸" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["cardExtra", "height"]} label="卡片高度" tooltip="留空则按内容自适应，如 120px">
-                <Input placeholder="留空自适应" />
+              <Form.Item name={["cardExtra", "height"]} label="卡片高度" tooltip="只填数字，留空则按内容自适应，单位 px">
+                <InputNumber min={0} max={2000} addonAfter="px" style={{ width: '100%' }} placeholder="留空自适应" />
               </Form.Item>
               <Form.Item name={["cardExtra", "bgOpacity"]} label="底色透明度" tooltip="0 全透明 - 1 不透明；留空为不透明">
                 <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} placeholder="0 - 1" />
@@ -1303,132 +1456,6 @@ export const Theme: React.FC<ThemeProps> = () => {
               </Form.Item>
               <Form.Item name={["siteConfig", "sortByClicks"]} label="按访问次数排序" valuePropName="checked" tooltip="开启后工具按访问次数排序（手动排序优先）">
                 <Switch />
-              </Form.Item>
-            </div>
-          </Card>
-                    </>
-                  ),
-                },
-                {
-                  key: "link",
-                  label: "链接与打开方式",
-                  children: (
-                    <>
-                      {/* 链接与按钮 */}
-          <Card title="链接与按钮" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["colors", "primary"]} label="主题色" tooltip="影响链接、选中标签、按钮等强调色">
-                <ColorPicker showText />
-              </Form.Item>
-              <Form.Item name={["colors", "border"]} label="边框颜色" tooltip="留空使用默认">
-                <ColorPicker showText allowClear />
-              </Form.Item>
-              <Form.Item name={["linkBtn", "linkColor"]} label="链接颜色" tooltip="留空跟随主题色">
-                <ColorPicker showText allowClear />
-              </Form.Item>
-              <Form.Item name={["linkBtn", "buttonRadius"]} label="按钮形状：方形↔圆形" tooltip="单位 px，填写数字即可">
-                <Input addonAfter="px" placeholder="4" />
-              </Form.Item>
-            </div>
-          </Card>
-                      {/* 打开方式（自 settings 迁入） */}
-          <Card title="打开方式" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>原「站点设置」项，存储位置不变，随「保存配置」一并提交</span>}>
-            <div style={{ maxWidth: 360 }}>
-              <Form.Item name={["siteSetting", "jumpTargetBlank"]} label="链接打开方式" tooltip="点击工具卡片时，在新窗口还是当前页打开">
-                <Select
-                  options={[
-                    { label: "当前窗口打开", value: 0 },
-                    { label: "新窗口打开", value: 1 },
-                  ]}
-                />
-              </Form.Item>
-            </div>
-          </Card>
-                    </>
-                  ),
-                },
-                {
-                  key: "footer",
-                  label: "页脚与备案",
-                  children: (
-                    <>
-                      {/* 页脚 */}
-          <Card title="页脚 / 备案区" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["footer", "text"]} label="页脚文案" tooltip="留空则显示默认版权信息">
-                <Input placeholder="留空使用默认文案" />
-              </Form.Item>
-              <Form.Item name={["footer", "textColor"]} label="文字颜色" tooltip="留空跟随次级文字色">
-                <ColorPicker showText allowClear />
-              </Form.Item>
-              <Form.Item name={["footer", "hidden"]} label="隐藏页脚" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </div>
-          </Card>
-                      {/* 备案文案（自 settings 迁入） */}
-          <Card title="备案信息" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>原「站点设置」项，存储位置不变，随「保存配置」一并提交</span>}>
-            <Form.Item name={["siteSetting", "govRecord"]} label="备案文案">
-              <Input placeholder="如：京ICP备XXXXXXXX号" />
-            </Form.Item>
-          </Card>
-                    </>
-                  ),
-                },
-                {
-                  key: "font",
-                  label: "字体",
-                  children: (
-                    <>
-                      {/* 字体与圆角 */}
-          <Card title="字体与圆角" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["font", "family"]} label="字体" tooltip="留空使用系统默认字体栈">
-                <Select
-                  allowClear
-                  placeholder="系统默认"
-                  options={[
-                    { label: "系统默认", value: "" },
-                    { label: "微软雅黑", value: "'Microsoft YaHei', sans-serif" },
-                    { label: "苹方", value: "'PingFang SC', sans-serif" },
-                    { label: "思源黑体", value: "'Source Han Sans SC', 'Noto Sans SC', sans-serif" },
-                    { label: "宋体", value: "SimSun, serif" },
-                    { label: "Georgia（衬线）", value: "Georgia, serif" },
-                    { label: "Arial", value: "Arial, Helvetica, sans-serif" },
-                    { label: "等宽字体", value: "'Courier New', monospace" },
-                  ]}
-                />
-              </Form.Item>
-              <Form.Item name={["font", "baseFontSize"]} label="正文字号" tooltip="单位 px，填写数字即可">
-                <Input addonAfter="px" placeholder="14" />
-              </Form.Item>
-              <Form.Item name={["colors", "textPrimary"]} label="正文字色" tooltip="留空使用默认">
-                <ColorPicker showText allowClear />
-              </Form.Item>
-              <Form.Item name={["colors", "textSecondary"]} label="次级文字色" tooltip="留空使用默认">
-                <ColorPicker showText allowClear />
-              </Form.Item>
-
-            </div>
-          </Card>
-                      {/* 标题与简介文字 */}
-          <Card title="标题与简介文字" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-              <Form.Item name={["typography", "titleFontSize"]} label="标题字号" tooltip="单位 px，填写数字即可">
-                <Input addonAfter="px" placeholder="16" />
-              </Form.Item>
-              <Form.Item name={["typography", "titleFontWeight"]} label="标题字重">
-                <Select
-                  options={[
-                    { label: "正常 (400)", value: "400" },
-                    { label: "中等 (500)", value: "500" },
-                    { label: "半粗 (600)", value: "600" },
-                    { label: "粗体 (700)", value: "700" },
-                  ]}
-                />
-              </Form.Item>
-              <Form.Item name={["typography", "descFontSize"]} label="简介字号" tooltip="单位 px，填写数字即可">
-                <Input addonAfter="px" placeholder="13" />
               </Form.Item>
             </div>
           </Card>
@@ -1477,7 +1504,7 @@ export const Theme: React.FC<ThemeProps> = () => {
                         ))}
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-                        <Form.Item name={["darkTheme", "colors", "primary"]} label="主色调">
+                        <Form.Item name={["darkTheme", "colors", "primary"]} label="强调色">
                           <ColorPicker showText />
                         </Form.Item>
                         <Form.Item name={["darkTheme", "colors", "bgBase"]} label="页面背景色">
@@ -1486,10 +1513,10 @@ export const Theme: React.FC<ThemeProps> = () => {
                         <Form.Item name={["darkTheme", "colors", "bgCard"]} label="卡片背景色">
                           <ColorPicker showText />
                         </Form.Item>
-                        <Form.Item name={["darkTheme", "colors", "textPrimary"]} label="主文字颜色">
+                        <Form.Item name={["darkTheme", "colors", "textPrimary"]} label="正文字色">
                           <ColorPicker showText />
                         </Form.Item>
-                        <Form.Item name={["darkTheme", "colors", "textSecondary"]} label="次文字颜色">
+                        <Form.Item name={["darkTheme", "colors", "textSecondary"]} label="次级文字色">
                           <ColorPicker showText />
                         </Form.Item>
                         <Form.Item name={["darkTheme", "colors", "border"]} label="边框颜色">

@@ -240,9 +240,14 @@ func validateThemeConfig(config *types.ThemeConfig) error {
 	if err := validateColorField(config.PageBg.GradientTo, "背景渐变色"); err != nil {
 		return err
 	}
-	if config.PageBg.Image != "" && !strings.HasPrefix(config.PageBg.Image, "data:") &&
-		!strings.HasPrefix(config.PageBg.Image, "/") && !strings.HasPrefix(config.PageBg.Image, "images/") {
-		return fmt.Errorf("背景图仅支持 data: 协议或站内路径")
+	if config.PageBg.Image != "" && !strings.HasPrefix(config.PageBg.Image, "/") &&
+		!strings.HasPrefix(config.PageBg.Image, "images/") {
+		if !strings.HasPrefix(config.PageBg.Image, "data:") {
+			return fmt.Errorf("背景图仅支持 data: 协议或站内路径")
+		}
+		if err := ValidateDataURLImage("背景图片", config.PageBg.Image, "png/jpeg/webp", 500, bitmapImageMIMEs); err != nil {
+			return err
+		}
 	}
 	if config.PageBg.DimOpacity != "" {
 		dimPattern := regexp.MustCompile(`^(0(\.\d+)?|1)$`)

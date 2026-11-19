@@ -238,7 +238,7 @@ func ExecuteBackup() error {
 	if config.WebDAVURL == "" || config.Username == "" || config.Password == "" {
 		errMsg := "WebDAV 配置不完整"
 		updateBackupStatus("", errMsg)
-		return fmt.Errorf(errMsg)
+		return fmt.Errorf("%s", errMsg)
 	}
 
 	// 创建 WebDAV 客户端
