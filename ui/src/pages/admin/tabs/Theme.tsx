@@ -13,7 +13,7 @@ import {
   fetchExportTheme,
   fetchImportTheme,
 } from "../../../utils/api";
-import { applyPreferredTheme, applyThemeVars, clearThemeVars, type ThemeConfig } from "../../../utils/theme";
+import { applyPreferredTheme, applyThemeVars, applyVarsToStyle, clearThemeVars, computeThemeVars, type ThemeConfig } from "../../../utils/theme";
 import { BgColorsOutlined, ReloadOutlined, SaveOutlined } from "@ant-design/icons";
 import { useTranslation } from '../../../i18n';
 
@@ -383,6 +383,152 @@ const buildConfigFromValues = (values: any) => ({
   },
 });
 
+// ===== 实时预览（沙箱模拟页） =====
+// 用 srcDoc 渲染一个与首页同构的静态模拟页（无脚本）：
+// - 表单变化 → computeThemeVars → 变量写入模拟页 body → 样式实时联动
+// - 自定义 CSS 注入模拟页 <style>，其选择器（body/.topbar/.card-box/.record-wraper 等）
+//   在模拟页中均有对应元素，因此自定义 CSS 也能实时预览
+const buildPreviewDoc = () => {
+  const cardsHtml = "<a class=\"card-box\" data-catelog=\"\u6280\u672f\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%2324292f%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3EG%3C/text%3E%3C/svg%3E\" alt=\"GitHub\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">GitHub</span><span class=\"card-tag\">\u6280\u672f</span></div>\n          <div class=\"card-right-bottom\">\u5168\u7403\u5f00\u6e90\u4ee3\u7801\u6258\u7ba1\u53ca\u5f00\u53d1\u8005\u534f\u4f5c\u5e73\u53f0</div>\n        </div>\n      </a>\n<a class=\"card-box\" data-catelog=\"\u641c\u7d22\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%232932e1%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3E%E7%99%BE%3C/text%3E%3C/svg%3E\" alt=\"\u767e\u5ea6\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">\u767e\u5ea6</span><span class=\"card-tag\">\u641c\u7d22</span></div>\n          <div class=\"card-right-bottom\">\u5168\u7403\u9886\u5148\u7684\u4e2d\u6587\u641c\u7d22\u5f15\u64ce</div>\n        </div>\n      </a>\n<a class=\"card-box\" data-catelog=\"\u793e\u533a\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%23fb7299%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3E%E5%93%94%3C/text%3E%3C/svg%3E\" alt=\"\u54d4\u54e9\u54d4\u54e9\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">\u54d4\u54e9\u54d4\u54e9</span><span class=\"card-tag\">\u793e\u533a</span></div>\n          <div class=\"card-right-bottom\">\u56fd\u5185\u77e5\u540d\u7684\u5e74\u8f7b\u4e16\u4ee3\u6f6e\u6d41\u6587\u5316\u793e\u533a</div>\n        </div>\n      </a>\n<a class=\"card-box\" data-catelog=\"\u5de5\u5177\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%230f2b46%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3ED%3C/text%3E%3C/svg%3E\" alt=\"DeepL \u7ffb\u8bd1\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">DeepL \u7ffb\u8bd1</span><span class=\"card-tag\">\u5de5\u5177</span></div>\n          <div class=\"card-right-bottom\">\u7ed3\u5408AI\u6df1\u5ea6\u5b66\u4e60\u7684\u9ad8\u51c6\u786e\u7387\u7ffb\u8bd1\u5de5\u5177</div>\n        </div>\n      </a>\n<a class=\"card-box\" data-catelog=\"\u793e\u533a\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%230084ff%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3E%E7%9F%A5%3C/text%3E%3C/svg%3E\" alt=\"\u77e5\u4e4e\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">\u77e5\u4e4e</span><span class=\"card-tag\">\u793e\u533a</span></div>\n          <div class=\"card-right-bottom\">\u4e2d\u6587\u4e92\u8054\u7f51\u9ad8\u8d28\u91cf\u95ee\u7b54\u793e\u533a</div>\n        </div>\n      </a>\n<a class=\"card-box\" data-catelog=\"\u5de5\u5177\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%23111111%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3EN%3C/text%3E%3C/svg%3E\" alt=\"Notion\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">Notion</span><span class=\"card-tag\">\u5de5\u5177</span></div>\n          <div class=\"card-right-bottom\">\u5168\u80fd\u578b\u4e00\u4f53\u5316\u77e5\u8bc6\u5e93\u4e0e\u534f\u4f5c\u5de5\u5177</div>\n        </div>\n      </a>";
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding-bottom: 46px;
+  font-family: var(--van-nav-font-family);
+  font-size: var(--van-nav-base-font-size);
+  background: var(--van-nav-page-bg);
+  background-attachment: fixed;
+  color: var(--van-nav-text-primary);
+}
+.topbar { padding: 16px 0 8px; background: var(--van-nav-topbar-bg); color: var(--van-nav-topbar-text); backdrop-filter: var(--van-nav-topbar-filter); -webkit-backdrop-filter: var(--van-nav-topbar-filter); }
+.search-wraper { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+.search-wraper input {
+  width: 100%; height: 40px; padding: 0 14px;
+  border: 1px solid var(--van-nav-border); border-radius: var(--van-nav-radius-global);
+  background: color-mix(in srgb, var(--van-nav-bg-card) 55%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  color: var(--van-nav-text-primary); outline: none;
+}
+.tag-row { max-width: 640px; margin: 12px auto 18px; padding: 0 16px; }
+.select-tag { display: inline-block; padding: 3px 12px; margin: 0 6px 6px 0; border: 1px solid var(--van-nav-border); border-radius: var(--van-nav-radius-global); color: var(--van-nav-text-secondary); font-size: 12px; }
+.select-tag-active { border-color: var(--van-nav-primary); color: var(--van-nav-primary); }
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: var(--van-nav-card-gap); padding: 0 18px; }
+.card-box { display: flex; gap: 10px; align-items: center; background: var(--van-nav-bg-card); border-radius: var(--van-nav-card-radius); box-shadow: var(--van-nav-card-shadow); padding: var(--van-nav-card-padding); transition: transform 0.2s ease; }
+.card-box:hover { transform: translateY(-2px); }
+body.card-hover-off .card-box:hover { transform: none; }
+body.card-outline-mode .card-box { box-shadow: none; border: 1px solid var(--van-nav-border); }
+.card-left { flex-shrink: 0; }
+.card-left img { width: var(--van-nav-card-logo-size, 32px); height: var(--van-nav-card-logo-size, 32px); border-radius: var(--van-nav-card-logo-radius, 0px); display: block; }
+.card-right { flex: 1; overflow: hidden; }
+.card-right-title { color: var(--van-nav-card-title-color, var(--van-nav-text-primary)); font-size: var(--van-nav-title-size, 16px); font-weight: var(--van-nav-title-weight, 600); }
+.card-tag { font-size: 11px; color: var(--van-nav-text-secondary); border: 1px solid var(--van-nav-border); border-radius: 4px; padding: 1px 6px; margin-left: 6px; }
+.card-right-bottom { color: var(--van-nav-text-secondary); font-size: var(--van-nav-desc-size, 13px); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.record-wraper { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; padding: 10px 0; background: var(--van-nav-bg-base); color: var(--van-nav-footer-text, var(--van-nav-text-secondary)); font-size: 12px; }
+body.footer-hidden .record-wraper { display: none; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="search-wraper"><input id="search-bar" placeholder="按任意键直接开始搜索" /></div>
+    <div class="tag-row">
+      <span class="select-tag select-tag-active">全部工具</span>
+      <span class="select-tag">常用</span>
+      <span class="select-tag">技术</span>
+      <span class="select-tag">社区</span>
+    </div>
+  </div>
+  <div class="cards"><a class="card-box" data-catelog="技术">
+        <div class="card-left"><img src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%2324292f%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3EG%3C/text%3E%3C/svg%3E" alt="GitHub" /></div>
+        <div class="card-right">
+          <div class="card-right-top"><span class="card-right-title">GitHub</span><span class="card-tag">技术</span></div>
+          <div class="card-right-bottom">全球开源代码托管及开发者协作平台</div>
+        </div>
+      </a>
+<a class="card-box" data-catelog="搜索">
+        <div class="card-left"><img src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%232932e1%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3E%E7%99%BE%3C/text%3E%3C/svg%3E" alt="百度" /></div>
+        <div class="card-right">
+          <div class="card-right-top"><span class="card-right-title">百度</span><span class="card-tag">搜索</span></div>
+          <div class="card-right-bottom">全球领先的中文搜索引擎</div>
+        </div>
+      </a>
+<a class="card-box" data-catelog="社区">
+        <div class="card-left"><img src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%23fb7299%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3E%E5%93%94%3C/text%3E%3C/svg%3E" alt="哔哩哔哩" /></div>
+        <div class="card-right">
+          <div class="card-right-top"><span class="card-right-title">哔哩哔哩</span><span class="card-tag">社区</span></div>
+          <div class="card-right-bottom">国内知名的年轻世代潮流文化社区</div>
+        </div>
+      </a>
+<a class="card-box" data-catelog="工具">
+        <div class="card-left"><img src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%230f2b46%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3ED%3C/text%3E%3C/svg%3E" alt="DeepL 翻译" /></div>
+        <div class="card-right">
+          <div class="card-right-top"><span class="card-right-title">DeepL 翻译</span><span class="card-tag">工具</span></div>
+          <div class="card-right-bottom">结合AI深度学习的高准确率翻译工具</div>
+        </div>
+      </a>
+<a class="card-box" data-catelog="社区">
+        <div class="card-left"><img src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%230084ff%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3E%E7%9F%A5%3C/text%3E%3C/svg%3E" alt="知乎" /></div>
+        <div class="card-right">
+          <div class="card-right-top"><span class="card-right-title">知乎</span><span class="card-tag">社区</span></div>
+          <div class="card-right-bottom">中文互联网高质量问答社区</div>
+        </div>
+      </a>
+<a class="card-box" data-catelog="工具">
+        <div class="card-left"><img src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%23111111%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3EN%3C/text%3E%3C/svg%3E" alt="Notion" /></div>
+        <div class="card-right">
+          <div class="card-right-top"><span class="card-right-title">Notion</span><span class="card-tag">工具</span></div>
+          <div class="card-right-bottom">全能型一体化知识库与协作工具</div>
+        </div>
+      </a></div>
+  <div class="record-wraper">© 主题实时预览 · 备案信息示例</div>
+</body>
+</html>`;
+};
+
+const ThemePreview: React.FC<{ form: any; isDark: boolean }> = ({ form, isDark }) => {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const values = Form.useWatch([], form);
+  const [srcDoc] = useState(() => buildPreviewDoc());
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        const doc = iframeRef.current?.contentDocument;
+        if (!doc || !doc.body || !values) return;
+        const config = buildConfigFromValues(values);
+        const vars = computeThemeVars(config, isDark);
+        applyVarsToStyle(doc.body.style, vars);
+        let styleEl = doc.getElementById("preview-custom-css") as HTMLStyleElement | null;
+        if (!styleEl) {
+          styleEl = doc.createElement("style");
+          styleEl.id = "preview-custom-css";
+          doc.head.appendChild(styleEl);
+        }
+        styleEl.textContent = vars["--van-nav-custom-css"] || "";
+        doc.body.classList.toggle("card-hover-off", config.cardExtra?.hoverLift === false);
+        doc.body.classList.toggle("card-outline-mode", config.cardExtra?.outline === true);
+        doc.body.classList.toggle("footer-hidden", config.footer?.hidden === true);
+      } catch {
+        // iframe 文档未就绪时忽略本次同步
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [values, isDark]);
+
+  return (
+    <iframe
+      ref={iframeRef}
+      srcDoc={srcDoc}
+      sandbox="allow-same-origin"
+      title="主题实时预览"
+      style={{ width: "100%", height: 520, border: "1px solid #d9d9d9", borderRadius: 8, background: "#fff" }}
+    />
+  );
+};
+
 export interface ThemeProps {}
 
 // 夜间配色预设（仅填充 darkTheme 表单，不写入数据库）
@@ -620,8 +766,9 @@ export const Theme: React.FC<ThemeProps> = () => {
   }, [form]);
 
   return (
-    <div className="overflow-auto">
-      <Spin spinning={loading}>
+    <div className="theme-page-layout">
+      <div className="theme-page-main">
+        <Spin spinning={loading}>
           <Form
             form={form}
             layout="vertical"
@@ -1098,7 +1245,16 @@ key: "presets",
             </Space>
           </Form.Item>
           </Form>
-      </Spin>
+        </Spin>
+      </div>
+      <div className="theme-page-preview">
+          <Card
+            title="实时预览"
+            extra={<span style={{ fontSize: 12, color: '#999' }}>随左侧配置实时变化，自定义 CSS 同步生效</span>}
+          >
+            <ThemePreview form={form} isDark={isDark} />
+          </Card>
+        </div>
     </div>
   );
 };
