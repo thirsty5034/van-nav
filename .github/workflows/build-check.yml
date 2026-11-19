@@ -35,7 +35,7 @@ jobs:
           mkdir -p public
           cd ui
           echo "Node: $(node -v) pnpm: $(pnpm -v) CI=$CI"
-          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm install --frozen-lockfile --ignore-scripts --config.confirmModulesPurge=false
           pnpm build
           cd ..
           cp -r ui/build/* public/

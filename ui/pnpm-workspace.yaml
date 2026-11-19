@@ -1,4 +1,7 @@
 # pnpm 11+：overrides / allowBuilds 只能写在本文件，package.json 的 "pnpm" 字段会被忽略
+# minimumReleaseAge=0：关闭 pnpm 11 对"发布未满 24h 新版本"的供应链缓释拦截，
+# 否则刚发布的安全修复版本（如 source-map-js@1.2.4）会在 CI frozen 校验时被拒
+minimumReleaseAge: 0
 allowBuilds:
   core-js: true
   core-js-pure: true
@@ -7,30 +10,44 @@ overrides:
   # --- 既有（master 已落地；部分覆盖 CRA 传递依赖，保留以维持 lock 一致）---
   nth-check: ">=2.0.1"
   # 统一抬到安全线；禁止再钉 @6: 6.0.2（会压过本条，导致 #53/#97 残留）
-  serialize-javascript: ">=7.0.5"
+  serialize-javascript: ">=7.1.4"
   underscore: ">=1.13.8"
-  tmp: ">=0.2.6"
-  webpack-dev-server: ">=5.2.4"
+  tmp: ">=0.2.7"
+  webpack-dev-server: ">=5.2.7"
   uuid: ">=11.1.1"
   "@tootallnate/once": ">=2.0.1"
-  postcss: ">=8.5.18"
+  postcss: ">=8.5.33"
 
-  # --- Plan A 低风险必做（原 package.json pnpm.overrides，pnpm 11 已不读该字段）---
+  # --- 分版本限定：跨 major 的包按消费方 major 分别钉，避免全局抬升压坏老链 ---
   form-data@3: 3.0.5
   form-data@4: 4.0.6
-  launch-editor: 2.14.1
-  brace-expansion@2: 2.1.2
-  brace-expansion@5: 5.0.8
-  js-yaml@3: 3.15.0
-  js-yaml@4: 4.3.0
-  fast-uri: 3.1.4
-  shell-quote: 1.9.0
-  websocket-driver: 0.7.5
-  http-proxy-middleware@2: 2.0.10
-  body-parser@1: 1.20.6
-  serialize-javascript@7: 7.0.5
-  svgo@2: 2.8.3
-
-  # --- Plan B：补齐 CRA 传递依赖安全线（Dependabot open #134/#53/#97/#141）---
   brace-expansion@1: 1.1.16
-  svgo@1: 2.8.3
+  brace-expansion@2: 2.1.2
+  brace-expansion@5: 5.0.13
+  js-yaml@3: 3.15.2
+  js-yaml@4: 4.3.2
+  svgo@1: 2.8.4
+  svgo@2: 2.8.4
+  http-proxy-middleware@2: 2.0.10
+  body-parser@1: 1.20.9
+  "tailwindcss>postcss-selector-parser": "6.1.5"
+
+  # --- 2026-11-20 依赖漏洞清零批次（pnpm audit 71 项归零所需）---
+  fast-uri: 3.1.9
+  nanoid: 3.3.20
+  postcss-selector-parser: 7.2.1
+  browserslist: 4.29.6
+  qs: 6.17.1
+  colord: 2.14.0
+  baseline-browser-mapping: 2.11.38
+  webpack-dev-middleware: 8.6.1
+  source-map-js: 1.2.4
+  proxy-addr: 2.0.8
+  compression: 1.8.2
+  shell-quote: 1.12.0
+  follow-redirects: 1.16.3
+  launch-editor: 2.14.2
+  axios: 1.20.0
+  react-router: 7.18.2
+  glob: 14.0.2
+  minimatch: 11.0.1
