@@ -1259,20 +1259,7 @@ export const Theme: React.FC<ThemeProps> = () => {
                           )}
                         </div>
                       </Card>
-                      {/* 全局文字（字体已下放到各区域页签单独设置） */}
-                      <Card title="全局文字" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>全局正文颜色与字号；各区域（搜索框/标签/卡片/页脚）可单独设置字体与字号</span>}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-                          <Form.Item name={["font", "baseFontSize"]} label="正文字号" tooltip="只填数字，单位 px">
-                            <InputNumber min={10} max={32} addonAfter="px" style={{ width: '100%' }} placeholder="14" />
-                          </Form.Item>
-                          <Form.Item name={["colors", "textPrimary"]} label="正文字色" tooltip="留空使用默认">
-                            <ColorPicker showText allowClear />
-                          </Form.Item>
-                          <Form.Item name={["colors", "textSecondary"]} label="次级文字色" tooltip="留空使用默认">
-                            <ColorPicker showText allowClear />
-                          </Form.Item>
-                        </div>
-                      </Card>
+
                       {/* 打开方式 */}
                       <Card title="打开方式" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>点击工具卡片时的打开行为</span>}>
                         <div style={{ maxWidth: 360 }}>
