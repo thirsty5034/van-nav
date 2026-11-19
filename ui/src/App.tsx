@@ -1,8 +1,9 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { App as AntApp } from 'antd';
+import { App as AntApp, ConfigProvider } from 'antd';
 import { Spin } from 'antd';
 import { applyPreferredTheme, applyThemeVars, startThemeWatcher } from './utils/theme';
+import { useAntdTheme } from './hooks/useAntdTheme';
 import { fetchGetTheme } from './utils/api';
 import { I18nProvider } from './i18n';
 import './App.css';
@@ -33,6 +34,8 @@ const ThemeSync = () => {
       if (res?.success && res?.data && Object.keys(res.data).length > 0) {
         applyThemeVars(res.data);
         applyPreferredTheme('theme-config');
+        // 通知 antd 主题映射刷新（夜间算法/配色 token）
+        window.dispatchEvent(new CustomEvent('theme-config-loaded'));
       }
     } catch (err) {
       console.error('加载主题配置失败:', err);
@@ -124,7 +127,10 @@ const LoadingFallback = () => {
 };
 
 function App() {
+  // antd 组件主题：跟随夜间模式与主题管理配色（darkAlgorithm/token 贯通）
+  const { antdTheme } = useAntdTheme();
   return (
+    <ConfigProvider theme={antdTheme}>
     <I18nProvider>
     <AntApp>
       <Router>
@@ -148,6 +154,7 @@ function App() {
       </Router>
     </AntApp>
     </I18nProvider>
+    </ConfigProvider>
   );
 }
 

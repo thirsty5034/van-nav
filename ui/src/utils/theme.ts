@@ -94,6 +94,8 @@ export const startThemeWatcher = () => {
   const tick = () => {
     if (initTheme() !== 'auto') return; // 手动偏好时不自动干预
     applyPreferredTheme('watcher');
+    // 通知订阅方（antd 主题、全局监听）自动策略已重算
+    broadcastThemeChange();
   };
   try {
     const mql = window.matchMedia('(prefers-color-scheme: dark)');
