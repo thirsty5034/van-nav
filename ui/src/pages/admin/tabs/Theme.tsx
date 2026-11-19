@@ -13,7 +13,7 @@ import {
   fetchExportTheme,
   fetchImportTheme,
 } from "../../../utils/api";
-import { applyPreferredTheme, applyThemeVars, applyVarsToStyle, clearThemeVars, computeThemeVars, type ThemeConfig } from "../../../utils/theme";
+import { applyPreferredTheme, applyThemeVars, clearThemeVars, type ThemeConfig } from "../../../utils/theme";
 import { BgColorsOutlined, ReloadOutlined, SaveOutlined } from "@ant-design/icons";
 import { useTranslation } from '../../../i18n';
 
@@ -383,70 +383,6 @@ const buildConfigFromValues = (values: any) => ({
   },
 });
 
-// 实时预览：静态模拟首页结构（无 iframe、无脚本），避免焦点抢占与页面跳动
-const ThemePreview: React.FC<{ form: any }> = ({ form }) => {
-  const mockRef = useRef<HTMLDivElement>(null);
-  const values = Form.useWatch([], form);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      try {
-        const el = mockRef.current;
-        if (!el || !values) return;
-        const config = buildConfigFromValues(values);
-        const dark = document.body.classList.contains("dark-mode");
-        const vars = computeThemeVars(config, dark);
-        applyVarsToStyle(el.style, vars);
-        let styleEl = el.querySelector("#van-nav-preview-css") as HTMLStyleElement | null;
-        if (!styleEl) {
-          styleEl = document.createElement("style");
-          styleEl.id = "van-nav-preview-css";
-          el.appendChild(styleEl);
-        }
-        styleEl.textContent = vars["--van-nav-custom-css"] || "";
-        el.classList.toggle("card-outline-mode", config.cardExtra?.outline === true);
-        el.classList.toggle("footer-hidden", config.footer?.hidden === true);
-      } catch {
-        // 忽略预览同步异常
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [values]);
-
-  const sampleCards = [
-    { name: "GitHub", desc: "全球开源代码托管及开发者协作平台", color: "#24292f" },
-    { name: "百度", desc: "全球领先的中文搜索引擎", color: "#2932e1" },
-    { name: "哔哩哔哩", desc: "国内知名的年轻世代潮流文化社区", color: "#fb7299" },
-    { name: "DeepL 翻译", desc: "结合AI深度学习的高准确率翻译工具", color: "#0f2b46" },
-    { name: "知乎", desc: "中文互联网高质量问答社区", color: "#0084ff" },
-    { name: "Notion", desc: "全能型一体化知识库与协作工具", color: "#111111" },
-  ];
-
-  return (
-    <div ref={mockRef} className="theme-preview-mock">
-      <div className="tp-search">按任意键直接开始搜索</div>
-      <div className="tp-tags">
-        <span className="tp-tag tp-tag-active">全部工具</span>
-        <span className="tp-tag">常用</span>
-        <span className="tp-tag">技术</span>
-        <span className="tp-tag">社区</span>
-      </div>
-      <div className="tp-cards">
-        {sampleCards.map((c) => (
-          <div className="tp-card" key={c.name}>
-            <div className="tp-logo" style={{ backgroundColor: c.color }}>{c.name.slice(0, 1)}</div>
-            <div>
-              <div className="tp-title">{c.name}</div>
-              <div className="tp-desc">{c.desc}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="tp-footer">© 主题预览 · 备案信息示例</div>
-    </div>
-  );
-};
-
 export interface ThemeProps {}
 
 // 夜间配色预设（仅填充 darkTheme 表单，不写入数据库）
@@ -684,9 +620,8 @@ export const Theme: React.FC<ThemeProps> = () => {
   }, [form]);
 
   return (
-    <div className="theme-page-layout">
+    <div className="overflow-auto">
       <Spin spinning={loading}>
-        <div className="theme-page-main">
           <Form
             form={form}
             layout="vertical"
@@ -1120,15 +1055,6 @@ export const Theme: React.FC<ThemeProps> = () => {
             </Space>
           </Form.Item>
           </Form>
-        </div>
-        <div className="theme-page-preview">
-          <Card
-            title="实时预览"
-            extra={<span style={{ fontSize: 12, color: '#999' }}>随当前配置实时变化</span>}
-          >
-            <ThemePreview form={form} />
-          </Card>
-        </div>
       </Spin>
     </div>
   );
