@@ -1109,7 +1109,7 @@ export const Theme: React.FC<ThemeProps> = () => {
                           <Form.Item name={["siteSetting", "title"]} label="站点标题" required rules={[{ required: true, message: "请填写站点标题" }]}>
                             <Input placeholder="站点标题" />
                           </Form.Item>
-                          <Form.Item name={["siteSetting", "favicon"]} label="Favicon" rules={[{ required: true, message: "请上传或填写 Favicon" }]}>
+                          <Form.Item name={["siteSetting", "favicon"]} label="Favicon" tooltip="站点图标；留空使用系统默认 favicon.ico。支持 png/jpeg/webp/ico，≤200KB" extra={<a onClick={() => form.setFieldsValue({ siteSetting: { favicon: "" } })}>清除并恢复系统默认</a>}>
                             <Upload accept="image/png,image/jpeg,image/webp,image/x-icon" maxCount={1} showUploadList={false}
                               beforeUpload={(file) => {
                                 const ok = ["image/png", "image/jpeg", "image/webp", "image/x-icon"].includes(file.type);
@@ -1123,7 +1123,7 @@ export const Theme: React.FC<ThemeProps> = () => {
                               <Button icon={<UploadOutlined />}>上传图片</Button>
                             </Upload>
                           </Form.Item>
-                          <Form.Item name={["siteSetting", "logo192"]} label="Logo 192" rules={[{ required: true, message: "请上传或填写 192px Logo" }]}>
+                          <Form.Item name={["siteSetting", "logo192"]} label="Logo 192" tooltip="192x192 图标，用于 PWA 可安装应用；留空使用系统默认 logo192.png。支持 png/jpeg/webp，≤200KB" extra={<a onClick={() => form.setFieldsValue({ siteSetting: { logo192: "" } })}>清除并恢复系统默认</a>}>
                             <Upload accept="image/png,image/jpeg,image/webp" maxCount={1} showUploadList={false}
                               beforeUpload={(file) => {
                                 const ok = ["image/png", "image/jpeg", "image/webp"].includes(file.type);
@@ -1137,7 +1137,7 @@ export const Theme: React.FC<ThemeProps> = () => {
                               <Button icon={<UploadOutlined />}>上传图片</Button>
                             </Upload>
                           </Form.Item>
-                          <Form.Item name={["siteSetting", "logo512"]} label="Logo 512" rules={[{ required: true, message: "请上传或填写 512px Logo" }]}>
+                          <Form.Item name={["siteSetting", "logo512"]} label="Logo 512" tooltip="512x512 图标，用于 PWA 可安装应用；留空使用系统默认 logo512.png。支持 png/jpeg/webp，≤200KB" extra={<a onClick={() => form.setFieldsValue({ siteSetting: { logo512: "" } })}>清除并恢复系统默认</a>}>
                             <Upload accept="image/png,image/jpeg,image/webp" maxCount={1} showUploadList={false}
                               beforeUpload={(file) => {
                                 const ok = ["image/png", "image/jpeg", "image/webp"].includes(file.type);

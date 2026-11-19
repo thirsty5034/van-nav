@@ -15,7 +15,21 @@ func IncrementDeploymentVersion() (string, error) {
 }
 
 func GetSetting() (types.Setting, error) {
-	return database.GetSettingRow()
+	data, err := database.GetSettingRow()
+	if err != nil {
+		return data, err
+	}
+	// 图标允许留空（非必填）：读取时回退系统默认，与前端"留空使用默认"语义一致
+	if data.Favicon == "" {
+		data.Favicon = "favicon.ico"
+	}
+	if data.Logo192 == "" {
+		data.Logo192 = "logo192.png"
+	}
+	if data.Logo512 == "" {
+		data.Logo512 = "logo512.png"
+	}
+	return data, nil
 }
 
 func UpdateSetting(data types.Setting) error {

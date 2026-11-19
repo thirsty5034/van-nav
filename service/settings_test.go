@@ -73,3 +73,28 @@ func TestLanguageWhitelistRejectsInvalid(t *testing.T) {
 	setting.Language = origLang
 	UpdateSetting(setting)
 }
+
+func TestGetSettingIconFallback(t *testing.T) {
+	database.InitDB()
+	orig, err := GetSetting()
+	if err != nil {
+		t.Fatalf("GetSetting failed: %v", err)
+	}
+	// 图标清空后保存（非必填），读取时应回退系统默认
+	setting := orig
+	setting.Favicon = ""
+	setting.Logo192 = ""
+	setting.Logo512 = ""
+	if err := UpdateSetting(setting); err != nil {
+		t.Fatalf("UpdateSetting failed: %v", err)
+	}
+	got, err := GetSetting()
+	if err != nil {
+		t.Fatalf("GetSetting failed: %v", err)
+	}
+	if got.Favicon != "favicon.ico" || got.Logo192 != "logo192.png" || got.Logo512 != "logo512.png" {
+		t.Errorf("空图标应回退系统默认, got favicon=%q logo192=%q logo512=%q", got.Favicon, got.Logo192, got.Logo512)
+	}
+	// 恢复原值，避免影响其他用例
+	_ = UpdateSetting(orig)
+}
