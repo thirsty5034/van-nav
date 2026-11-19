@@ -132,9 +132,8 @@ const Content = (props: any) => {
   const searchCfg = themeConfig?.search;
   const tagCfg = themeConfig?.tag;
   const cardCfg = themeConfig?.cardExtra;
-  const footerCfg = themeConfig?.footer;
-  // 页脚文案：主题配置的 footer.text 优先，空则回退站点设置的备案文案
-  const footerText = footerCfg?.text || data?.setting?.govRecord || '';
+  // 页脚&备案文案：统一使用站点设置里的备案文案（原主题 footer.text 已合并废弃）
+  const footerText = data?.setting?.govRecord || '';
 
   const searchHidden = searchCfg?.hidden === true;
   const tagHidden = tagCfg?.hidden === true;
@@ -149,9 +148,8 @@ const Content = (props: any) => {
 
   const searchTop = !searchHidden && !searchAtBottom;
   const tagTop = !tagHidden && !tagAtBottom && !tagSide;
-  // 搜索框插槽：水平位置（左/中/右）+ 透明无框类；宽度由 --van-nav-search-width 控制
-  const searchSlotClass = `search-slot${searchCfg?.position ? ` search-pos-${searchCfg.position}` : ''}${searchCfg?.transparent ? ' search-transparent' : ''}`;
-  const tagTransparentClass = tagCfg?.transparent ? ' tag-transparent' : '';
+  // 搜索框插槽：水平位置（左/中/右）；宽度由 --van-nav-search-width 控制，边框/底色由主题变量控制
+  const searchSlotClass = `search-slot${searchCfg?.position ? ` search-pos-${searchCfg.position}` : ''}`;
 
   const showAdmin = useMemo(() => {
     const hide = data?.setting?.hideAdmin === true;
@@ -682,14 +680,14 @@ const Content = (props: any) => {
       </Helmet>
       {(searchTop || tagTop) && (
         <div className="topbar">
-          <div className={`content${tagTransparentClass}`}>
+          <div className="content">
             {searchTop && <div className={searchSlotClass}>{searchBar}</div>}
             {tagTop && tagSelector}
           </div>
         </div>
       )}
       {!tagHidden && tagSide && (
-        <div className={`tag-rail tag-rail-${tagSide}${tagTransparentClass}`}>{tagSelector}</div>
+        <div className={`tag-rail tag-rail-${tagSide}`}>{tagSelector}</div>
       )}
       <div className={`content-wraper${tagSide ? ` tag-rail-spacing-${tagSide}` : ''}`}>
         <div className={`content cards ${data?.siteConfig?.compactMode ? 'compact-grid' : ''}`} style={gridStyle}>
@@ -697,7 +695,7 @@ const Content = (props: any) => {
         </div>
       </div>
       {(searchAtBottom || tagAtBottom) && (
-        <div className={`bottom-controls${tagTransparentClass}`}>
+        <div className="bottom-controls">
           {searchAtBottom && <div className={searchSlotClass}>{searchBar}</div>}
           {tagAtBottom && tagSelector}
         </div>

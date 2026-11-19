@@ -19,8 +19,9 @@
 .bottom-controls .search-wraper input,
 .topbar input#search-bar {
   background: var(--van-nav-search-bg, color-mix(in srgb, var(--van-nav-bg-base) 55%, transparent));
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  border-color: var(--van-nav-search-border-color, var(--van-nav-border));
+  backdrop-filter: var(--van-nav-search-filter, blur(10px));
+  -webkit-backdrop-filter: var(--van-nav-search-filter, blur(10px));
 }
 
 
@@ -775,24 +776,6 @@ body.dark-mode .content.compact-grid .card-box:hover {
   color: var(--van-nav-search-placeholder-color, revert);
 }
 
-/* 搜索框透明无框 */
-.search-slot.search-transparent input,
-.search-slot.search-transparent input#search-bar {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-.search-slot.search-transparent input:hover,
-.search-slot.search-transparent input:focus,
-.search-slot.search-transparent input:focus-visible {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  outline: none;
-}
-
 /* 底部搜索/标签区（search.vertical=bottom 或 tag.position=bottom 时渲染在卡片列表之后） */
 .bottom-controls {
   margin: 0 5vw;
@@ -819,35 +802,7 @@ body.dark-mode .tag-rail .select-tag {
   border-color: var(--van-nav-tag-active-bg, var(--van-nav-primary));
 }
 
-/* 分类标签透明无框：去底色去边框，保留选中态与 hover 描边 */
-.tag-transparent .select-tag {
-  background: transparent;
-  border-color: transparent;
-}
-.tag-transparent .select-tag:hover {
-  background: transparent;
-  border-color: var(--van-nav-primary);
-}
 
-/* 暗色下透明无框需同特异度覆盖，压过 body.dark-mode .select-tag 的底色/边框 */
-body.dark-mode .tag-transparent .select-tag {
-  background: transparent;
-  border-color: transparent;
-}
-body.dark-mode .tag-transparent .select-tag:hover {
-  background: transparent;
-  border-color: var(--van-nav-primary);
-}
-
-/* 透明无框模式下选中标签仍保留底色（与预览一致） */
-.tag-transparent .select-tag-active {
-  background-color: var(--van-nav-tag-active-bg, var(--van-nav-primary));
-  border-color: var(--van-nav-tag-active-bg, var(--van-nav-primary));
-}
-body.dark-mode .tag-transparent .select-tag-active {
-  background-color: var(--van-nav-tag-active-bg, var(--van-nav-primary));
-  border-color: var(--van-nav-tag-active-bg, var(--van-nav-primary));
-}
 
 /* 分类标签左右贴屏（fixed 侧边竖排） */
 .tag-rail {

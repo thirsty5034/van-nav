@@ -218,6 +218,7 @@ type ThemeSearchConfig struct {
 	FontFamily       string `json:"fontFamily"`       // 搜索框字体族；空=跟随全局字体
 	FontSize         string `json:"fontSize"`         // 搜索框字号，如 16px；空=默认
 	BgColor          string `json:"bgColor"`          // 搜索框背景颜色；空=跟随页面背景的半透明毛玻璃
+	BorderColor      string `json:"borderColor"`      // 搜索框边框颜色；空=跟随全局边框色
 }
 
 // 分类标签配置
@@ -231,6 +232,7 @@ type ThemeTagConfig struct {
 	Radius      string `json:"radius"`      // 圆角，如 8px
 	FontFamily  string `json:"fontFamily"`  // 标签字体族；空=跟随全局字体
 	FontSize    string `json:"fontSize"`    // 标签字号，如 13px；空=默认
+	BorderColor string `json:"borderColor"` // 标签边框颜色；空=跟随全局边框色
 }
 
 // 完整主题配置

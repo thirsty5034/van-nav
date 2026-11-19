@@ -499,6 +499,7 @@ const buildConfigFromValues = (values: any) => ({
     fontFamily: values.search?.fontFamily || "",
     fontSize: numToPx(values.search?.fontSize, "16px"),
     bgColor: colorToHex(values.search?.bgColor, ""),
+    borderColor: colorToHex(values.search?.borderColor, ""),
   },
   tag: {
     hidden: !!values.tag?.hidden,
@@ -510,6 +511,7 @@ const buildConfigFromValues = (values: any) => ({
     radius: numToPxOrEmpty(values.tag?.radius),
     fontFamily: values.tag?.fontFamily || "",
     fontSize: numToPx(values.tag?.fontSize, "13px"),
+    borderColor: colorToHex(values.tag?.borderColor, ""),
   },
 });
 
@@ -542,14 +544,13 @@ body.search-left .search-wraper { margin-left: 16px; margin-right: auto; }
 body.search-right .search-wraper { margin-left: auto; margin-right: 16px; }
 .search-wraper input {
   width: 100%; height: var(--van-nav-search-height, 40px); padding: 0 14px;
-  border: 1px solid var(--van-nav-border); border-radius: var(--van-nav-search-radius, var(--van-nav-radius-global));
+  border: 1px solid var(--van-nav-border); border-color: var(--van-nav-search-border-color, var(--van-nav-border)); border-radius: var(--van-nav-search-radius, var(--van-nav-radius-global));
   background: var(--van-nav-search-bg, color-mix(in srgb, var(--van-nav-bg-base) 55%, transparent));
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: var(--van-nav-search-filter, blur(10px)); -webkit-backdrop-filter: var(--van-nav-search-filter, blur(10px));
   color: var(--van-nav-search-text-color, var(--van-nav-text-primary)); outline: none;
   font-family: var(--van-nav-search-font-family, inherit); font-size: var(--van-nav-search-font-size, 14px);
 }
 .search-wraper input::placeholder { color: var(--van-nav-search-placeholder-color, var(--van-nav-text-secondary)); }
-body.search-transparent .search-wraper input { background: transparent; border-color: transparent; }
 body.search-hidden .search-wraper { display: none; }
 .tag-row { order: 1; max-width: 640px; margin: 12px auto 18px; padding: 0 16px; }
 body.tag-bottom .tag-row { order: 3; }
@@ -559,11 +560,8 @@ body.tag-left .tag-row, body.tag-right .tag-row { position: fixed; top: 90px; ma
 body.tag-left .tag-row { left: 0; }
 body.tag-right .tag-row { right: 0; align-items: flex-end; }
 body.tag-hidden .tag-row { display: none; }
-.select-tag { display: inline-block; padding: 3px 12px; margin: 0 6px 6px 0; border: 1px solid var(--van-nav-tag-bg, var(--van-nav-border)); border-radius: var(--van-nav-tag-radius, var(--van-nav-radius-global)); background: var(--van-nav-tag-bg, transparent); color: var(--van-nav-tag-text-color, var(--van-nav-text-secondary)); font-family: var(--van-nav-tag-font-family, inherit); font-size: var(--van-nav-tag-font-size, 12px); }
+.select-tag { display: inline-block; padding: 3px 12px; margin: 0 6px 6px 0; border: 1px solid var(--van-nav-border); border-color: var(--van-nav-tag-border-color, var(--van-nav-tag-bg, var(--van-nav-border))); border-radius: var(--van-nav-tag-radius, var(--van-nav-radius-global)); background: var(--van-nav-tag-bg, transparent); color: var(--van-nav-tag-text-color, var(--van-nav-text-secondary)); font-family: var(--van-nav-tag-font-family, inherit); font-size: var(--van-nav-tag-font-size, 12px); }
 .select-tag-active { background: var(--van-nav-tag-active-bg, var(--van-nav-primary)); border-color: var(--van-nav-tag-active-bg, var(--van-nav-primary)); color: #ffffff; }
-/* 分类标签透明无框：去底色去边框，选中态保留 */
-body.tag-transparent .select-tag { background: transparent; border-color: transparent; }
-body.tag-transparent .select-tag:hover { border-color: var(--van-nav-primary); }
 .cards { order: 2; display: grid; grid-template-columns: 1fr 1fr; gap: var(--van-nav-card-gap); padding: 0 18px; }
 .card-box { display: flex; gap: 10px; align-items: center; background: color-mix(in srgb, var(--van-nav-bg-card) calc(var(--van-nav-card-bg-opacity, 1) * 100%), transparent); border-radius: var(--van-nav-card-radius); box-shadow: var(--van-nav-card-shadow); padding: var(--van-nav-card-padding); min-height: var(--van-nav-card-height, auto); transition: transform 0.2s ease; }
 .card-box:hover { transform: translateY(-2px); }
@@ -670,6 +668,15 @@ export const Theme: React.FC<ThemeProps> = () => {
   const footerHiddenWatch = Form.useWatch(["footer", "hidden"], form);
   // 描边替代阴影：开启时显示边框颜色、隐藏卡片阴影，二者互斥
   const cardOutlineWatch = Form.useWatch(["cardExtra", "outline"], form);
+  // 卡片各部分显隐：隐藏后对应设置项一并隐藏
+  const showLogoWatch = Form.useWatch(["cardExtra", "showLogo"], form);
+  const showTitleWatch = Form.useWatch(["cardExtra", "showTitle"], form);
+  const showDescWatch = Form.useWatch(["cardExtra", "showDesc"], form);
+  const showTagWatch = Form.useWatch(["cardExtra", "showTag"], form);
+  // 站点图标当前值：驱动“清除并恢复系统默认”的状态展示
+  const faviconWatch = Form.useWatch(["siteSetting", "favicon"], form);
+  const logo192Watch = Form.useWatch(["siteSetting", "logo192"], form);
+  const logo512Watch = Form.useWatch(["siteSetting", "logo512"], form);
 
   // 把迁入的站点外观设置填充进表单（siteSetting/siteConfig 命名空间，保存时各走各的 API）
   useEffect(() => {
@@ -723,7 +730,6 @@ export const Theme: React.FC<ThemeProps> = () => {
       const searchCfg = config.search || {};
       const tagCfg = config.tag || {};
       doc.body.classList.toggle("search-hidden", searchCfg.hidden === true);
-      doc.body.classList.toggle("search-transparent", searchCfg.transparent === true);
       doc.body.classList.toggle("search-left", searchCfg.position === "left");
       doc.body.classList.toggle("search-right", searchCfg.position === "right");
       doc.body.classList.toggle("search-bottom", searchCfg.vertical === "bottom");
@@ -731,10 +737,9 @@ export const Theme: React.FC<ThemeProps> = () => {
       doc.body.classList.toggle("tag-bottom", tagCfg.position === "bottom");
       doc.body.classList.toggle("tag-left", tagCfg.position === "left");
       doc.body.classList.toggle("tag-right", tagCfg.position === "right");
-      doc.body.classList.toggle("tag-transparent", tagCfg.transparent === true);
-      // 页脚文案：页脚文案优先，其次备案文案，均空显示示例
+      // 页脚&备案文案：统一取站点设置的备案文案，留空显示示例
       const footerEl = doc.getElementById("preview-footer");
-      if (footerEl) footerEl.textContent = config.footer?.text || allValues.siteSetting?.govRecord || "© 主题实时预览 · 备案信息示例";
+      if (footerEl) footerEl.textContent = allValues.siteSetting?.govRecord || "© 主题实时预览 · 备案信息示例";
       doc.body.classList.toggle("card-hover-off", cardCfg.hoverLift === false);
       doc.body.classList.toggle("card-outline-mode", cardCfg.outline === true);
       doc.body.classList.toggle("card-ghost", parseFloat(String(cardCfg.bgOpacity ?? "")) === 0);
@@ -1038,8 +1043,8 @@ export const Theme: React.FC<ThemeProps> = () => {
               cardExtra: { hoverLift: true, outline: false, height: null, showLogo: true, showTitle: true, showDesc: true, showTag: true, bgOpacity: "", titleFontFamily: "", descFontFamily: "", descColor: "", tagColor: "", tagBg: "", tagRadius: null, borderColor: "" },
               linkBtn: { buttonRadius: null },
               footer: { hidden: false, text: "", bgColor: "", fontFamily: "" },
-              search: { hidden: false, position: "center", width: "60%", vertical: "top", height: 40, radius: 8, transparent: false, textColor: "", placeholderColor: "", placeholder: "", fontFamily: "", fontSize: 16, bgColor: "" },
-              tag: { hidden: false, position: "top", transparent: false, bg: "", activeBg: "", textColor: "", radius: null, fontFamily: "", fontSize: 13 },
+              search: { hidden: false, position: "center", width: "60%", vertical: "top", height: 40, radius: 8, textColor: "", placeholderColor: "", placeholder: "", fontFamily: "", fontSize: 16, bgColor: "", borderColor: "" },
+              tag: { hidden: false, position: "top", bg: "", activeBg: "", textColor: "", radius: null, fontFamily: "", fontSize: 13, borderColor: "" },
               siteSetting: { title: "", favicon: "", logo192: "", logo512: "", govRecord: "", jumpTargetBlank: 0, pcColumnCount: 3, showSearchEngine: true },
               siteConfig: { noImageMode: false, compactMode: false, sortByClicks: false },
             }}
@@ -1109,7 +1114,7 @@ export const Theme: React.FC<ThemeProps> = () => {
                           <Form.Item name={["siteSetting", "title"]} label="站点标题" required rules={[{ required: true, message: "请填写站点标题" }]}>
                             <Input placeholder="站点标题" />
                           </Form.Item>
-                          <Form.Item name={["siteSetting", "favicon"]} label="Favicon" tooltip="站点图标；留空使用系统默认 favicon.ico。支持 png/jpeg/webp/ico，≤200KB" extra={<a onClick={() => form.setFieldsValue({ siteSetting: { favicon: "" } })}>清除并恢复系统默认</a>}>
+                          <Form.Item name={["siteSetting", "favicon"]} label="Favicon" tooltip="站点图标；留空使用系统默认 favicon.ico。支持 png/jpeg/webp/ico，≤200KB" extra={faviconWatch ? <a onClick={() => form.setFieldsValue({ siteSetting: { favicon: "" } })}>清除并恢复系统默认</a> : <span style={{ fontSize: 12, color: '#999' }}>未设置，使用系统默认 favicon.ico</span>}>
                             <Upload accept="image/png,image/jpeg,image/webp,image/x-icon" maxCount={1} showUploadList={false}
                               beforeUpload={(file) => {
                                 const ok = ["image/png", "image/jpeg", "image/webp", "image/x-icon"].includes(file.type);
@@ -1123,7 +1128,7 @@ export const Theme: React.FC<ThemeProps> = () => {
                               <Button icon={<UploadOutlined />}>上传图片</Button>
                             </Upload>
                           </Form.Item>
-                          <Form.Item name={["siteSetting", "logo192"]} label="Logo 192" tooltip="192x192 图标，用于 PWA 可安装应用；留空使用系统默认 logo192.png。支持 png/jpeg/webp，≤200KB" extra={<a onClick={() => form.setFieldsValue({ siteSetting: { logo192: "" } })}>清除并恢复系统默认</a>}>
+                          <Form.Item name={["siteSetting", "logo192"]} label="Logo 192" tooltip="192x192 图标，用于 PWA 可安装应用；留空使用系统默认 logo192.png。支持 png/jpeg/webp，≤200KB" extra={logo192Watch ? <a onClick={() => form.setFieldsValue({ siteSetting: { logo192: "" } })}>清除并恢复系统默认</a> : <span style={{ fontSize: 12, color: '#999' }}>未设置，使用系统默认 logo192.png</span>}>
                             <Upload accept="image/png,image/jpeg,image/webp" maxCount={1} showUploadList={false}
                               beforeUpload={(file) => {
                                 const ok = ["image/png", "image/jpeg", "image/webp"].includes(file.type);
@@ -1137,7 +1142,7 @@ export const Theme: React.FC<ThemeProps> = () => {
                               <Button icon={<UploadOutlined />}>上传图片</Button>
                             </Upload>
                           </Form.Item>
-                          <Form.Item name={["siteSetting", "logo512"]} label="Logo 512" tooltip="512x512 图标，用于 PWA 可安装应用；留空使用系统默认 logo512.png。支持 png/jpeg/webp，≤200KB" extra={<a onClick={() => form.setFieldsValue({ siteSetting: { logo512: "" } })}>清除并恢复系统默认</a>}>
+                          <Form.Item name={["siteSetting", "logo512"]} label="Logo 512" tooltip="512x512 图标，用于 PWA 可安装应用；留空使用系统默认 logo512.png。支持 png/jpeg/webp，≤200KB" extra={logo512Watch ? <a onClick={() => form.setFieldsValue({ siteSetting: { logo512: "" } })}>清除并恢复系统默认</a> : <span style={{ fontSize: 12, color: '#999' }}>未设置，使用系统默认 logo512.png</span>}>
                             <Upload accept="image/png,image/jpeg,image/webp" maxCount={1} showUploadList={false}
                               beforeUpload={(file) => {
                                 const ok = ["image/png", "image/jpeg", "image/webp"].includes(file.type);
@@ -1241,10 +1246,10 @@ export const Theme: React.FC<ThemeProps> = () => {
                         </div>
                       </Card>
                       {/* 页脚与备案 */}
-                      <Card title="页脚与备案" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>备案文案为原「站点设置」项；页脚背景留空=透明融入页面背景，使用渐变/图片背景时建议留空</span>}>
+                      <Card title="页脚与备案" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>页脚&amp;备案文案显示在页面底部；页脚背景留空=透明融入页面背景，使用渐变/图片背景时建议留空</span>}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-                          <Form.Item name={["footer", "text"]} label="页脚文案" tooltip="留空则显示备案文案或默认版权信息">
-                            <Input placeholder="留空使用备案文案" />
+                          <Form.Item name={["siteSetting", "govRecord"]} label="页脚&备案文案" tooltip="显示在页面底部；留空显示默认版权信息">
+                            <Input placeholder="如：© 2026 Van Nav · 京ICP备XXXXXXXX号" />
                           </Form.Item>
                           <Form.Item name={["footer", "textColor"]} label="页脚文字颜色" tooltip="留空跟随次级文字色">
                             <ColorPicker showText allowClear />
@@ -1258,11 +1263,6 @@ export const Theme: React.FC<ThemeProps> = () => {
                           <Form.Item name={["footer", "hidden"]} label="隐藏页脚" valuePropName="checked">
                             <Switch />
                           </Form.Item>
-                          {!footerHiddenWatch && (<>
-                          <Form.Item name={["siteSetting", "govRecord"]} label="备案文案">
-                            <Input placeholder="如：京ICP备XXXXXXXX号" />
-                          </Form.Item>
-                          </>)}
                         </div>
                       </Card>
                     </>
@@ -1314,10 +1314,10 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item name={["search", "radius"]} label="形状：方形↔圆形" tooltip="只填数字，0 为方形，数值越大越圆润，单位 px">
                 <InputNumber min={0} max={100} addonAfter="px" style={{ width: '100%' }} placeholder="8" />
               </Form.Item>
-              <Form.Item name={["search", "transparent"]} label="透明无框" valuePropName="checked" tooltip="开启后搜索框无底色无边框，融入背景">
-                <Switch />
+              <Form.Item name={["search", "bgColor"]} label="背景颜色" tooltip="搜索框自身的底色；留空=跟随页面背景的半透明毛玻璃；设为全透明时搜索框完全融入背景">
+                <ColorPicker showText allowClear />
               </Form.Item>
-              <Form.Item name={["search", "bgColor"]} label="背景颜色" tooltip="搜索框自身的底色；留空=跟随页面背景的半透明毛玻璃">
+              <Form.Item name={["search", "borderColor"]} label="框颜色" tooltip="搜索框边框颜色；留空=跟随全局边框色；与背景颜色都设为全透明时，搜索框完全融入背景">
                 <ColorPicker showText allowClear />
               </Form.Item>
               <Form.Item name={["search", "textColor"]} label="文字颜色" tooltip="留空跟随正文字色">
@@ -1381,10 +1381,10 @@ export const Theme: React.FC<ThemeProps> = () => {
                             ]}
                           />
                         </Form.Item>
-                        <Form.Item name={["tag", "transparent"]} label="透明无框" valuePropName="checked" tooltip="开启后标签无底色无边框，融入背景">
-                          <Switch />
-                        </Form.Item>
                         <Form.Item name={["tag", "bg"]} label="底色" tooltip="留空跟随卡片底色">
+                          <ColorPicker showText allowClear />
+                        </Form.Item>
+                        <Form.Item name={["tag", "borderColor"]} label="框颜色" tooltip="标签边框颜色；留空=跟随全局边框色；与底色都设为全透明时，标签完全融入背景">
                           <ColorPicker showText allowClear />
                         </Form.Item>
                         <Form.Item name={["colors", "primary"]} label="强调色" tooltip="未单独设置选中底色时，选中的标签使用此色；同时影响输入框聚焦边框">
@@ -1464,12 +1464,16 @@ export const Theme: React.FC<ThemeProps> = () => {
           {/* 卡片 Logo */}
           <Card title="卡片 Logo" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["cardExtra", "logoSize"]} label="Logo 大小" tooltip="只填数字，单位 px，各屏幕宽度统一生效">
+              {showLogoWatch !== false && (
+                <>
+                <Form.Item name={["cardExtra", "logoSize"]} label="Logo 大小" tooltip="只填数字，单位 px，各屏幕宽度统一生效">
                 <InputNumber min={8} max={128} addonAfter="px" style={{ width: '100%' }} placeholder="32" />
               </Form.Item>
               <Form.Item name={["cardExtra", "logoRadius"]} label="Logo 形状：方正↔圆润" tooltip="只填数字，0 为方形，数值越大越圆润，超过 Logo 半径即为圆形，单位 px">
                 <InputNumber min={0} max={50} addonAfter="px" style={{ width: '100%' }} placeholder="0" />
               </Form.Item>
+                              </>
+              )}
               <Form.Item name={["cardExtra", "showLogo"]} label="隐藏 Logo" valuePropName="checked" getValueProps={(v) => ({ checked: v === false })} getValueFromEvent={(v) => !v}>
                 <Switch />
               </Form.Item>
@@ -1478,7 +1482,9 @@ export const Theme: React.FC<ThemeProps> = () => {
           {/* 卡片标题 */}
           <Card title="卡片标题" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["typography", "titleFontSize"]} label="标题字号" tooltip="只填数字，单位 px">
+              {showTitleWatch !== false && (
+                <>
+                <Form.Item name={["typography", "titleFontSize"]} label="标题字号" tooltip="只填数字，单位 px">
                 <InputNumber min={10} max={40} addonAfter="px" style={{ width: '100%' }} placeholder="16" />
               </Form.Item>
               <Form.Item name={["typography", "titleFontWeight"]} label="标题字重">
@@ -1497,6 +1503,8 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item name={["cardExtra", "titleColor"]} label="标题颜色" tooltip="留空跟随正文字色">
                 <ColorPicker showText allowClear />
               </Form.Item>
+                              </>
+              )}
               <Form.Item name={["cardExtra", "showTitle"]} label="隐藏标题" valuePropName="checked" getValueProps={(v) => ({ checked: v === false })} getValueFromEvent={(v) => !v}>
                 <Switch />
               </Form.Item>
@@ -1505,7 +1513,9 @@ export const Theme: React.FC<ThemeProps> = () => {
           {/* 卡片描述 */}
           <Card title="卡片描述" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["typography", "descFontSize"]} label="描述字号" tooltip="只填数字，单位 px">
+              {showDescWatch !== false && (
+                <>
+                <Form.Item name={["typography", "descFontSize"]} label="描述字号" tooltip="只填数字，单位 px">
                 <InputNumber min={10} max={30} addonAfter="px" style={{ width: '100%' }} placeholder="13" />
               </Form.Item>
               <Form.Item name={["cardExtra", "descFontFamily"]} label="描述字体" tooltip="留空跟随全局字体">
@@ -1514,6 +1524,8 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item name={["cardExtra", "descColor"]} label="描述颜色" tooltip="留空跟随次级文字色">
                 <ColorPicker showText allowClear />
               </Form.Item>
+                              </>
+              )}
               <Form.Item name={["cardExtra", "showDesc"]} label="隐藏简介" valuePropName="checked" getValueProps={(v) => ({ checked: v === false })} getValueFromEvent={(v) => !v}>
                 <Switch />
               </Form.Item>
@@ -1522,7 +1534,9 @@ export const Theme: React.FC<ThemeProps> = () => {
           {/* 卡片小标签 */}
           <Card title="卡片小标签" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>卡片标题旁的分类小标签</span>}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["cardExtra", "tagColor"]} label="文字颜色" tooltip="留空跟随次级文字色">
+              {showTagWatch !== false && (
+                <>
+                <Form.Item name={["cardExtra", "tagColor"]} label="文字颜色" tooltip="留空跟随次级文字色">
                 <ColorPicker showText allowClear />
               </Form.Item>
               <Form.Item name={["cardExtra", "tagBg"]} label="底色" tooltip="留空跟随卡片底色">
@@ -1531,6 +1545,8 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item name={["cardExtra", "tagRadius"]} label="圆角" tooltip="只填数字，单位 px">
                 <InputNumber min={0} max={20} addonAfter="px" style={{ width: '100%' }} placeholder="4" />
               </Form.Item>
+                              </>
+              )}
               <Form.Item name={["cardExtra", "showTag"]} label="隐藏小标签" valuePropName="checked" getValueProps={(v) => ({ checked: v === false })} getValueFromEvent={(v) => !v}>
                 <Switch />
               </Form.Item>

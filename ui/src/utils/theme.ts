@@ -82,6 +82,7 @@ export interface ThemeSearchConfig {
   fontFamily?: string;
   fontSize?: string;
   bgColor?: string;
+  borderColor?: string;
 }
 
 export interface ThemeTagConfig {
@@ -94,6 +95,7 @@ export interface ThemeTagConfig {
   radius?: string;
   fontFamily?: string;
   fontSize?: string;
+  borderColor?: string;
 }
 
 const toMinutes = (s?: string): number => {
@@ -257,6 +259,9 @@ export const getCurrentThemeConfig = (): ThemeConfig | null => {
   return currentThemeConfig;
 };
 
+// 判断 8 位 hex 颜色是否为全透明（alpha=00），用于让“透明背景”真正全透明（同时去掉毛玻璃模糊）
+const isTransparentHex = (v?: string): boolean => typeof v === 'string' && /^#[0-9a-f]{6}00$/i.test(v);
+
 // 计算主题 CSS 变量表（纯映射，主页面与预览 iframe 共用）
 export const computeThemeVars = (config: ThemeConfig, dark: boolean): Record<string, string> => {
   const colors = dark && config.darkTheme?.colors ? config.darkTheme.colors : config.colors;
@@ -330,6 +335,9 @@ export const computeThemeVars = (config: ThemeConfig, dark: boolean): Record<str
     '--van-nav-search-font-family': config.search?.fontFamily || '',
     '--van-nav-search-font-size': config.search?.fontSize || '',
     '--van-nav-search-bg': config.search?.bgColor || '',
+    '--van-nav-search-border-color': config.search?.borderColor || '',
+    // 背景全透明时去掉毛玻璃模糊，呈现完全透明
+    '--van-nav-search-filter': isTransparentHex(config.search?.bgColor) ? 'none' : '',
     // 扩展：分类标签
     '--van-nav-tag-hidden': config.tag?.hidden ? 'true' : 'false',
     '--van-nav-tag-position': config.tag?.position || '',
@@ -339,6 +347,7 @@ export const computeThemeVars = (config: ThemeConfig, dark: boolean): Record<str
     '--van-nav-tag-radius': config.tag?.radius || '',
     '--van-nav-tag-font-family': config.tag?.fontFamily || '',
     '--van-nav-tag-font-size': config.tag?.fontSize || '',
+    '--van-nav-tag-border-color': config.tag?.borderColor || '',
     // 扩展：卡片高度/展示开关/底色透明度（展示开关缺省视为展示）
     '--van-nav-card-height': config.cardExtra?.height || '',
     '--van-nav-card-show-logo': config.cardExtra?.showLogo === false ? 'false' : 'true',
@@ -428,7 +437,8 @@ export const clearThemeVars = () => {
     '--van-nav-card-show-desc', '--van-nav-card-show-tag', '--van-nav-card-bg-opacity',
     '--van-nav-footer-bg', '--van-nav-footer-font-family',
     '--van-nav-search-font-family', '--van-nav-search-font-size', '--van-nav-search-bg',
-    '--van-nav-tag-font-family', '--van-nav-tag-font-size',
+    '--van-nav-search-border-color', '--van-nav-search-filter',
+    '--van-nav-tag-font-family', '--van-nav-tag-font-size', '--van-nav-tag-border-color',
     '--van-nav-card-title-font-family', '--van-nav-card-desc-font-family',
     '--van-nav-card-desc-color', '--van-nav-card-tag-color', '--van-nav-card-tag-bg',
     '--van-nav-card-tag-radius', '--van-nav-card-border-color',

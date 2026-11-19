@@ -2,6 +2,7 @@
   cursor: pointer;
   color: var(--van-nav-text-secondary);
   border: 1px solid var(--van-nav-border);
+  border-color: var(--van-nav-tag-border-color, var(--van-nav-border));
   transition: all 0.3s;
   box-sizing: border-box;
 }

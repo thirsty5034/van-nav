@@ -157,7 +157,8 @@ export const fetchDeleteCatelog = async (id: number) => {
 
 export const fetchUpdateSetting = async (payload: any) => {
     const { data } = await axios.put(`/api/admin/setting`, payload);
-    return data?.data || {};
+    // 返回完整响应体（含 success），供调用方判断保存结果
+    return data;
 };
 
 
@@ -168,7 +169,8 @@ export const fetchUpdateLanguage = async (language: string) => {
 
 export const fetchUpdateSiteConfig = async (payload: any) => {
     const { data } = await axios.put(`/api/admin/siteConfig`, payload);
-    return data?.data || {};
+    // 返回完整响应体（含 success），供调用方判断保存结果
+    return data;
 };
 
 export const fetchUpdateUser = async (payload: any) => {

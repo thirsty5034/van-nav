@@ -338,6 +338,9 @@ func validateThemeConfig(config *types.ThemeConfig) error {
 	if err := validateColorField(config.Search.BgColor, "搜索框背景颜色"); err != nil {
 		return err
 	}
+	if err := validateColorField(config.Search.BorderColor, "搜索框边框颜色"); err != nil {
+		return err
+	}
 
 	// 校验分类标签配置
 	switch config.Tag.Position {
@@ -361,6 +364,9 @@ func validateThemeConfig(config *types.ThemeConfig) error {
 		return err
 	}
 	if err := validatePxField(config.Tag.FontSize, "分类标签字号"); err != nil {
+		return err
+	}
+	if err := validateColorField(config.Tag.BorderColor, "分类标签边框颜色"); err != nil {
 		return err
 	}
 
@@ -565,6 +571,7 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 		config.Search.FontFamily = strFromMap(m, "fontFamily", config.Search.FontFamily)
 		config.Search.FontSize = strFromMap(m, "fontSize", config.Search.FontSize)
 		config.Search.BgColor = strFromMap(m, "bgColor", config.Search.BgColor)
+		config.Search.BorderColor = strFromMap(m, "borderColor", config.Search.BorderColor)
 	}
 	// 解析分类标签配置（字段缺失/为空时保持默认值）
 	if m, ok := configMap["tag"].(map[string]interface{}); ok {
@@ -577,6 +584,7 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 		config.Tag.Radius = strFromMap(m, "radius", config.Tag.Radius)
 		config.Tag.FontFamily = strFromMap(m, "fontFamily", config.Tag.FontFamily)
 		config.Tag.FontSize = strFromMap(m, "fontSize", config.Tag.FontSize)
+		config.Tag.BorderColor = strFromMap(m, "borderColor", config.Tag.BorderColor)
 	}
 
 	return &config, nil
@@ -771,6 +779,7 @@ func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, erro
 			"fontFamily":       config.Search.FontFamily,
 			"fontSize":         config.Search.FontSize,
 			"bgColor":          config.Search.BgColor,
+			"borderColor":      config.Search.BorderColor,
 		},
 		"tag": map[string]interface{}{
 			"hidden":      config.Tag.Hidden,
@@ -782,6 +791,7 @@ func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, erro
 			"radius":      config.Tag.Radius,
 			"fontFamily":  config.Tag.FontFamily,
 			"fontSize":    config.Tag.FontSize,
+			"borderColor": config.Tag.BorderColor,
 		},
 	}
 	
