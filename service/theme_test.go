@@ -99,3 +99,61 @@ func TestSanitizeCustomCSSNightTheme(t *testing.T) {
 		t.Errorf("外部 url() 应被拒绝, got %v", err)
 	}
 }
+
+func TestValidateThemeConfigExtended(t *testing.T) {
+	base := getDefaultThemeConfig()
+
+	// 默认值应整体合法
+	if err := validateThemeConfig(&base); err != nil {
+		t.Errorf("默认扩展配置应合法, got %v", err)
+	}
+
+	// 圆角风格非法
+	c := base
+	c.Radius.Style = "huge"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("非法圆角风格应被拒绝")
+	}
+
+	// 顶栏背景色非法
+	c = base
+	c.Topbar.Background = "#zzz"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("非法顶栏背景色应被拒绝")
+	}
+
+	// 顶栏 transparent 合法
+	c = base
+	c.Topbar.Background = "transparent"
+	if err := validateThemeConfig(&c); err != nil {
+		t.Errorf("transparent 顶栏应合法, got %v", err)
+	}
+
+	// 背景图协议非法
+	c = base
+	c.PageBg.Image = "https://evil.com/bg.png"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("外部背景图应被拒绝")
+	}
+
+	// data: 背景图合法
+	c = base
+	c.PageBg.Image = "data:image/png;base64,iVBORw0KGgo="
+	if err := validateThemeConfig(&c); err != nil {
+		t.Errorf("data: 背景图应合法, got %v", err)
+	}
+
+	// 遮罩透明度非法
+	c = base
+	c.PageBg.DimOpacity = "1.5"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("超范围遮罩透明度应被拒绝")
+	}
+
+	// 字号非法
+	c = base
+	c.Font.BaseFontSize = "big"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("非法字号应被拒绝")
+	}
+}

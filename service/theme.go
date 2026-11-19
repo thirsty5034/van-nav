@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -79,6 +80,13 @@ func getDefaultThemeConfig() types.ThemeConfig {
 			End:   "08:00",
 		},
 		DarkTheme: getDefaultDarkTheme(),
+		Font:      types.ThemeFontConfig{Family: "", BaseFontSize: "14px"},
+		Radius:    types.ThemeRadiusConfig{Style: "small"},
+		Topbar:    types.ThemeTopbarConfig{Background: "", TextColor: "", Blur: false, Height: ""},
+		PageBg:    types.ThemePageBgConfig{GradientTo: "", Image: "", DimOpacity: ""},
+		CardExtra: types.ThemeCardConfig{LogoRadius: "", LogoSize: "", TitleColor: "", HoverLift: true, Outline: false},
+		LinkBtn:   types.ThemeLinkConfig{LinkColor: "", ButtonRadius: ""},
+		Footer:    types.ThemeFooterConfig{TextColor: "", Hidden: false},
 	}
 }
 
@@ -180,6 +188,71 @@ func validateThemeConfig(config *types.ThemeConfig) error {
 		// 允许 0-50px
 	} else if config.Layout.CardBorderRadius != "0" {
 		return fmt.Errorf("卡片圆角格式无效，应为 0-50px")
+	}
+
+	// 校验扩展配置组
+	validateColorField := func(v, name string) error {
+		if v != "" && !colorPattern.MatchString(v) {
+			return fmt.Errorf("%s格式无效", name)
+		}
+		return nil
+	}
+	validatePxField := func(v, name string) error {
+		if v != "" && !pxPattern.MatchString(v) {
+			return fmt.Errorf("%s格式无效，应为 px 值", name)
+		}
+		return nil
+	}
+
+	if err := validatePxField(config.Font.BaseFontSize, "正文字号"); err != nil {
+		return err
+	}
+	switch config.Radius.Style {
+	case "", "none", "small", "medium", "large":
+	default:
+		return fmt.Errorf("圆角风格无效，应为 none/small/medium/large")
+	}
+	if config.Topbar.Background != "" && config.Topbar.Background != "transparent" {
+		if err := validateColorField(config.Topbar.Background, "顶栏背景色"); err != nil {
+			return err
+		}
+	}
+	if err := validateColorField(config.Topbar.TextColor, "顶栏文字色"); err != nil {
+		return err
+	}
+	if err := validatePxField(config.Topbar.Height, "顶栏高度"); err != nil {
+		return err
+	}
+	if err := validateColorField(config.PageBg.GradientTo, "背景渐变色"); err != nil {
+		return err
+	}
+	if config.PageBg.Image != "" && !strings.HasPrefix(config.PageBg.Image, "data:") &&
+		!strings.HasPrefix(config.PageBg.Image, "/") && !strings.HasPrefix(config.PageBg.Image, "images/") {
+		return fmt.Errorf("背景图仅支持 data: 协议或站内路径")
+	}
+	if config.PageBg.DimOpacity != "" {
+		dimPattern := regexp.MustCompile(`^(0(\.\d+)?|1)$`)
+		if !dimPattern.MatchString(config.PageBg.DimOpacity) {
+			return fmt.Errorf("背景遮罩透明度应为 0-1 之间的数字")
+		}
+	}
+	if err := validateColorField(config.CardExtra.TitleColor, "卡片标题颜色"); err != nil {
+		return err
+	}
+	if err := validatePxField(config.CardExtra.LogoRadius, "Logo圆角"); err != nil {
+		return err
+	}
+	if err := validatePxField(config.CardExtra.LogoSize, "Logo尺寸"); err != nil {
+		return err
+	}
+	if err := validateColorField(config.LinkBtn.LinkColor, "链接颜色"); err != nil {
+		return err
+	}
+	if err := validatePxField(config.LinkBtn.ButtonRadius, "按钮圆角"); err != nil {
+		return err
+	}
+	if err := validateColorField(config.Footer.TextColor, "页脚文字颜色"); err != nil {
+		return err
 	}
 
 	return nil
@@ -287,6 +360,41 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 		}
 	}
 
+	// 解析扩展配置组（字体/圆角/顶栏/背景/卡片/链接/页脚）
+	if m, ok := configMap["font"].(map[string]interface{}); ok {
+		config.Font.Family = strFromMap(m, "family", config.Font.Family)
+		config.Font.BaseFontSize = strFromMap(m, "baseFontSize", config.Font.BaseFontSize)
+	}
+	if m, ok := configMap["radius"].(map[string]interface{}); ok {
+		config.Radius.Style = strFromMap(m, "style", config.Radius.Style)
+	}
+	if m, ok := configMap["topbar"].(map[string]interface{}); ok {
+		config.Topbar.Background = strFromMap(m, "background", config.Topbar.Background)
+		config.Topbar.TextColor = strFromMap(m, "textColor", config.Topbar.TextColor)
+		config.Topbar.Blur = boolFromMap(m, "blur", config.Topbar.Blur)
+		config.Topbar.Height = strFromMap(m, "height", config.Topbar.Height)
+	}
+	if m, ok := configMap["pageBg"].(map[string]interface{}); ok {
+		config.PageBg.GradientTo = strFromMap(m, "gradientTo", config.PageBg.GradientTo)
+		config.PageBg.Image = strFromMap(m, "image", config.PageBg.Image)
+		config.PageBg.DimOpacity = strFromMap(m, "dimOpacity", config.PageBg.DimOpacity)
+	}
+	if m, ok := configMap["cardExtra"].(map[string]interface{}); ok {
+		config.CardExtra.LogoRadius = strFromMap(m, "logoRadius", config.CardExtra.LogoRadius)
+		config.CardExtra.LogoSize = strFromMap(m, "logoSize", config.CardExtra.LogoSize)
+		config.CardExtra.TitleColor = strFromMap(m, "titleColor", config.CardExtra.TitleColor)
+		config.CardExtra.HoverLift = boolFromMap(m, "hoverLift", config.CardExtra.HoverLift)
+		config.CardExtra.Outline = boolFromMap(m, "outline", config.CardExtra.Outline)
+	}
+	if m, ok := configMap["linkBtn"].(map[string]interface{}); ok {
+		config.LinkBtn.LinkColor = strFromMap(m, "linkColor", config.LinkBtn.LinkColor)
+		config.LinkBtn.ButtonRadius = strFromMap(m, "buttonRadius", config.LinkBtn.ButtonRadius)
+	}
+	if m, ok := configMap["footer"].(map[string]interface{}); ok {
+		config.Footer.TextColor = strFromMap(m, "textColor", config.Footer.TextColor)
+		config.Footer.Hidden = boolFromMap(m, "hidden", config.Footer.Hidden)
+	}
+
 	return &config, nil
 }
 
@@ -296,8 +404,7 @@ func isValidNightModeMode(mode string) bool {
 }
 
 // colorsFromMap 从 map 解析颜色配置，缺省字段回退 fallback
-func colorsFromMap(colors map[string]interface{}, fallback types.ThemeColors) types.ThemeColors {
-	if v, ok := colors["primary"].(string); ok {
+func colorsFromMap(colors map[string]interface{}, fallback types.ThemeColors) types.ThemeColors {	if v, ok := colors["primary"].(string); ok {
 		fallback.Primary = v
 	}
 	if v, ok := colors["bgBase"].(string); ok {
@@ -318,24 +425,49 @@ func colorsFromMap(colors map[string]interface{}, fallback types.ThemeColors) ty
 	return fallback
 }
 
+// strFromMap 从 map 读取字符串，空值回退 fallback
+func strFromMap(m map[string]interface{}, key, fallback string) string {
+	if v, ok := m[key].(string); ok && v != "" {
+		return v
+	}
+	return fallback
+}
+
+// boolFromMap 从 map 读取布尔值，缺省回退 fallback
+func boolFromMap(m map[string]interface{}, key string, fallback bool) bool {
+	if v, ok := m[key].(bool); ok {
+		return v
+	}
+	return fallback
+}
+
 // SaveThemeConfig 保存主题配置
 func SaveThemeConfig(config types.ThemeConfig) error {
+	configMap, err := buildThemeConfigMap(config)
+	if err != nil {
+		return err
+	}
+	return database.SaveThemeConfig(configMap)
+}
+
+// buildThemeConfigMap 校验、净化并转换为存储 map（保存/方案/导入共用同一校验标准）
+func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, error) {
 	// 1. 校验配置有效性
 	if err := validateThemeConfig(&config); err != nil {
-		return fmt.Errorf("配置校验失败: %w", err)
+		return nil, fmt.Errorf("配置校验失败: %w", err)
 	}
 	
 	// 2. 净化自定义CSS
 	sanitizedCSS, err := sanitizeCustomCSS(config.CustomCSS)
 	if err != nil {
-		return fmt.Errorf("自定义CSS校验失败: %w", err)
+		return nil, fmt.Errorf("自定义CSS校验失败: %w", err)
 	}
 	config.CustomCSS = sanitizedCSS
 
 	// 2.5 净化夜间自定义CSS
 	sanitizedDarkCSS, err := sanitizeCustomCSS(config.DarkTheme.CustomCSS)
 	if err != nil {
-		return fmt.Errorf("夜间自定义CSS校验失败: %w", err)
+		return nil, fmt.Errorf("夜间自定义CSS校验失败: %w", err)
 	}
 	config.DarkTheme.CustomCSS = sanitizedDarkCSS
 
@@ -382,9 +514,111 @@ func SaveThemeConfig(config types.ThemeConfig) error {
 			},
 			"customCSS": config.DarkTheme.CustomCSS,
 		},
+		"font": map[string]interface{}{
+			"family":       config.Font.Family,
+			"baseFontSize": config.Font.BaseFontSize,
+		},
+		"radius": map[string]interface{}{
+			"style": config.Radius.Style,
+		},
+		"topbar": map[string]interface{}{
+			"background": config.Topbar.Background,
+			"textColor":  config.Topbar.TextColor,
+			"blur":       config.Topbar.Blur,
+			"height":     config.Topbar.Height,
+		},
+		"pageBg": map[string]interface{}{
+			"gradientTo": config.PageBg.GradientTo,
+			"image":      config.PageBg.Image,
+			"dimOpacity": config.PageBg.DimOpacity,
+		},
+		"cardExtra": map[string]interface{}{
+			"logoRadius": config.CardExtra.LogoRadius,
+			"logoSize":   config.CardExtra.LogoSize,
+			"titleColor": config.CardExtra.TitleColor,
+			"hoverLift":  config.CardExtra.HoverLift,
+			"outline":    config.CardExtra.Outline,
+		},
+		"linkBtn": map[string]interface{}{
+			"linkColor":    config.LinkBtn.LinkColor,
+			"buttonRadius": config.LinkBtn.ButtonRadius,
+		},
+		"footer": map[string]interface{}{
+			"textColor": config.Footer.TextColor,
+			"hidden":    config.Footer.Hidden,
+		},
 	}
 	
-	// 5. 保存到数据库
+	return configMap, nil
+}
+
+// ListThemePresets 主题方案列表（config 已解析为 map）
+func ListThemePresets() ([]map[string]interface{}, error) {
+	presets, err := database.ListThemePresets()
+	if err != nil {
+		return nil, err
+	}
+	result := []map[string]interface{}{}
+	for _, p := range presets {
+		var config map[string]interface{}
+		if err := json.Unmarshal([]byte(p.ConfigJSON), &config); err != nil {
+			return nil, fmt.Errorf("解析主题方案配置失败: %w", err)
+		}
+		result = append(result, map[string]interface{}{
+			"id":        p.ID,
+			"name":      p.Name,
+			"config":    config,
+			"updatedAt": p.UpdatedAt,
+		})
+	}
+	return result, nil
+}
+
+// SaveThemePreset 保存主题方案（与主配置同校验标准）
+func SaveThemePreset(id int64, name string, config types.ThemeConfig) (int64, error) {
+	if strings.TrimSpace(name) == "" {
+		return 0, fmt.Errorf("方案名称不能为空")
+	}
+	configMap, err := buildThemeConfigMap(config)
+	if err != nil {
+		return 0, err
+	}
+	configJSON, err := json.Marshal(configMap)
+	if err != nil {
+		return 0, fmt.Errorf("序列化主题方案失败: %w", err)
+	}
+	return database.SaveThemePreset(database.ThemePreset{ID: id, Name: name, ConfigJSON: string(configJSON)})
+}
+
+// ApplyThemePreset 将方案应用为当前主题配置
+func ApplyThemePreset(id int64) error {
+	preset, err := database.GetThemePreset(id)
+	if err != nil {
+		return err
+	}
+	var configMap map[string]interface{}
+	if err := json.Unmarshal([]byte(preset.ConfigJSON), &configMap); err != nil {
+		return fmt.Errorf("解析主题方案配置失败: %w", err)
+	}
+	return database.SaveThemeConfig(configMap)
+}
+
+// DeleteThemePreset 删除主题方案
+func DeleteThemePreset(id int64) error {
+	return database.DeleteThemePreset(id)
+}
+
+// ExportThemeConfig 导出当前主题配置（原始 map，便于 JSON 分享）
+func ExportThemeConfig() (map[string]interface{}, error) {
+	return database.GetThemeConfig()
+}
+
+// ImportThemeConfig 导入主题配置（与主配置同校验标准）
+func ImportThemeConfig(config types.ThemeConfig) error {
+	configMap, err := buildThemeConfigMap(config)
+	if err != nil {
+		return err
+	}
 	return database.SaveThemeConfig(configMap)
 }
 

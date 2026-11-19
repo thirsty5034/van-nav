@@ -337,3 +337,39 @@ export const fetchResetTheme = async () => {
     const { data } = await axios.delete(`/api/admin/theme`);
     return data;
 };
+
+// 主题方案：列表（管理员接口）
+export const fetchListThemePresets = async () => {
+    const { data } = await axios.get(`/api/admin/theme/presets`);
+    return data;
+};
+
+// 主题方案：保存（id>0 为更新）
+export const fetchSaveThemePreset = async (id: number, name: string, config: any) => {
+    const { data } = await axios.post(`/api/admin/theme/presets`, { id, name, config });
+    return data;
+};
+
+// 主题方案：删除
+export const fetchDeleteThemePreset = async (id: number) => {
+    const { data } = await axios.delete(`/api/admin/theme/presets/${id}`);
+    return data;
+};
+
+// 主题方案：应用为当前配置
+export const fetchApplyThemePreset = async (id: number) => {
+    const { data } = await axios.post(`/api/admin/theme/presets/${id}/apply`);
+    return data;
+};
+
+// 主题配置：导出（JSON）
+export const fetchExportTheme = async () => {
+    const { data } = await axios.get(`/api/admin/theme/export`);
+    return data;
+};
+
+// 主题配置：导入
+export const fetchImportTheme = async (config: any) => {
+    const { data } = await axios.post(`/api/admin/theme/import`, config);
+    return data;
+};

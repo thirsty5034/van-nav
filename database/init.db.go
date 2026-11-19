@@ -166,6 +166,17 @@ func InitDB() {
 	);`
 	_, err = DB.Exec(sql_create_table)
 	utils.CheckErr(err)
+
+	// 主题方案表（多套可切换主题）
+	sql_create_table = `CREATE TABLE IF NOT EXISTS nav_theme_presets (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL,
+		config_json TEXT NOT NULL DEFAULT '{}',
+		created_at TEXT NOT NULL DEFAULT (datetime('now')),
+		updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+	);`
+	_, err = DB.Exec(sql_create_table)
+	utils.CheckErr(err)
 	// 初始化默认搜索引擎
 	var searchEngineCount int
 	err = DB.QueryRow(`SELECT COUNT(*) FROM nav_search_engine;`).Scan(&searchEngineCount)

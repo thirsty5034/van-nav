@@ -27,18 +27,54 @@
   --van-nav-title-size: 16px;
   --van-nav-title-weight: 600;
   --van-nav-desc-size: 13px;
+
+  /* 扩展配置系统（由主题管理动态覆盖） */
+  --van-nav-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --van-nav-base-font-size: 14px;
+  --van-nav-radius-global: 4px;
+  --van-nav-topbar-bg: var(--van-nav-bg-base);
+  --van-nav-topbar-text: var(--van-nav-text-primary);
+  --van-nav-topbar-height: auto;
+  --van-nav-topbar-filter: none;
+  --van-nav-page-bg: var(--van-nav-bg-base);
+  --van-nav-card-logo-radius: 0px;
+  --van-nav-card-logo-size: 32px;
+  --van-nav-card-title-color: var(--van-nav-text-primary);
+  --van-nav-link-color: var(--van-nav-primary);
+  --van-nav-btn-radius: 4px;
+  --van-nav-footer-text: var(--van-nav-text-secondary);
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--van-nav-font-family);
+  font-size: var(--van-nav-base-font-size);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--van-nav-bg-base);
+  background: var(--van-nav-page-bg);
+  background-attachment: fixed;
   overflow-y: auto;
   overflow-x: hidden;
   overflow-anchor: none;
   color: var(--van-nav-text-primary);
+}
+
+/* ===== 主题管理扩展：链接颜色与模式类 ===== */
+body a:not(.card-box) {
+  color: var(--van-nav-link-color);
+}
+
+body.footer-hidden .record-wraper {
+  display: none;
+}
+
+body.card-outline-mode .card-box {
+  box-shadow: none;
+  border: 1px solid var(--van-nav-border);
+}
+
+body.card-hover-off .card-box:hover {
+  transform: none;
 }
 
 /* 隐藏全局滚动条 */

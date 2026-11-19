@@ -57,3 +57,75 @@ func DeleteThemeConfig() error {
 	}
 	return nil
 }
+
+// ==================== 主题方案（多套可切换主题） ====================
+
+// ThemePreset 主题方案记录
+type ThemePreset struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	ConfigJSON string `json:"configJson"`
+	UpdatedAt string `json:"updatedAt"`
+}
+
+// ListThemePresets 获取全部主题方案（按更新时间倒序）
+func ListThemePresets() ([]ThemePreset, error) {
+	rows, err := DB.Query(`SELECT id, name, config_json, updated_at FROM nav_theme_presets ORDER BY updated_at DESC`)
+	if err != nil {
+		return nil, fmt.Errorf("查询主题方案失败: %w", err)
+	}
+	defer rows.Close()
+
+	presets := []ThemePreset{}
+	for rows.Next() {
+		var p ThemePreset
+		if err := rows.Scan(&p.ID, &p.Name, &p.ConfigJSON, &p.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("读取主题方案失败: %w", err)
+		}
+		presets = append(presets, p)
+	}
+	return presets, nil
+}
+
+// SaveThemePreset 新增/更新主题方案，返回方案 id
+func SaveThemePreset(preset ThemePreset) (int64, error) {
+	if preset.ID > 0 {
+		query := `UPDATE nav_theme_presets SET name = ?, config_json = ?, updated_at = datetime('now') WHERE id = ?`
+		_, err := DB.Exec(query, preset.Name, preset.ConfigJSON, preset.ID)
+		if err != nil {
+			return 0, fmt.Errorf("更新主题方案失败: %w", err)
+		}
+		return preset.ID, nil
+	}
+	query := `INSERT INTO nav_theme_presets (name, config_json, created_at, updated_at)
+              VALUES (?, ?, datetime('now'), datetime('now'))`
+	res, err := DB.Exec(query, preset.Name, preset.ConfigJSON)
+	if err != nil {
+		return 0, fmt.Errorf("新增主题方案失败: %w", err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("获取主题方案ID失败: %w", err)
+	}
+	return id, nil
+}
+
+// DeleteThemePreset 删除主题方案
+func DeleteThemePreset(id int64) error {
+	_, err := DB.Exec(`DELETE FROM nav_theme_presets WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("删除主题方案失败: %w", err)
+	}
+	return nil
+}
+
+// GetThemePreset 获取单个主题方案
+func GetThemePreset(id int64) (ThemePreset, error) {
+	var p ThemePreset
+	err := DB.QueryRow(`SELECT id, name, config_json, updated_at FROM nav_theme_presets WHERE id = ?`, id).
+		Scan(&p.ID, &p.Name, &p.ConfigJSON, &p.UpdatedAt)
+	if err != nil {
+		return p, fmt.Errorf("查询主题方案失败: %w", err)
+	}
+	return p, nil
+}

@@ -5,7 +5,12 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: var(--van-nav-bg-base);
+  background-color: var(--van-nav-topbar-bg);
+  color: var(--van-nav-topbar-text);
+  backdrop-filter: var(--van-nav-topbar-filter);
+  -webkit-backdrop-filter: var(--van-nav-topbar-filter);
+  min-height: var(--van-nav-topbar-height);
+  box-sizing: border-box;
 }
 
 :root {
@@ -138,7 +143,7 @@
   }
   .card-right-title {
     display: inline-block;
-    color: var(--van-nav-text-primary);
+    color: var(--van-nav-card-title-color, var(--van-nav-text-primary));
     font-weight: 500;
     font-size: 12px;
     margin-top: 3px;
@@ -148,12 +153,14 @@
     text-align: center;
   }
   .card-left > img {
-    width: 32px;
-    height: 32px;
+    width: var(--van-nav-card-logo-size, 32px);
+    height: var(--van-nav-card-logo-size, 32px);
+    border-radius: var(--van-nav-card-logo-radius, 0px);
   }
   .card-left embed {
-    width: 32px;
-    height: 32px;
+    width: var(--van-nav-card-logo-size, 32px);
+    height: var(--van-nav-card-logo-size, 32px);
+    border-radius: var(--van-nav-card-logo-radius, 0px);
   }
   .card-right {
     margin-right: 0px;
@@ -273,7 +280,7 @@
   }
   .card-right-title {
     display: inline-block;
-    color: var(--van-nav-text-primary);
+    color: var(--van-nav-card-title-color, var(--van-nav-text-primary));
     font-weight: 500;
     font-size: 14px;
     margin-top: 4px;
@@ -418,7 +425,7 @@
   }
   .card-right-title {
     display: inline-block;
-    color: var(--van-nav-text-primary);
+    color: var(--van-nav-card-title-color, var(--van-nav-text-primary));
     font-size: var(--van-nav-title-size, 16px);
     margin-right: 7px;
     overflow: hidden;
@@ -562,7 +569,7 @@
   }
   .card-right-title {
     display: inline-block;
-    color: var(--van-nav-text-primary);
+    color: var(--van-nav-card-title-color, var(--van-nav-text-primary));
     font-size: var(--van-nav-title-size, 16px);
     font-weight: var(--van-nav-title-weight, 600);
     margin-right: 7px;
@@ -610,7 +617,7 @@
 
 .record-wraper a {
   text-decoration: none;
-  color: #bbb;
+  color: var(--van-nav-footer-text, var(--van-nav-text-secondary));
 }
 
 /* 精简模式样式 - 6列布局 */

@@ -1,9 +1,19 @@
-import { Button, Card, ColorPicker, Form, Input, message, Modal, Radio, Select, Space, Spin, TimePicker } from "antd";
+import { Button, Card, Checkbox, ColorPicker, Form, Input, InputNumber, message, Modal, Radio, Select, Space, Spin, Switch, TimePicker } from "antd";
 import dayjs from "dayjs";
 import type { Color } from "antd/es/color-picker";
-import { useCallback, useEffect, useState } from "react";
-import { fetchGetTheme, fetchUpdateTheme, fetchResetTheme } from "../../../utils/api";
-import { applyPreferredTheme, applyThemeVars, clearThemeVars, type ThemeConfig } from "../../../utils/theme";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  fetchGetTheme,
+  fetchUpdateTheme,
+  fetchResetTheme,
+  fetchListThemePresets,
+  fetchSaveThemePreset,
+  fetchDeleteThemePreset,
+  fetchApplyThemePreset,
+  fetchExportTheme,
+  fetchImportTheme,
+} from "../../../utils/api";
+import { applyPreferredTheme, applyThemeVars, applyVarsToStyle, clearThemeVars, computeThemeVars, type ThemeConfig } from "../../../utils/theme";
 import { BgColorsOutlined, ReloadOutlined, SaveOutlined } from "@ant-design/icons";
 import { useTranslation } from '../../../i18n';
 
@@ -305,6 +315,115 @@ const colorToHex = (color: any, defaultVal: string): string => {
   return defaultVal;
 };
 
+// 由表单值构建提交配置（保存 / 存为方案 共用同一转换）
+const buildConfigFromValues = (values: any) => ({
+  ...values,
+  colors: {
+    primary: colorToHex(values.colors?.primary, "#1677ff"),
+    bgBase: colorToHex(values.colors?.bgBase, "#f5f5f5"),
+    bgCard: colorToHex(values.colors?.bgCard, "#ffffff"),
+    textPrimary: colorToHex(values.colors?.textPrimary, "#000000e0"),
+    textSecondary: colorToHex(values.colors?.textSecondary, "#000000a6"),
+    border: colorToHex(values.colors?.border, "#d9d9d9"),
+  },
+  layout: {
+    cardBorderRadius: values.layout?.cardBorderRadius || "8px",
+    cardShadow: values.layout?.cardShadow || "0 1px 2px rgba(0,0,0,0.03), 0 1px 6px rgba(0,0,0,0.02)",
+    cardPadding: values.layout?.cardPadding || "16px",
+    cardGap: values.layout?.cardGap || "16px",
+  },
+  typography: values.typography || {},
+  customCSS: values.customCSS || "",
+  nightMode: {
+    mode: values.nightMode?.mode || "system",
+    start: values.nightMode?.start?.format ? values.nightMode.start.format("HH:mm") : (values.nightMode?.start || "18:00"),
+    end: values.nightMode?.end?.format ? values.nightMode.end.format("HH:mm") : (values.nightMode?.end || "08:00"),
+  },
+  darkTheme: {
+    colors: {
+      primary: colorToHex(values.darkTheme?.colors?.primary, "#4096ff"),
+      bgBase: colorToHex(values.darkTheme?.colors?.bgBase, "#0f1115"),
+      bgCard: colorToHex(values.darkTheme?.colors?.bgCard, "#1d1f24"),
+      textPrimary: colorToHex(values.darkTheme?.colors?.textPrimary, "#ffffffe0"),
+      textSecondary: colorToHex(values.darkTheme?.colors?.textSecondary, "#ffffffa6"),
+      border: colorToHex(values.darkTheme?.colors?.border, "#333333"),
+    },
+    customCSS: values.darkTheme?.customCSS || "",
+  },
+  font: {
+    family: values.font?.family || "",
+    baseFontSize: values.font?.baseFontSize || "14px",
+  },
+  radius: { style: values.radius?.style || "small" },
+  topbar: {
+    background: values.topbar?.transparent ? "transparent" : colorToHex(values.topbar?.background, ""),
+    textColor: colorToHex(values.topbar?.textColor, ""),
+    blur: !!values.topbar?.blur,
+    height: values.topbar?.height || "",
+  },
+  pageBg: {
+    gradientTo: colorToHex(values.pageBg?.gradientTo, ""),
+    image: values.pageBg?.image || "",
+    dimOpacity: values.pageBg?.dimOpacity != null && values.pageBg.dimOpacity !== "" ? String(values.pageBg.dimOpacity) : "",
+  },
+  cardExtra: {
+    logoRadius: values.cardExtra?.logoRadius || "",
+    logoSize: values.cardExtra?.logoSize || "",
+    titleColor: colorToHex(values.cardExtra?.titleColor, ""),
+    hoverLift: values.cardExtra?.hoverLift !== false,
+    outline: !!values.cardExtra?.outline,
+  },
+  linkBtn: {
+    linkColor: colorToHex(values.linkBtn?.linkColor, ""),
+    buttonRadius: values.linkBtn?.buttonRadius || "",
+  },
+  footer: {
+    textColor: colorToHex(values.footer?.textColor, ""),
+    hidden: !!values.footer?.hidden,
+  },
+});
+
+// 实时预览：把当前表单值映射为 CSS 变量同步到 iframe 文档（防抖 300ms）
+const ThemePreview: React.FC<{ form: any }> = ({ form }) => {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const values = Form.useWatch([], form);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        const doc = iframeRef.current?.contentDocument;
+        if (!doc || !values || !doc.body) return;
+        const config = buildConfigFromValues(values);
+        const dark = doc.body.classList.contains("dark-mode");
+        const vars = computeThemeVars(config, dark);
+        applyVarsToStyle(doc.body.style, vars);
+        let styleEl = doc.getElementById("van-nav-preview-css") as HTMLStyleElement | null;
+        if (!styleEl) {
+          styleEl = doc.createElement("style");
+          styleEl.id = "van-nav-preview-css";
+          doc.head.appendChild(styleEl);
+        }
+        styleEl.textContent = vars["--van-nav-custom-css"] || "";
+        doc.body.classList.toggle("card-hover-off", config.cardExtra?.hoverLift === false);
+        doc.body.classList.toggle("card-outline-mode", config.cardExtra?.outline === true);
+        doc.body.classList.toggle("footer-hidden", config.footer?.hidden === true);
+      } catch {
+        // iframe 文档未就绪时忽略本次同步
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [values]);
+
+  return (
+    <iframe
+      ref={iframeRef}
+      src="/"
+      title="主题实时预览"
+      style={{ width: "100%", height: 460, border: "1px solid #d9d9d9", borderRadius: 8 }}
+    />
+  );
+};
+
 export interface ThemeProps {}
 
 // 夜间配色预设（仅填充 darkTheme 表单，不写入数据库）
@@ -312,6 +431,11 @@ const nightPresets: { name: string; colors: Record<string, string> }[] = [
   { name: "深邃蓝", colors: { primary: "#4096ff", bgBase: "#0f1115", bgCard: "#1d1f24", textPrimary: "#ffffffe0", textSecondary: "#ffffffa6", border: "#333333" } },
   { name: "石墨黑", colors: { primary: "#8b8b8b", bgBase: "#0a0a0a", bgCard: "#171717", textPrimary: "#f5f5f5e0", textSecondary: "#a3a3a3a6", border: "#2e2e2e" } },
   { name: "暗夜紫", colors: { primary: "#7c5cff", bgBase: "#13111c", bgCard: "#1e1b2e", textPrimary: "#f0eeffe0", textSecondary: "#b8b3cfa6", border: "#332e47" } },
+  { name: "护眼绿", colors: { primary: "#2ba471", bgBase: "#0e1a14", bgCard: "#16241d", textPrimary: "#e6f2ebe0", textSecondary: "#a8c5b8a6", border: "#28402f" } },
+  { name: "暖橙", colors: { primary: "#ff8c42", bgBase: "#1a120c", bgCard: "#241a12", textPrimary: "#ffeadbe0", textSecondary: "#d8bfa8a6", border: "#3d2c1e" } },
+  { name: "赛博朋克", colors: { primary: "#ff2ea6", bgBase: "#0d0b1e", bgCard: "#161331", textPrimary: "#eae6ffe0", textSecondary: "#9f97c9a6", border: "#2c2650" } },
+  { name: "玫瑰金", colors: { primary: "#e56b8c", bgBase: "#1a1114", bgCard: "#251a1e", textPrimary: "#ffe9eee0", textSecondary: "#d3aeb8a6", border: "#402930" } },
+  { name: "青柠", colors: { primary: "#7ed321", bgBase: "#101508", bgCard: "#1a2210", textPrimary: "#f2ffe0e0", textSecondary: "#c2d8a0a6", border: "#2e3d1c" } },
 ];
 
 export const Theme: React.FC<ThemeProps> = () => {
@@ -357,47 +481,131 @@ export const Theme: React.FC<ThemeProps> = () => {
     loadThemeConfig();
   }, [loadThemeConfig]);
 
+  // ===== 主题方案 =====
+  const [presets, setPresets] = useState<any[]>([]);
+  const [presetModalOpen, setPresetModalOpen] = useState(false);
+  const [presetName, setPresetName] = useState("");
+  const importFileRef = useRef<HTMLInputElement>(null);
+
+  const loadPresets = useCallback(async () => {
+    try {
+      const res = await fetchListThemePresets();
+      if (res?.success) setPresets(res.data || []);
+    } catch (err) {
+      console.error("加载主题方案失败:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPresets();
+  }, [loadPresets]);
+
+  const handleSaveAsPreset = useCallback(async () => {
+    if (!presetName.trim()) {
+      message.warning("请填写方案名称");
+      return;
+    }
+    try {
+      const values = await form.validateFields();
+      const config = buildConfigFromValues(values);
+      const res = await fetchSaveThemePreset(0, presetName.trim(), config);
+      if (res?.success) {
+        message.success("主题方案已保存");
+        setPresetModalOpen(false);
+        setPresetName("");
+        loadPresets();
+      } else {
+        message.error(res?.errorMessage || "保存失败");
+      }
+    } catch (err: any) {
+      if (err?.errorFields) return; // 表单校验错误，提示已由表单展示
+      message.error("保存失败: " + (err.message || "未知错误"));
+    }
+  }, [form, presetName, loadPresets]);
+
+  const handleApplyPresetById = useCallback(async (id: number) => {
+    try {
+      const res = await fetchApplyThemePreset(id);
+      if (res?.success) {
+        message.success("主题方案已应用");
+        const themeRes = await fetchGetTheme();
+        if (themeRes?.success && themeRes?.data) {
+          applyThemeVars(themeRes.data);
+          applyPreferredTheme("theme-preset");
+        }
+        loadThemeConfig();
+      } else {
+        message.error(res?.errorMessage || "应用失败");
+      }
+    } catch (err: any) {
+      message.error("应用失败: " + (err.message || "未知错误"));
+    }
+  }, [loadThemeConfig]);
+
+  const handleDeletePreset = useCallback((id: number) => {
+    Modal.confirm({
+      title: "删除主题方案",
+      content: "确定删除该方案吗？",
+      okText: "删除",
+      okType: "danger",
+      cancelText: "取消",
+      onOk: async () => {
+        const res = await fetchDeleteThemePreset(id);
+        if (res?.success) {
+          message.success("已删除");
+          loadPresets();
+        } else {
+          message.error(res?.errorMessage || "删除失败");
+        }
+      },
+    });
+  }, [loadPresets]);
+
+  // ===== 导入导出 =====
+  const handleExport = useCallback(async () => {
+    try {
+      const res = await fetchExportTheme();
+      if (!res?.success) {
+        message.error(res?.errorMessage || "导出失败");
+        return;
+      }
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `van-nav-theme-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      message.error("导出失败: " + (err.message || "未知错误"));
+    }
+  }, []);
+
+  const handleImportFile = useCallback(async (file: File) => {
+    try {
+      const config = JSON.parse(await file.text());
+      const res = await fetchImportTheme(config);
+      if (res?.success) {
+        message.success("主题配置已导入");
+        const themeRes = await fetchGetTheme();
+        if (themeRes?.success && themeRes?.data) {
+          applyThemeVars(themeRes.data);
+          applyPreferredTheme("theme-import");
+        }
+        loadThemeConfig();
+      } else {
+        message.error(res?.errorMessage || "导入失败");
+      }
+    } catch (err: any) {
+      message.error("导入失败: " + (err.message || "文件不是合法的 JSON"));
+    }
+  }, [loadThemeConfig]);
+
   // 保存主题配置
   const handleSave = useCallback(async (values: any) => {
     setSaving(true);
     try {
-      // 转换颜色值为字符串（处理 ColorPicker 返回的 Color 对象）
-      const config = {
-        ...values,
-        colors: {
-          primary: colorToHex(values.colors?.primary, "#1677ff"),
-          bgBase: colorToHex(values.colors?.bgBase, "#f5f5f5"),
-          bgCard: colorToHex(values.colors?.bgCard, "#ffffff"),
-          textPrimary: colorToHex(values.colors?.textPrimary, "#000000e0"),
-          textSecondary: colorToHex(values.colors?.textSecondary, "#000000a6"),
-          border: colorToHex(values.colors?.border, "#d9d9d9"),
-        },
-        layout: {
-          cardBorderRadius: values.layout?.cardBorderRadius || "8px",
-          cardShadow: values.layout?.cardShadow || "0 1px 2px rgba(0,0,0,0.03), 0 1px 6px rgba(0,0,0,0.02)",
-          cardPadding: values.layout?.cardPadding || "16px",
-          cardGap: values.layout?.cardGap || "16px",
-        },
-        typography: values.typography || {},
-        customCSS: values.customCSS || "",
-        nightMode: {
-          mode: values.nightMode?.mode || "system",
-          start: values.nightMode?.start?.format ? values.nightMode.start.format("HH:mm") : (values.nightMode?.start || "18:00"),
-          end: values.nightMode?.end?.format ? values.nightMode.end.format("HH:mm") : (values.nightMode?.end || "08:00"),
-        },
-        darkTheme: {
-          colors: {
-            primary: colorToHex(values.darkTheme?.colors?.primary, "#4096ff"),
-            bgBase: colorToHex(values.darkTheme?.colors?.bgBase, "#0f1115"),
-            bgCard: colorToHex(values.darkTheme?.colors?.bgCard, "#1d1f24"),
-            textPrimary: colorToHex(values.darkTheme?.colors?.textPrimary, "#ffffffe0"),
-            textSecondary: colorToHex(values.darkTheme?.colors?.textSecondary, "#ffffffa6"),
-            border: colorToHex(values.darkTheme?.colors?.border, "#333333"),
-          },
-          customCSS: values.darkTheme?.customCSS || "",
-        },
-      };
-
+      const config = buildConfigFromValues(values);
       const res = await fetchUpdateTheme(config);
       if (res?.success) {
         message.success("主题配置已保存");
@@ -486,6 +694,56 @@ export const Theme: React.FC<ThemeProps> = () => {
           </div>
         </Card>
 
+        {/* 主题方案（多套可切换）与导入导出 */}
+        <Card
+          title="主题方案"
+          style={{ marginBottom: 24 }}
+          extra={
+            <Space>
+              <Button size="small" onClick={() => setPresetModalOpen(true)}>把当前配置存为方案</Button>
+              <Button size="small" onClick={handleExport}>导出 JSON</Button>
+              <Button size="small" onClick={() => importFileRef.current?.click()}>导入 JSON</Button>
+              <input
+                ref={importFileRef}
+                type="file"
+                accept="application/json"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleImportFile(f);
+                  e.target.value = '';
+                }}
+              />
+            </Space>
+          }
+        >
+          {presets.length === 0 ? (
+            <div style={{ color: '#999', fontSize: 13 }}>
+              还没有保存的主题方案。配置好当前主题后，可将其存为命名方案，之后一键应用。
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+              {presets.map((p: any) => (
+                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 4, border: '1px solid #eee', borderRadius: 6, padding: '4px 8px' }}>
+                  <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                  <Button type="link" size="small" onClick={() => handleApplyPresetById(p.id)}>应用</Button>
+                  <Button type="link" size="small" danger onClick={() => handleDeletePreset(p.id)}>删除</Button>
+                </div>
+              ))}
+            </div>
+          )}
+          <Modal
+            title="保存为主题方案"
+            open={presetModalOpen}
+            onOk={handleSaveAsPreset}
+            onCancel={() => setPresetModalOpen(false)}
+            okText="保存"
+            cancelText="取消"
+          >
+            <Input value={presetName} onChange={(e) => setPresetName(e.target.value)} placeholder="方案名称，例如：默认蓝 / 护眼夜话" />
+          </Modal>
+        </Card>
+
         <Form
           form={form}
           onFinish={handleSave}
@@ -514,6 +772,13 @@ export const Theme: React.FC<ThemeProps> = () => {
       customCSS: "",
       nightMode: { mode: "system", start: null, end: null },
       darkTheme: { customCSS: "" },
+      font: { family: "", baseFontSize: "14px" },
+      radius: { style: "small" },
+      topbar: { transparent: false, blur: false, height: "" },
+      pageBg: { image: "", dimOpacity: "" },
+      cardExtra: { hoverLift: true, outline: false },
+      linkBtn: { buttonRadius: "" },
+      footer: { hidden: false },
           }}
         >
           {/* 主题色彩配置 */}
@@ -664,7 +929,114 @@ export const Theme: React.FC<ThemeProps> = () => {
             
           </Card>
 
-          {/* 自定义CSS */}
+            {/* 字体与圆角 */}
+          <Card title="字体与圆角" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["font", "family"]} label="字体族" tooltip="留空使用系统默认字体栈，多个字体用逗号分隔">
+                <Input placeholder="留空 = 系统默认" />
+              </Form.Item>
+              <Form.Item name={["font", "baseFontSize"]} label="正文字号">
+                <Input placeholder="14px" />
+              </Form.Item>
+              <Form.Item name={["radius", "style"]} label="全局圆角风格">
+                <Select
+                  options={[
+                    { label: "直角", value: "none" },
+                    { label: "小圆角（默认）", value: "small" },
+                    { label: "中圆角", value: "medium" },
+                    { label: "大圆角", value: "large" },
+                  ]}
+                />
+              </Form.Item>
+            </div>
+          </Card>
+
+          {/* 顶栏样式 */}
+          <Card title="顶栏样式" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["topbar", "transparent"]} label="透明顶栏" valuePropName="checked">
+                <Checkbox>背景透明（滚动内容透出）</Checkbox>
+              </Form.Item>
+              <Form.Item name={["topbar", "blur"]} label="毛玻璃效果" valuePropName="checked">
+                <Checkbox>背景模糊</Checkbox>
+              </Form.Item>
+              <Form.Item name={["topbar", "background"]} label="顶栏背景色" tooltip="留空跟随页面背景；勾选透明顶栏时忽略此项">
+                <Input placeholder="#1677ff / 留空跟随页面" />
+              </Form.Item>
+              <Form.Item name={["topbar", "textColor"]} label="顶栏文字色">
+                <Input placeholder="留空跟随文字主色" />
+              </Form.Item>
+              <Form.Item name={["topbar", "height"]} label="顶栏最小高度">
+                <Input placeholder="默认（由内容撑开）" />
+              </Form.Item>
+            </div>
+          </Card>
+
+          {/* 页面背景 */}
+          <Card title="页面背景" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["pageBg", "gradientTo"]} label="渐变第二色" tooltip="留空为纯色；填写后与页面背景色形成纵向渐变">
+                <Input placeholder="留空 = 纯色" />
+              </Form.Item>
+              <Form.Item name={["pageBg", "dimOpacity"]} label="背景暗色遮罩" tooltip="叠加在背景图上的黑色遮罩透明度">
+                <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} placeholder="0 - 1" />
+              </Form.Item>
+              <Form.Item
+                name={["pageBg", "image"]}
+                label="背景图片"
+                tooltip="支持 data: 协议或站内路径（如 /bg.webp），禁止外链"
+              >
+                <Input placeholder="data:image/png;base64,... 或 /bg.webp" />
+              </Form.Item>
+            </div>
+          </Card>
+
+          {/* 卡片细项 */}
+          <Card title="卡片细项" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["cardExtra", "logoSize"]} label="Logo 尺寸">
+                <Input placeholder="32px" />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "logoRadius"]} label="Logo 圆角">
+                <Input placeholder="0px / 8px / 50%" />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "titleColor"]} label="标题颜色">
+                <Input placeholder="留空跟随文字主色" />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "hoverLift"]} label="Hover 动效" valuePropName="checked" tooltip="鼠标悬停时卡片上浮">
+                <Switch />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "outline"]} label="描边模式" valuePropName="checked" tooltip="开启后卡片用边框替代阴影">
+                <Switch />
+              </Form.Item>
+            </div>
+          </Card>
+
+          {/* 链接与按钮 */}
+          <Card title="链接与按钮" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["linkBtn", "linkColor"]} label="链接颜色">
+                <Input placeholder="留空跟随主色调" />
+              </Form.Item>
+              <Form.Item name={["linkBtn", "buttonRadius"]} label="按钮圆角">
+                <Input placeholder="4px" />
+              </Form.Item>
+            </div>
+          </Card>
+
+          {/* 页脚 */}
+          <Card title="页脚 / 备案区" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["footer", "textColor"]} label="文字颜色">
+                <Input placeholder="留空跟随次级文字色" />
+              </Form.Item>
+              <Form.Item name={["footer", "hidden"]} label="隐藏备案区" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+            </div>
+          </Card>
+
+        {/* 自定义CSS */}
           <Card
             title="自定义CSS"
             style={{ marginBottom: 24 }}
@@ -696,6 +1068,15 @@ export const Theme: React.FC<ThemeProps> = () => {
                 <li>禁止使用非 data: 协议的 url() 引用外部资源</li>
               </ul>
             </div>
+          </Card>
+
+          {/* 实时预览 */}
+          <Card
+            title="实时预览"
+            style={{ marginBottom: 24 }}
+            extra={<span style={{ fontSize: 12, color: '#999' }}>按当前表单值实时渲染（防抖 300ms），保存前即可查看效果</span>}
+          >
+            <ThemePreview form={form} />
           </Card>
 
           {/* 操作按钮 */}

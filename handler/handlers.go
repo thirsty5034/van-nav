@@ -1569,3 +1569,136 @@ func ResetThemeConfigHandler(c *gin.Context) {
 		"message": "已重置为默认主题",
 	})
 }
+
+// ListThemePresetsHandler 获取主题方案列表（管理员接口）
+func ListThemePresetsHandler(c *gin.Context) {
+	presets, err := service.ListThemePresets()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"success": true,
+		"data":    presets,
+	})
+}
+
+// themePresetRequest 主题方案保存请求体
+type themePresetRequest struct {
+	ID     int64             `json:"id"`
+	Name   string            `json:"name"`
+	Config types.ThemeConfig `json:"config"`
+}
+
+// SaveThemePresetHandler 保存主题方案（新增或更新）
+func SaveThemePresetHandler(c *gin.Context) {
+	var req themePresetRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": "请求参数格式错误: " + err.Error(),
+		})
+		return
+	}
+	id, err := service.SaveThemePreset(req.ID, req.Name, req.Config)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"success": true,
+		"message": "主题方案已保存",
+		"data":    gin.H{"id": id},
+	})
+}
+
+// DeleteThemePresetHandler 删除主题方案
+func DeleteThemePresetHandler(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": "方案ID无效",
+		})
+		return
+	}
+	if err := service.DeleteThemePreset(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"success": true,
+		"message": "主题方案已删除",
+	})
+}
+
+// ApplyThemePresetHandler 将主题方案应用为当前配置
+func ApplyThemePresetHandler(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": "方案ID无效",
+		})
+		return
+	}
+	if err := service.ApplyThemePreset(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"success": true,
+		"message": "主题方案已应用",
+	})
+}
+
+// ExportThemeConfigHandler 导出当前主题配置（JSON）
+func ExportThemeConfigHandler(c *gin.Context) {
+	config, err := service.ExportThemeConfig()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success":      false,
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"success": true,
+		"data":    config,
+	})
+}
+
+// ImportThemeConfigHandler 导入主题配置
+func ImportThemeConfigHandler(c *gin.Context) {
+	var config types.ThemeConfig
+	if err := c.ShouldBindJSON(&config); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": "请求参数格式错误: " + err.Error(),
+		})
+		return
+	}
+	if err := service.ImportThemeConfig(config); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":      false,
+			"errorMessage": err.Error(),
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"success": true,
+		"message": "主题配置已导入",
+	})
+}

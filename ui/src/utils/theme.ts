@@ -11,6 +11,46 @@ export interface DarkThemeConfig {
   customCSS: string;
 }
 
+export interface ThemeFontConfig {
+  family?: string;
+  baseFontSize?: string;
+}
+
+export interface ThemeRadiusConfig {
+  style?: 'none' | 'small' | 'medium' | 'large';
+}
+
+export interface ThemeTopbarConfig {
+  background?: string;
+  textColor?: string;
+  blur?: boolean;
+  height?: string;
+}
+
+export interface ThemePageBgConfig {
+  gradientTo?: string;
+  image?: string;
+  dimOpacity?: string;
+}
+
+export interface ThemeCardConfig {
+  logoRadius?: string;
+  logoSize?: string;
+  titleColor?: string;
+  hoverLift?: boolean;
+  outline?: boolean;
+}
+
+export interface ThemeLinkConfig {
+  linkColor?: string;
+  buttonRadius?: string;
+}
+
+export interface ThemeFooterConfig {
+  textColor?: string;
+  hidden?: boolean;
+}
+
 const toMinutes = (s?: string): number => {
   if (!s || !/^\d{1,2}:\d{2}$/.test(s)) return NaN;
   const [h, m] = s.split(':').map(Number);
@@ -148,6 +188,13 @@ export interface ThemeConfig {
   customCSS: string;
   nightMode?: NightModeConfig;
   darkTheme?: DarkThemeConfig;
+  font?: ThemeFontConfig;
+  radius?: ThemeRadiusConfig;
+  topbar?: ThemeTopbarConfig;
+  pageBg?: ThemePageBgConfig;
+  cardExtra?: ThemeCardConfig;
+  linkBtn?: ThemeLinkConfig;
+  footer?: ThemeFooterConfig;
 }
 
 // 缓存当前主题配置
@@ -163,32 +210,90 @@ export const getCurrentThemeConfig = (): ThemeConfig | null => {
   return currentThemeConfig;
 };
 
-// 应用主题CSS变量到:root（暗色时优先使用夜间配色）
-export const applyThemeVars = (config: ThemeConfig, isDark?: boolean) => {
-  const root = document.documentElement;
-  const dark = isDark ?? (document.querySelector('body')?.classList.contains('dark-mode') ?? false);
+// 计算主题 CSS 变量表（纯映射，主页面与预览 iframe 共用）
+export const computeThemeVars = (config: ThemeConfig, dark: boolean): Record<string, string> => {
   const colors = dark && config.darkTheme?.colors ? config.darkTheme.colors : config.colors;
   const customCSS = dark && config.darkTheme?.customCSS ? config.darkTheme.customCSS : config.customCSS;
-  
-  // 应用色彩变量
-  root.style.setProperty('--van-nav-primary', colors.primary);
-  root.style.setProperty('--van-nav-bg-base', colors.bgBase);
-  root.style.setProperty('--van-nav-bg-card', colors.bgCard);
-  root.style.setProperty('--van-nav-text-primary', colors.textPrimary);
-  root.style.setProperty('--van-nav-text-secondary', colors.textSecondary);
-  root.style.setProperty('--van-nav-border', colors.border);
-  
-  // 应用布局变量
-  root.style.setProperty('--van-nav-card-radius', config.layout.cardBorderRadius);
-  root.style.setProperty('--van-nav-card-shadow', config.layout.cardShadow);
-  root.style.setProperty('--van-nav-card-padding', config.layout.cardPadding);
-  root.style.setProperty('--van-nav-card-gap', config.layout.cardGap);
-  
-  // 应用排版变量
-  root.style.setProperty('--van-nav-title-size', config.typography.titleFontSize);
-  root.style.setProperty('--van-nav-title-weight', config.typography.titleFontWeight);
-  root.style.setProperty('--van-nav-desc-size', config.typography.descFontSize);
-  
+  const radiusMap: Record<string, string> = { none: '0px', small: '4px', medium: '8px', large: '16px' };
+
+  const topbarBg = config.topbar?.background
+    || (config.topbar?.blur ? 'color-mix(in srgb, var(--van-nav-bg-base) 80%, transparent)' : 'var(--van-nav-bg-base)');
+
+  let pageBg = 'var(--van-nav-bg-base)';
+  if (config.pageBg?.gradientTo) {
+    pageBg = `linear-gradient(180deg, var(--van-nav-bg-base), ${config.pageBg.gradientTo})`;
+  }
+  if (config.pageBg?.image) {
+    const dim = config.pageBg.dimOpacity
+      ? `linear-gradient(rgba(0,0,0,${config.pageBg.dimOpacity}),rgba(0,0,0,${config.pageBg.dimOpacity})),`
+      : '';
+    pageBg = `${dim} url("${config.pageBg.image}") center/cover fixed no-repeat`;
+  }
+
+  return {
+    // 色彩
+    '--van-nav-primary': colors.primary,
+    '--van-nav-bg-base': colors.bgBase,
+    '--van-nav-bg-card': colors.bgCard,
+    '--van-nav-text-primary': colors.textPrimary,
+    '--van-nav-text-secondary': colors.textSecondary,
+    '--van-nav-border': colors.border,
+    // 布局
+    '--van-nav-card-radius': config.layout.cardBorderRadius,
+    '--van-nav-card-shadow': config.layout.cardShadow,
+    '--van-nav-card-padding': config.layout.cardPadding,
+    '--van-nav-card-gap': config.layout.cardGap,
+    // 排版
+    '--van-nav-title-size': config.typography.titleFontSize,
+    '--van-nav-title-weight': config.typography.titleFontWeight,
+    '--van-nav-desc-size': config.typography.descFontSize,
+    // 扩展：字体/圆角
+    '--van-nav-font-family': config.font?.family || '',
+    '--van-nav-base-font-size': config.font?.baseFontSize || '14px',
+    '--van-nav-radius-global': radiusMap[config.radius?.style || 'small'] || '4px',
+    // 扩展：顶栏
+    '--van-nav-topbar-bg': topbarBg,
+    '--van-nav-topbar-text': config.topbar?.textColor || 'var(--van-nav-text-primary)',
+    '--van-nav-topbar-height': config.topbar?.height || '',
+    '--van-nav-topbar-filter': config.topbar?.blur ? 'blur(12px)' : 'none',
+    // 扩展：页面背景
+    '--van-nav-page-bg': pageBg,
+    // 扩展：卡片细项
+    '--van-nav-card-logo-radius': config.cardExtra?.logoRadius || '0px',
+    '--van-nav-card-logo-size': config.cardExtra?.logoSize || '32px',
+    '--van-nav-card-title-color': config.cardExtra?.titleColor || 'var(--van-nav-text-primary)',
+    // 扩展：链接/按钮、页脚
+    '--van-nav-link-color': config.linkBtn?.linkColor || 'var(--van-nav-primary)',
+    '--van-nav-btn-radius': config.linkBtn?.buttonRadius || '4px',
+    '--van-nav-footer-text': config.footer?.textColor || 'var(--van-nav-text-secondary)',
+    // 自定义 CSS 挂到变量，便于预览复用
+    '--van-nav-custom-css': customCSS || '',
+  };
+};
+
+// 应用主题CSS变量到 body（暗色时优先使用夜间配色）
+// 把变量表应用到指定元素的 style（空值移除，回到 CSS 默认）；主页面与预览 iframe 共用
+export const applyVarsToStyle = (style: CSSStyleDeclaration, vars: Record<string, string>) => {
+  Object.entries(vars).forEach(([key, value]) => {
+    if (key === '--van-nav-custom-css') return;
+    if (value === '') style.removeProperty(key);
+    else style.setProperty(key, value);
+  });
+};
+
+export const applyThemeVars = (config: ThemeConfig, isDark?: boolean) => {
+  // 挂载到 body：inline 变量优先级高于 body.dark-mode 类内覆盖，夜间配色才能真实生效
+  const root = document.body;
+  const dark = isDark ?? (document.querySelector('body')?.classList.contains('dark-mode') ?? false);
+  const vars = computeThemeVars(config, dark);
+
+  applyVarsToStyle(root.style, vars);
+
+  // 模式类：hover 动效开关 / 描边模式 / 页脚隐藏
+  document.body.classList.toggle('card-hover-off', config.cardExtra?.hoverLift === false);
+  document.body.classList.toggle('card-outline-mode', config.cardExtra?.outline === true);
+  document.body.classList.toggle('footer-hidden', config.footer?.hidden === true);
+
   // 应用自定义CSS
   let styleEl = document.getElementById('van-nav-custom-css');
   if (!styleEl) {
@@ -196,8 +301,8 @@ export const applyThemeVars = (config: ThemeConfig, isDark?: boolean) => {
     styleEl.id = 'van-nav-custom-css';
     document.head.appendChild(styleEl);
   }
-  styleEl.textContent = customCSS || '';
-  
+  styleEl.textContent = vars['--van-nav-custom-css'];
+
   // 缓存配置
   setCurrentThemeConfig(config);
 };
@@ -211,7 +316,7 @@ export const reapplyThemeVars = () => {
 
 // 清除自定义主题变量（恢复默认）
 export const clearThemeVars = () => {
-  const root = document.documentElement;
+  const root = document.body;
   const customProps = [
     '--van-nav-primary',
     '--van-nav-bg-base', '--van-nav-bg-card',
@@ -220,10 +325,18 @@ export const clearThemeVars = () => {
     '--van-nav-card-gap', '--van-nav-header-height',
     '--van-nav-title-size',
     '--van-nav-title-weight', '--van-nav-desc-size',
+    '--van-nav-font-family', '--van-nav-base-font-size', '--van-nav-radius-global',
+    '--van-nav-topbar-bg', '--van-nav-topbar-text', '--van-nav-topbar-height', '--van-nav-topbar-filter',
+    '--van-nav-page-bg',
+    '--van-nav-card-logo-radius', '--van-nav-card-logo-size', '--van-nav-card-title-color',
+    '--van-nav-link-color', '--van-nav-btn-radius', '--van-nav-footer-text',
   ];
-  
+
   customProps.forEach(prop => root.style.removeProperty(prop));
-  
+
+  // 清除模式类
+  document.body.classList.remove('card-hover-off', 'card-outline-mode', 'footer-hidden');
+
   // 清除自定义CSS
   const styleEl = document.getElementById('van-nav-custom-css');
   if (styleEl) {

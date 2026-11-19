@@ -60,6 +60,13 @@ const ThemeSync = () => {
   useEffect(() => {
     const applyThemeToBody = () => {
       applyPreferredTheme('route');
+      // 分区 CSS 作用域：body[data-page] 供自定义 CSS 按页面定向（如 body[data-page="home"] .card-box）
+      const page = location.pathname.startsWith('/admin')
+        ? 'admin'
+        : location.pathname.startsWith('/login')
+          ? 'login'
+          : 'home';
+      document.body.setAttribute('data-page', page);
       // 主题切换后重新应用CSS变量
       setTimeout(() => loadAndApplyTheme(), 50);
     };

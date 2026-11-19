@@ -32,6 +32,7 @@ const Card = memo(({ id, title, url, des, logo, catelog, onClick, index, isSearc
       target={getJumpTarget(jumpTargetBlank) === "blank" ? "_blank" : "_self"}
       rel="noreferrer"
       className="card-box"
+      data-catelog={catelog}
     >
       {showNumIndex && <span className="card-index">{index + 1}</span>}
       <div className={`card-content ${compactMode ? 'compact-mode' : ''}`}>

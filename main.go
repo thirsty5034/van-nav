@@ -205,6 +205,14 @@ func main() {
 		// 主题美化配置
 		admin.POST("/theme", handler.UpdateThemeConfigHandler)
 		admin.DELETE("/theme", handler.ResetThemeConfigHandler)
+
+		// 主题方案（多套可切换主题）与导入导出
+		admin.GET("/theme/presets", handler.ListThemePresetsHandler)
+		admin.POST("/theme/presets", handler.SaveThemePresetHandler)
+		admin.DELETE("/theme/presets/:id", handler.DeleteThemePresetHandler)
+		admin.POST("/theme/presets/:id/apply", handler.ApplyThemePresetHandler)
+		admin.GET("/theme/export", handler.ExportThemeConfigHandler)
+		admin.POST("/theme/import", handler.ImportThemeConfigHandler)
 	}
 	}
 	logger.LogInfo("应用启动成功，网址: http://localhost:%s", *port)

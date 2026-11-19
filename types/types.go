@@ -139,13 +139,67 @@ type DarkThemeConfig struct {
 	CustomCSS string      `json:"customCSS"`
 }
 
+// 全局字体
+type ThemeFontConfig struct {
+	Family       string `json:"family"`       // 字体族（空=默认栈）
+	BaseFontSize string `json:"baseFontSize"` // 正文字号，如 14px
+}
+
+// 全局圆角风格：none=直角 small=4px medium=8px large=16px
+type ThemeRadiusConfig struct {
+	Style string `json:"style"`
+}
+
+// 顶栏样式
+type ThemeTopbarConfig struct {
+	Background string `json:"background"` // 颜色；transparent=透明
+	TextColor  string `json:"textColor"`
+	Blur       bool   `json:"blur"`   // 毛玻璃效果
+	Height     string `json:"height"` // 如 56px；空=默认
+}
+
+// 页面背景增强
+type ThemePageBgConfig struct {
+	GradientTo string `json:"gradientTo"` // 渐变第二色（空=纯色 bgBase）
+	Image      string `json:"image"`      // data: 协议或站内相对路径
+	DimOpacity string `json:"dimOpacity"` // 背景暗色遮罩 0-1
+}
+
+// 卡片细项
+type ThemeCardConfig struct {
+	LogoRadius string `json:"logoRadius"` // 如 8px / 50%
+	LogoSize   string `json:"logoSize"`   // 如 40px
+	TitleColor string `json:"titleColor"` // 空=跟随 textPrimary
+	HoverLift  bool   `json:"hoverLift"`  // hover 抬升动效
+	Outline    bool   `json:"outline"`    // 描边模式（边框替代阴影）
+}
+
+// 链接与按钮
+type ThemeLinkConfig struct {
+	LinkColor    string `json:"linkColor"`    // 超链接颜色；空=跟随 primary
+	ButtonRadius string `json:"buttonRadius"` // 按钮圆角 px
+}
+
+// 页脚/备案区
+type ThemeFooterConfig struct {
+	TextColor string `json:"textColor"` // 空=跟随 textSecondary
+	Hidden    bool   `json:"hidden"`    // 隐藏备案区
+}
+
 // 完整主题配置
 type ThemeConfig struct {
-	Version    string          `json:"version"`
-	Colors     ThemeColors     `json:"colors"`
-	Layout     ThemeLayout     `json:"layout"`
-	Typography ThemeTypography `json:"typography"`
-	CustomCSS  string          `json:"customCSS"`
-	NightMode  NightModeConfig `json:"nightMode"`
-	DarkTheme  DarkThemeConfig `json:"darkTheme"`
+	Version    string            `json:"version"`
+	Colors     ThemeColors       `json:"colors"`
+	Layout     ThemeLayout       `json:"layout"`
+	Typography ThemeTypography   `json:"typography"`
+	CustomCSS  string            `json:"customCSS"`
+	NightMode  NightModeConfig   `json:"nightMode"`
+	DarkTheme  DarkThemeConfig   `json:"darkTheme"`
+	Font       ThemeFontConfig   `json:"font"`
+	Radius     ThemeRadiusConfig `json:"radius"`
+	Topbar     ThemeTopbarConfig `json:"topbar"`
+	PageBg     ThemePageBgConfig `json:"pageBg"`
+	CardExtra  ThemeCardConfig   `json:"cardExtra"`
+	LinkBtn    ThemeLinkConfig   `json:"linkBtn"`
+	Footer     ThemeFooterConfig `json:"footer"`
 }
