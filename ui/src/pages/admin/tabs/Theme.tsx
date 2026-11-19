@@ -985,14 +985,47 @@ export const Theme: React.FC<ThemeProps> = () => {
                         <Form.Item name={["siteSetting", "title"]} label="站点标题" required rules={[{ required: true, message: "请填写站点标题" }]}>
                           <Input placeholder="站点标题" />
                         </Form.Item>
-                        <Form.Item name={["siteSetting", "favicon"]} label="Favicon" required rules={[{ required: true, message: "请填写 Favicon 地址" }]}>
-                          <Input placeholder="/favicon.ico" />
+                        <Form.Item name={["siteSetting", "favicon"]} label="Favicon" rules={[{ required: true, message: "请上传或填写 Favicon" }]}>
+                          <Upload accept="image/png,image/jpeg,image/webp,image/x-icon" maxCount={1} showUploadList={false}
+                            beforeUpload={(file) => {
+                              const ok = ["image/png", "image/jpeg", "image/webp", "image/x-icon"].includes(file.type);
+                              if (!ok) { message.error("仅支持 png/jpeg/webp/ico"); return false; }
+                              if (file.size > 200 * 1024) { message.error("图片不能超过 200KB"); return false; }
+                              const reader = new FileReader();
+                              reader.onload = () => form.setFieldsValue({ siteSetting: { favicon: reader.result } });
+                              reader.readAsDataURL(file);
+                              return false;
+                            }}>
+                            <Button icon={<UploadOutlined />}>上传图片</Button>
+                          </Upload>
                         </Form.Item>
-                        <Form.Item name={["siteSetting", "logo192"]} label="Logo 192" required rules={[{ required: true, message: "请填写 192px Logo 地址" }]}>
-                          <Input placeholder="/logo192.png" />
+                        <Form.Item name={["siteSetting", "logo192"]} label="Logo 192" rules={[{ required: true, message: "请上传或填写 192px Logo" }]}>
+                          <Upload accept="image/png,image/jpeg,image/webp" maxCount={1} showUploadList={false}
+                            beforeUpload={(file) => {
+                              const ok = ["image/png", "image/jpeg", "image/webp"].includes(file.type);
+                              if (!ok) { message.error("仅支持 png/jpeg/webp"); return false; }
+                              if (file.size > 200 * 1024) { message.error("图片不能超过 200KB"); return false; }
+                              const reader = new FileReader();
+                              reader.onload = () => form.setFieldsValue({ siteSetting: { logo192: reader.result } });
+                              reader.readAsDataURL(file);
+                              return false;
+                            }}>
+                            <Button icon={<UploadOutlined />}>上传图片</Button>
+                          </Upload>
                         </Form.Item>
-                        <Form.Item name={["siteSetting", "logo512"]} label="Logo 512" required rules={[{ required: true, message: "请填写 512px Logo 地址" }]}>
-                          <Input placeholder="/logo512.png" />
+                        <Form.Item name={["siteSetting", "logo512"]} label="Logo 512" rules={[{ required: true, message: "请上传或填写 512px Logo" }]}>
+                          <Upload accept="image/png,image/jpeg,image/webp" maxCount={1} showUploadList={false}
+                            beforeUpload={(file) => {
+                              const ok = ["image/png", "image/jpeg", "image/webp"].includes(file.type);
+                              if (!ok) { message.error("仅支持 png/jpeg/webp"); return false; }
+                              if (file.size > 200 * 1024) { message.error("图片不能超过 200KB"); return false; }
+                              const reader = new FileReader();
+                              reader.onload = () => form.setFieldsValue({ siteSetting: { logo512: reader.result } });
+                              reader.readAsDataURL(file);
+                              return false;
+                            }}>
+                            <Button icon={<UploadOutlined />}>上传图片</Button>
+                          </Upload>
                         </Form.Item>
                       </div>
                     </Card>
@@ -1090,20 +1123,20 @@ export const Theme: React.FC<ThemeProps> = () => {
                   <Radio.Button value="bottom">页面底部</Radio.Button>
                 </Radio.Group>
               </Form.Item>
-              <Form.Item name={["search", "height"]} label="高矮（高度）">
-                <Input placeholder="40px" />
+              <Form.Item name={["search", "height"]} label="高矮（高度）" tooltip="单位 px，填写数字即可">
+                <Input addonAfter="px" placeholder="40" />
               </Form.Item>
-              <Form.Item name={["search", "radius"]} label="形状：方形↔圆形">
-                <Input placeholder="8px" />
+              <Form.Item name={["search", "radius"]} label="形状：方形↔圆形" tooltip="单位 px，填写数字即可">
+                <Input addonAfter="px" placeholder="8" />
               </Form.Item>
               <Form.Item name={["search", "transparent"]} label="透明无框" valuePropName="checked" tooltip="开启后搜索框无底色无边框，融入背景">
                 <Switch />
               </Form.Item>
-              <Form.Item name={["search", "textColor"]} label="文字颜色">
-                <Input placeholder="留空跟随文字主色" />
+              <Form.Item name={["search", "textColor"]} label="文字颜色" tooltip="留空跟随正文字色">
+                <ColorPicker showText allowClear />
               </Form.Item>
-              <Form.Item name={["search", "placeholderColor"]} label="提示颜色">
-                <Input placeholder="留空跟随次级文字色" />
+              <Form.Item name={["search", "placeholderColor"]} label="提示颜色" tooltip="留空跟随次级文字色">
+                <ColorPicker showText allowClear />
               </Form.Item>
               <Form.Item name={["search", "placeholder"]} label="占位文案">
                 <Input placeholder="留空使用默认提示语" />
@@ -1155,17 +1188,17 @@ export const Theme: React.FC<ThemeProps> = () => {
                         <Form.Item name={["tag", "transparent"]} label="透明无框" valuePropName="checked" tooltip="开启后标签无底色无边框，融入背景">
                           <Switch />
                         </Form.Item>
-                        <Form.Item name={["tag", "bg"]} label="底色">
-                          <Input placeholder="留空跟随卡片背景色" />
+                        <Form.Item name={["tag", "bg"]} label="底色" tooltip="留空跟随卡片底色">
+                          <ColorPicker showText allowClear />
                         </Form.Item>
-                        <Form.Item name={["tag", "activeBg"]} label="选中底色">
-                          <Input placeholder="留空跟随主色调" />
+                        <Form.Item name={["tag", "activeBg"]} label="选中底色" tooltip="留空跟随主题色">
+                          <ColorPicker showText allowClear />
                         </Form.Item>
-                        <Form.Item name={["tag", "textColor"]} label="文字颜色">
-                          <Input placeholder="留空跟随文字主色" />
+                        <Form.Item name={["tag", "textColor"]} label="文字颜色" tooltip="留空跟随正文字色">
+                          <ColorPicker showText allowClear />
                         </Form.Item>
-                        <Form.Item name={["tag", "radius"]} label="形状：方形↔圆形">
-                          <Input placeholder="8px" />
+                        <Form.Item name={["tag", "radius"]} label="形状：方形↔圆形" tooltip="单位 px，填写数字即可">
+                          <Input addonAfter="px" placeholder="8" />
                         </Form.Item>
                       </div>
                     </Card>
@@ -1192,14 +1225,14 @@ export const Theme: React.FC<ThemeProps> = () => {
           </Card>{/* 布局配置 */}
           <Card title="布局调整" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-              <Form.Item name={["layout", "cardBorderRadius"]} label="形状：方形↔圆形" tooltip="卡片四角的圆角程度，如 8px；0px 为方形">
-                <Input placeholder="8px" />
+              <Form.Item name={["layout", "cardBorderRadius"]} label="形状：方形↔圆形" tooltip="卡片四角的圆角程度，0 为方形；单位 px，填写数字即可">
+                <Input addonAfter="px" placeholder="8" />
               </Form.Item>
-              <Form.Item name={["layout", "cardPadding"]} label="卡片内部留白">
-                <Input placeholder="16px" />
+              <Form.Item name={["layout", "cardPadding"]} label="卡片内部留白" tooltip="单位 px，填写数字即可">
+                <Input addonAfter="px" placeholder="16" />
               </Form.Item>
-              <Form.Item name={["layout", "cardGap"]} label="卡片之间的距离">
-                <Input placeholder="12px" />
+              <Form.Item name={["layout", "cardGap"]} label="卡片之间的距离" tooltip="单位 px，填写数字即可">
+                <Input addonAfter="px" placeholder="12" />
               </Form.Item>
             </div>
             <Form.Item name={["layout", "cardShadow"]} label="卡片阴影">
@@ -1215,14 +1248,14 @@ export const Theme: React.FC<ThemeProps> = () => {
           </Card>{/* 卡片细项 */}
           <Card title="卡片细项" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["cardExtra", "logoSize"]} label="Logo 大小">
-                <Input placeholder="32px" />
+              <Form.Item name={["cardExtra", "logoSize"]} label="Logo 大小" tooltip="单位 px，填写数字即可">
+                <Input addonAfter="px" placeholder="32" />
               </Form.Item>
-              <Form.Item name={["cardExtra", "logoRadius"]} label="Logo 形状：方正↔圆润">
-                <Input placeholder="0px / 8px / 50%" />
+              <Form.Item name={["cardExtra", "logoRadius"]} label="Logo 形状：方正↔圆润" tooltip="0 为方形，50% 为圆形；填写数字（px 或 %）">
+                <Input placeholder="0 / 8 / 50%" />
               </Form.Item>
-              <Form.Item name={["cardExtra", "titleColor"]} label="标题颜色">
-                <Input placeholder="留空跟随文字主色" />
+              <Form.Item name={["cardExtra", "titleColor"]} label="标题颜色" tooltip="留空跟随正文字色">
+                <ColorPicker showText allowClear />
               </Form.Item>
               <Form.Item name={["cardExtra", "hoverLift"]} label="悬停上浮" valuePropName="checked" tooltip="鼠标悬停时卡片轻轻上浮">
                 <Switch />
@@ -1293,8 +1326,8 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item name={["linkBtn", "linkColor"]} label="链接颜色" tooltip="留空跟随主题色">
                 <ColorPicker showText allowClear />
               </Form.Item>
-              <Form.Item name={["linkBtn", "buttonRadius"]} label="按钮形状：方形↔圆形">
-                <Input placeholder="4px" />
+              <Form.Item name={["linkBtn", "buttonRadius"]} label="按钮形状：方形↔圆形" tooltip="单位 px，填写数字即可">
+                <Input addonAfter="px" placeholder="4" />
               </Form.Item>
             </div>
           </Card>
@@ -1325,8 +1358,8 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item name={["footer", "text"]} label="页脚文案" tooltip="留空则显示默认版权信息">
                 <Input placeholder="留空使用默认文案" />
               </Form.Item>
-              <Form.Item name={["footer", "textColor"]} label="文字颜色">
-                <Input placeholder="留空跟随次级文字色" />
+              <Form.Item name={["footer", "textColor"]} label="文字颜色" tooltip="留空跟随次级文字色">
+                <ColorPicker showText allowClear />
               </Form.Item>
               <Form.Item name={["footer", "hidden"]} label="隐藏页脚" valuePropName="checked">
                 <Switch />
