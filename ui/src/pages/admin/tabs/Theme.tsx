@@ -467,7 +467,6 @@ const buildConfigFromValues = (values: any) => ({
     showTitle: values.cardExtra?.showTitle !== false,
     showDesc: values.cardExtra?.showDesc !== false,
     showTag: values.cardExtra?.showTag !== false,
-    bgOpacity: values.cardExtra?.bgOpacity != null && values.cardExtra.bgOpacity !== "" ? String(values.cardExtra.bgOpacity) : "",
     titleFontFamily: values.cardExtra?.titleFontFamily || "",
     descFontFamily: values.cardExtra?.descFontFamily || "",
     descColor: colorToHex(values.cardExtra?.descColor, ""),
@@ -1041,7 +1040,7 @@ export const Theme: React.FC<ThemeProps> = () => {
               radius: { style: "small" },
               topbar: { transparent: false, blur: false, height: null },
               pageBg: { mode: "color", image: "", dimOpacity: "", dim: false },
-              cardExtra: { hoverLift: true, outline: false, height: null, width: null, showLogo: true, showTitle: true, showDesc: true, showTag: true, bgOpacity: "", titleFontFamily: "", descFontFamily: "", descColor: "", tagColor: "", tagBg: "", tagRadius: null, borderColor: "" },
+              cardExtra: { hoverLift: true, outline: false, height: null, width: null, showLogo: true, showTitle: true, showDesc: true, showTag: true, titleFontFamily: "", descFontFamily: "", descColor: "", tagColor: "", tagBg: "", tagRadius: null, borderColor: "" },
               linkBtn: { buttonRadius: null },
               footer: { hidden: false, text: "", bgColor: "", fontFamily: "" },
               search: { hidden: false, position: "center", width: "60%", vertical: "top", height: 40, radius: 8, textColor: "", placeholderColor: "", placeholder: "", fontFamily: "", fontSize: 16, bgColor: "", borderColor: "" },
@@ -1247,11 +1246,13 @@ export const Theme: React.FC<ThemeProps> = () => {
                         </div>
                       </Card>
                       {/* 页脚与备案 */}
-                      <Card title="页脚与备案" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>页脚&amp;备案文案显示在页面底部；页脚背景留空=透明融入页面背景，使用渐变/图片背景时建议留空</span>}>
+                      <Card title="页脚与备案" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>页脚&备案文案显示在页面底部；页脚背景留空=透明融入页面背景，使用渐变/图片背景时建议留空</span>}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
                           <Form.Item name={["footer", "hidden"]} label="显示页脚" valuePropName="checked" getValueProps={(v) => ({ checked: v !== true })} getValueFromEvent={(v) => !v} tooltip="关闭后整个页脚区连同其专属设置项一并隐藏">
                             <Switch />
                           </Form.Item>
+                          {footerHiddenWatch !== true && (
+                          <>
                           <Form.Item name={["siteSetting", "govRecord"]} label="页脚&备案文案" tooltip="显示在页面底部；留空显示默认版权信息">
                             <Input placeholder="如：© 2026 Van Nav · 京ICP备XXXXXXXX号" />
                           </Form.Item>
@@ -1264,6 +1265,8 @@ export const Theme: React.FC<ThemeProps> = () => {
                           <Form.Item name={["footer", "fontFamily"]} label="页脚字体" tooltip="留空跟随全局字体">
                             <Select allowClear placeholder="跟随全局" options={FONT_FAMILY_OPTIONS} />
                           </Form.Item>
+                          </>
+                        )}
                         </div>
                       </Card>
                     </>
@@ -1456,38 +1459,43 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item name={["cardExtra", "height"]} label="卡片高度" tooltip="只填数字，留空则按内容自适应，单位 px">
                 <InputNumber min={0} max={2000} addonAfter="px" style={{ width: '100%' }} placeholder="留空自适应" />
               </Form.Item>
-              <Form.Item name={["cardExtra", "bgOpacity"]} label="背景透明度" tooltip="卡片底色的不透明程度：0=全透明（无底色），1=不透明；留空=不透明">
-                <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} placeholder="0 - 1" />
-              </Form.Item>
               <Form.Item name={["cardExtra", "hoverLift"]} label="悬停上浮" valuePropName="checked" tooltip="鼠标悬停时卡片轻轻上浮">
                 <Switch />
               </Form.Item>
             </div>
           </Card>
           {/* 卡片 Logo */}
+                    {/* 卡片 Logo */}
           <Card title="卡片 Logo" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["cardExtra", "showLogo"]} label="显示 Logo" valuePropName="checked">
+                            <Form.Item name={["cardExtra", "showLogo"]} label="显示 Logo" valuePropName="checked">
                 <Switch />
               </Form.Item>
-              <Form.Item name={["cardExtra", "logoSize"]} label="Logo 大小" tooltip="只填数字，单位 px，各屏幕宽度统一生效">
+              {showLogoWatch !== false && (
+              <>
+                            <Form.Item name={["cardExtra", "logoSize"]} label="Logo 大小" tooltip="只填数字，单位 px，各屏幕宽度统一生效">
                 <InputNumber min={8} max={128} addonAfter="px" style={{ width: '100%' }} placeholder="32" />
               </Form.Item>
-              <Form.Item name={["cardExtra", "logoRadius"]} label="Logo 形状：方正↔圆润" tooltip="只填数字，0 为方形，数值越大越圆润，超过 Logo 半径即为圆形，单位 px">
+                            <Form.Item name={["cardExtra", "logoRadius"]} label="Logo 形状：方正↔圆润" tooltip="只填数字，0 为方形，数值越大越圆润，超过 Logo 半径即为圆形，单位 px">
                 <InputNumber min={0} max={50} addonAfter="px" style={{ width: '100%' }} placeholder="0" />
               </Form.Item>
+              </>
+              )}
             </div>
           </Card>
           {/* 卡片标题 */}
+                    {/* 卡片标题 */}
           <Card title="卡片标题" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["cardExtra", "showTitle"]} label="显示 标题" valuePropName="checked">
+                            <Form.Item name={["cardExtra", "showTitle"]} label="显示 标题" valuePropName="checked">
                 <Switch />
               </Form.Item>
-              <Form.Item name={["typography", "titleFontSize"]} label="标题字号" tooltip="只填数字，单位 px">
+              {showTitleWatch !== false && (
+              <>
+                            <Form.Item name={["typography", "titleFontSize"]} label="标题字号" tooltip="只填数字，单位 px">
                 <InputNumber min={10} max={40} addonAfter="px" style={{ width: '100%' }} placeholder="16" />
               </Form.Item>
-              <Form.Item name={["typography", "titleFontWeight"]} label="标题字重">
+                            <Form.Item name={["typography", "titleFontWeight"]} label="标题字重">
                 <Select
                   options={[
                     { label: "正常 (400)", value: "400" },
@@ -1497,46 +1505,58 @@ export const Theme: React.FC<ThemeProps> = () => {
                   ]}
                 />
               </Form.Item>
-              <Form.Item name={["cardExtra", "titleFontFamily"]} label="标题字体" tooltip="留空跟随全局字体">
+                            <Form.Item name={["cardExtra", "titleFontFamily"]} label="标题字体" tooltip="留空跟随全局字体">
                 <Select allowClear placeholder="跟随全局" options={FONT_FAMILY_OPTIONS} />
               </Form.Item>
-              <Form.Item name={["cardExtra", "titleColor"]} label="标题颜色" tooltip="留空跟随正文字色">
+                            <Form.Item name={["cardExtra", "titleColor"]} label="标题颜色" tooltip="留空跟随正文字色">
                 <ColorPicker showText allowClear />
               </Form.Item>
+              </>
+              )}
             </div>
           </Card>
           {/* 卡片描述 */}
+                    {/* 卡片描述 */}
           <Card title="卡片描述" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["cardExtra", "showDesc"]} label="显示 简介" valuePropName="checked">
+                            <Form.Item name={["cardExtra", "showDesc"]} label="显示 简介" valuePropName="checked">
                 <Switch />
               </Form.Item>
-              <Form.Item name={["typography", "descFontSize"]} label="描述字号" tooltip="只填数字，单位 px">
+              {showDescWatch !== false && (
+              <>
+                            <Form.Item name={["typography", "descFontSize"]} label="描述字号" tooltip="只填数字，单位 px">
                 <InputNumber min={10} max={30} addonAfter="px" style={{ width: '100%' }} placeholder="13" />
               </Form.Item>
-              <Form.Item name={["cardExtra", "descFontFamily"]} label="描述字体" tooltip="留空跟随全局字体">
+                            <Form.Item name={["cardExtra", "descFontFamily"]} label="描述字体" tooltip="留空跟随全局字体">
                 <Select allowClear placeholder="跟随全局" options={FONT_FAMILY_OPTIONS} />
               </Form.Item>
-              <Form.Item name={["cardExtra", "descColor"]} label="描述颜色" tooltip="留空跟随次级文字色">
+                            <Form.Item name={["cardExtra", "descColor"]} label="描述颜色" tooltip="留空跟随次级文字色">
                 <ColorPicker showText allowClear />
               </Form.Item>
+              </>
+              )}
             </div>
           </Card>
           {/* 卡片小标签 */}
-          <Card title="卡片小标签" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>卡片标题旁的分类小标签</span>}>
+                    {/* 卡片小标签 */}
+          <Card title="卡片小标签" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["cardExtra", "showTag"]} label="显示 小标签" valuePropName="checked">
+                            <Form.Item name={["cardExtra", "showTag"]} label="显示 小标签" valuePropName="checked">
                 <Switch />
               </Form.Item>
-              <Form.Item name={["cardExtra", "tagColor"]} label="文字颜色" tooltip="留空跟随次级文字色">
+              {showTagWatch !== false && (
+              <>
+                            <Form.Item name={["cardExtra", "tagColor"]} label="文字颜色" tooltip="留空跟随次级文字色">
                 <ColorPicker showText allowClear />
               </Form.Item>
-              <Form.Item name={["cardExtra", "tagBg"]} label="底色" tooltip="留空跟随卡片底色">
+                            <Form.Item name={["cardExtra", "tagBg"]} label="底色" tooltip="留空跟随卡片底色">
                 <ColorPicker showText allowClear />
               </Form.Item>
-              <Form.Item name={["cardExtra", "tagRadius"]} label="圆角" tooltip="只填数字，单位 px">
+                            <Form.Item name={["cardExtra", "tagRadius"]} label="圆角" tooltip="只填数字，单位 px">
                 <InputNumber min={0} max={20} addonAfter="px" style={{ width: '100%' }} placeholder="4" />
               </Form.Item>
+              </>
+              )}
             </div>
           </Card>
           {/* 显示选项（自 settings 迁入） */}

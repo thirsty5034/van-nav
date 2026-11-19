@@ -118,6 +118,7 @@ func main() {
 	//router.Use(gzip.Gzip(gzip.DefaultCompression))
 	// 嵌入文件夹
 	router.GET("/manifest.json", handler.ManifestHandler)
+	router.GET("/favicon.ico", handler.FaviconHandler)
 	router.Use(Serve("/", BinaryFileSystem(fs, "public")))
 	api := router.Group("/api")
 	api.Use(func(c *gin.Context) {

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"crypto/tls"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net"
@@ -148,6 +149,45 @@ func UpdateSettingHandler(c *gin.Context) {
 		"success": true,
 		"message": "更新配置成功",
 	})
+}
+
+// FaviconHandler 返回站点图标：优先站点设置的自定义图标；未设置时回退内置默认图标。
+// 独立路由保证“清除图标/恢复默认”后浏览器总能取到真实存在的默认图标（public 下并无 favicon.ico 文件）。
+func FaviconHandler(c *gin.Context) {
+	c.Header("Cache-Control", "no-cache")
+	if setting, err := service.GetSetting(); err == nil {
+		f := setting.Favicon
+		switch {
+		case strings.HasPrefix(f, "data:"):
+			if mime, raw, ok := decodeDataURL(f); ok {
+				c.Data(http.StatusOK, mime, raw)
+				return
+			}
+		case f != "" && f != "favicon.ico" && strings.Contains(f, "/"):
+			// 站内自定义路径（如 /my-icon.png）：交给静态服务
+			c.File(f)
+			return
+		}
+	}
+	// 默认图标：内置 PNG（/favicon.ico 此前并不存在文件，静态服务会回退 index.html 导致图标无法恢复默认）
+	c.Data(http.StatusOK, "image/png", service.DefaultLogoPNG())
+}
+
+// decodeDataURL 解析 data:URI（仅 base64），返回 MIME 与原始字节
+func decodeDataURL(uri string) (string, []byte, bool) {
+	header, payload, ok := strings.Cut(strings.TrimPrefix(uri, "data:"), ",")
+	if !ok || payload == "" {
+		return "", nil, false
+	}
+	mime := strings.TrimSpace(strings.Split(header, ";")[0])
+	if mime == "" {
+		mime = "application/octet-stream"
+	}
+	raw, err := base64.StdEncoding.DecodeString(payload)
+	if err != nil {
+		return "", nil, false
+	}
+	return mime, raw, true
 }
 
 func UpdateUserHandler(c *gin.Context) {
