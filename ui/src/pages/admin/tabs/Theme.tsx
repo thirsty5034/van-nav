@@ -430,26 +430,37 @@ const buildPreviewDoc = () => {
 * { box-sizing: border-box; }
 body {
   margin: 0; padding-bottom: 46px;
+  display: flex; flex-direction: column;
   font-family: var(--van-nav-font-family);
   font-size: var(--van-nav-base-font-size);
   background: var(--van-nav-page-bg);
   background-attachment: fixed;
   color: var(--van-nav-text-primary);
 }
-.topbar { padding: 16px 0 8px; background: var(--van-nav-topbar-bg); color: var(--van-nav-topbar-text); backdrop-filter: var(--van-nav-topbar-filter); -webkit-backdrop-filter: var(--van-nav-topbar-filter); }
-.search-wraper { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+.topbar { order: 0; padding: 16px 0 8px; background: var(--van-nav-topbar-bg); color: var(--van-nav-topbar-text); backdrop-filter: var(--van-nav-topbar-filter); -webkit-backdrop-filter: var(--van-nav-topbar-filter); }
+.search-wraper { width: var(--van-nav-search-width, 60%); margin: 0 auto; padding: 0 16px; }
+body.search-left .search-wraper { margin-left: 16px; margin-right: auto; }
+body.search-right .search-wraper { margin-left: auto; margin-right: 16px; }
 .search-wraper input {
-  width: 100%; height: 40px; padding: 0 14px;
-  border: 1px solid var(--van-nav-border); border-radius: var(--van-nav-radius-global);
+  width: 100%; height: var(--van-nav-search-height, 40px); padding: 0 14px;
+  border: 1px solid var(--van-nav-border); border-radius: var(--van-nav-search-radius, var(--van-nav-radius-global));
   background: color-mix(in srgb, var(--van-nav-bg-card) 55%, transparent);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  color: var(--van-nav-text-primary); outline: none;
+  color: var(--van-nav-search-text-color, var(--van-nav-text-primary)); outline: none;
 }
-.tag-row { max-width: 640px; margin: 12px auto 18px; padding: 0 16px; }
-.select-tag { display: inline-block; padding: 3px 12px; margin: 0 6px 6px 0; border: 1px solid var(--van-nav-border); border-radius: var(--van-nav-radius-global); color: var(--van-nav-text-secondary); font-size: 12px; }
-.select-tag-active { border-color: var(--van-nav-primary); color: var(--van-nav-primary); }
-.cards { display: grid; grid-template-columns: 1fr 1fr; gap: var(--van-nav-card-gap); padding: 0 18px; }
-.card-box { display: flex; gap: 10px; align-items: center; background: var(--van-nav-bg-card); border-radius: var(--van-nav-card-radius); box-shadow: var(--van-nav-card-shadow); padding: var(--van-nav-card-padding); transition: transform 0.2s ease; }
+.search-wraper input::placeholder { color: var(--van-nav-search-placeholder-color, var(--van-nav-text-secondary)); }
+body.search-transparent .search-wraper input { background: transparent; border-color: transparent; }
+body.search-hidden .search-wraper { display: none; }
+.tag-row { order: 1; max-width: 640px; margin: 12px auto 18px; padding: 0 16px; }
+body.tag-bottom .tag-row { order: 3; }
+body.tag-left .tag-row, body.tag-right .tag-row { position: fixed; top: 90px; max-width: none; margin: 0; display: flex; flex-direction: column; align-items: flex-start; z-index: 50; }
+body.tag-left .tag-row { left: 0; }
+body.tag-right .tag-row { right: 0; align-items: flex-end; }
+body.tag-hidden .tag-row { display: none; }
+.select-tag { display: inline-block; padding: 3px 12px; margin: 0 6px 6px 0; border: 1px solid var(--van-nav-tag-bg, var(--van-nav-border)); border-radius: var(--van-nav-tag-radius, var(--van-nav-radius-global)); background: var(--van-nav-tag-bg, transparent); color: var(--van-nav-tag-text-color, var(--van-nav-text-secondary)); font-size: 12px; }
+.select-tag-active { background: var(--van-nav-tag-active-bg, var(--van-nav-primary)); border-color: var(--van-nav-tag-active-bg, var(--van-nav-primary)); color: #ffffff; }
+.cards { order: 2; display: grid; grid-template-columns: 1fr 1fr; gap: var(--van-nav-card-gap); padding: 0 18px; }
+.card-box { display: flex; gap: 10px; align-items: center; background: var(--van-nav-bg-card); border-radius: var(--van-nav-card-radius); box-shadow: var(--van-nav-card-shadow); padding: var(--van-nav-card-padding); min-height: var(--van-nav-card-height, auto); transition: transform 0.2s ease; }
 .card-box:hover { transform: translateY(-2px); }
 body.card-hover-off .card-box:hover { transform: none; }
 body.card-outline-mode .card-box { box-shadow: none; border: 1px solid var(--van-nav-border); }
@@ -459,19 +470,19 @@ body.card-outline-mode .card-box { box-shadow: none; border: 1px solid var(--van
 .card-right-title { color: var(--van-nav-card-title-color, var(--van-nav-text-primary)); font-size: var(--van-nav-title-size, 16px); font-weight: var(--van-nav-title-weight, 600); }
 .card-tag { font-size: 11px; color: var(--van-nav-text-secondary); border: 1px solid var(--van-nav-border); border-radius: 4px; padding: 1px 6px; margin-left: 6px; }
 .card-right-bottom { color: var(--van-nav-text-secondary); font-size: var(--van-nav-desc-size, 13px); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.record-wraper { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; padding: 10px 0; background: var(--van-nav-bg-base); color: var(--van-nav-footer-text, var(--van-nav-text-secondary)); font-size: 12px; }
+.record-wraper { order: 4; position: fixed; bottom: 0; left: 0; right: 0; text-align: center; padding: 10px 0; background: var(--van-nav-bg-base); color: var(--van-nav-footer-text, var(--van-nav-text-secondary)); font-size: 12px; }
 body.footer-hidden .record-wraper { display: none; }
 </style>
 </head>
 <body>
   <div class="topbar">
     <div class="search-wraper"><input id="search-bar" placeholder="按任意键直接开始搜索" /></div>
-    <div class="tag-row">
-      <span class="select-tag select-tag-active">全部工具</span>
-      <span class="select-tag">常用</span>
-      <span class="select-tag">技术</span>
-      <span class="select-tag">社区</span>
-    </div>
+  </div>
+  <div class="tag-row">
+    <span class="select-tag select-tag-active">全部工具</span>
+    <span class="select-tag">常用</span>
+    <span class="select-tag">技术</span>
+    <span class="select-tag">社区</span>
   </div>
   <div class="cards"><a class="card-box" data-catelog="技术">
         <div class="card-left"><img src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%2324292f%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3EG%3C/text%3E%3C/svg%3E" alt="GitHub" /></div>
@@ -593,9 +604,25 @@ export const Theme: React.FC<ThemeProps> = () => {
         doc.head.appendChild(styleEl);
       }
       styleEl.textContent = vars["--van-nav-custom-css"] || "";
-      doc.body.classList.toggle("card-hover-off", config.cardExtra?.hoverLift === false);
-      doc.body.classList.toggle("card-outline-mode", config.cardExtra?.outline === true);
+      const cardCfg = config.cardExtra || {};
+      const searchCfg = config.search || {};
+      const tagCfg = config.tag || {};
+      doc.body.classList.toggle("search-hidden", searchCfg.hidden === true);
+      doc.body.classList.toggle("search-transparent", searchCfg.transparent === true);
+      doc.body.classList.toggle("search-left", searchCfg.position === "left");
+      doc.body.classList.toggle("search-right", searchCfg.position === "right");
+      doc.body.classList.toggle("tag-hidden", tagCfg.hidden === true);
+      doc.body.classList.toggle("tag-bottom", tagCfg.position === "bottom");
+      doc.body.classList.toggle("tag-left", tagCfg.position === "left");
+      doc.body.classList.toggle("tag-right", tagCfg.position === "right");
+      doc.body.classList.toggle("card-hover-off", cardCfg.hoverLift === false);
+      doc.body.classList.toggle("card-outline-mode", cardCfg.outline === true);
       doc.body.classList.toggle("footer-hidden", config.footer?.hidden === true);
+      const show = (sel, flag) => doc.querySelectorAll(sel).forEach(e => { e.style.display = flag ? "" : "none"; });
+      show(".card-left", cardCfg.showLogo !== false);
+      show(".card-right-title", cardCfg.showTitle !== false);
+      show(".card-right-bottom", cardCfg.showDesc !== false);
+      show(".card-tag", cardCfg.showTag !== false);
     } catch {
       // iframe 文档未就绪时忽略本次同步
     }
