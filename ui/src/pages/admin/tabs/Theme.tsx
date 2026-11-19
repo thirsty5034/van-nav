@@ -1003,25 +1003,31 @@ export const Theme: React.FC<ThemeProps> = () => {
       onOk: async () => {
         try {
           const res = await fetchResetTheme();
-          if (res?.success) {
-            message.success("已重置为默认主题");
-            // 站点图标一并恢复系统默认（清空后由后端回退 favicon.ico / logo192.png / logo512.png）
-            try {
-              await fetchUpdateSetting({
-                ...(store?.setting ?? {}),
-                favicon: "",
-                logo192: "",
-                logo512: "",
-              });
-            } catch (iconErr: any) {
-              console.error("重置站点图标失败:", iconErr);
-            }
-            clearThemeVars();
-            loadThemeConfig();
-            reload();
-          } else {
+          if (!res?.success) {
             message.error(res?.errorMessage || "重置失败");
+            return;
           }
+          // 站点设置与运行开关一并恢复默认（含站点图标清空后由后端回退 favicon.ico / logo192.png / logo512.png）
+          const siteRes = await fetchUpdateSetting({
+            ...(store?.setting ?? {}),
+            title: "Van Nav",
+            favicon: "",
+            logo192: "",
+            logo512: "",
+            govRecord: "",
+            jumpTargetBlank: false,
+            pcColumnCount: 3,
+            showSearchEngine: true,
+          });
+          const cfgRes = await fetchUpdateSiteConfig({ ...(store?.siteConfig ?? {}), sortByClicks: false });
+          if (!siteRes?.success || !cfgRes?.success) {
+            message.error("主题已重置，但部分站点设置恢复默认失败");
+            return;
+          }
+          message.success("已重置为默认主题");
+          clearThemeVars();
+          loadThemeConfig();
+          reload();
         } catch (err: any) {
           message.error("重置失败: " + (err.message || "未知错误"));
         }
