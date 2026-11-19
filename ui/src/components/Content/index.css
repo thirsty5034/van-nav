@@ -861,6 +861,7 @@ body.dark-mode .tag-rail .select-tag {
 /* 卡片高度（空值=auto 回退现默认）；精简模式的固定行高优先级更高，行为不变 */
 .content-wraper .card-box {
   height: var(--van-nav-card-height, auto);
+  max-width: var(--van-nav-card-width, none);
 }
 /* 卡片底色透明度 bgOpacity（0-1，空值=1 不透明） */
 @supports (background: color-mix(in srgb, red 50%, transparent)) {

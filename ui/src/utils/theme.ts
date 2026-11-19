@@ -41,6 +41,7 @@ export interface ThemeCardConfig {
   hoverLift?: boolean;
   outline?: boolean;
   height?: string;
+  width?: string;
   showLogo?: boolean;
   showTitle?: boolean;
   showDesc?: boolean;
@@ -350,6 +351,7 @@ export const computeThemeVars = (config: ThemeConfig, dark: boolean): Record<str
     '--van-nav-tag-border-color': config.tag?.borderColor || '',
     // 扩展：卡片高度/展示开关/底色透明度（展示开关缺省视为展示）
     '--van-nav-card-height': config.cardExtra?.height || '',
+    '--van-nav-card-width': config.cardExtra?.width || '',
     '--van-nav-card-show-logo': config.cardExtra?.showLogo === false ? 'false' : 'true',
     '--van-nav-card-show-title': config.cardExtra?.showTitle === false ? 'false' : 'true',
     '--van-nav-card-show-desc': config.cardExtra?.showDesc === false ? 'false' : 'true',
@@ -433,7 +435,7 @@ export const clearThemeVars = () => {
     '--van-nav-search-transparent', '--van-nav-search-text-color', '--van-nav-search-placeholder-color',
     '--van-nav-tag-hidden', '--van-nav-tag-position', '--van-nav-tag-bg',
     '--van-nav-tag-active-bg', '--van-nav-tag-text-color', '--van-nav-tag-radius',
-    '--van-nav-card-height', '--van-nav-card-show-logo', '--van-nav-card-show-title',
+    '--van-nav-card-height', '--van-nav-card-width', '--van-nav-card-show-logo', '--van-nav-card-show-title',
     '--van-nav-card-show-desc', '--van-nav-card-show-tag', '--van-nav-card-bg-opacity',
     '--van-nav-footer-bg', '--van-nav-footer-font-family',
     '--van-nav-search-font-family', '--van-nav-search-font-size', '--van-nav-search-bg',

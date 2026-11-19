@@ -374,6 +374,9 @@ func validateThemeConfig(config *types.ThemeConfig) error {
 	if err := validatePxField(config.CardExtra.Height, "卡片高度"); err != nil {
 		return err
 	}
+	if err := validatePxField(config.CardExtra.Width, "卡片宽度"); err != nil {
+		return err
+	}
 	opacityPattern := regexp.MustCompile(`^(0(\.\d+)?|1)$`)
 	if config.CardExtra.BgOpacity != "" && !opacityPattern.MatchString(config.CardExtra.BgOpacity) {
 		return fmt.Errorf("卡片底色透明度应为 0-1 之间的数字")
@@ -532,6 +535,7 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 		config.CardExtra.HoverLift = boolFromMap(m, "hoverLift", config.CardExtra.HoverLift)
 		config.CardExtra.Outline = boolFromMap(m, "outline", config.CardExtra.Outline)
 		config.CardExtra.Height = strFromMap(m, "height", config.CardExtra.Height)
+		config.CardExtra.Width = strFromMap(m, "width", config.CardExtra.Width)
 		config.CardExtra.ShowLogo = boolFromMap(m, "showLogo", config.CardExtra.ShowLogo)
 		config.CardExtra.ShowTitle = boolFromMap(m, "showTitle", config.CardExtra.ShowTitle)
 		config.CardExtra.ShowDesc = boolFromMap(m, "showDesc", config.CardExtra.ShowDesc)
@@ -741,6 +745,7 @@ func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, erro
 			"hoverLift":       config.CardExtra.HoverLift,
 			"outline":         config.CardExtra.Outline,
 			"height":          config.CardExtra.Height,
+			"width":           config.CardExtra.Width,
 			"showLogo":        config.CardExtra.ShowLogo,
 			"showTitle":       config.CardExtra.ShowTitle,
 			"showDesc":        config.CardExtra.ShowDesc,

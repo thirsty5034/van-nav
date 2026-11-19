@@ -381,6 +381,7 @@ const normalizeThemeFormValues = (d: any) => {
     d.cardExtra.logoSize = pxToNum(d.cardExtra.logoSize);
     d.cardExtra.logoRadius = pxToNum(d.cardExtra.logoRadius);
     d.cardExtra.height = pxToNum(d.cardExtra.height);
+    d.cardExtra.width = pxToNum(d.cardExtra.width);
   }
   if (d.linkBtn) d.linkBtn.buttonRadius = pxToNum(d.linkBtn.buttonRadius);
   if (d.search) {
@@ -461,6 +462,7 @@ const buildConfigFromValues = (values: any) => ({
     hoverLift: values.cardExtra?.hoverLift !== false,
     outline: !!values.cardExtra?.outline,
     height: numToPxOrEmpty(values.cardExtra?.height),
+    width: numToPxOrEmpty(values.cardExtra?.width),
     showLogo: values.cardExtra?.showLogo !== false,
     showTitle: values.cardExtra?.showTitle !== false,
     showDesc: values.cardExtra?.showDesc !== false,
@@ -563,7 +565,7 @@ body.tag-hidden .tag-row { display: none; }
 .select-tag { display: inline-block; padding: 3px 12px; margin: 0 6px 6px 0; border: 1px solid var(--van-nav-border); border-color: var(--van-nav-tag-border-color, var(--van-nav-tag-bg, var(--van-nav-border))); border-radius: var(--van-nav-tag-radius, var(--van-nav-radius-global)); background: var(--van-nav-tag-bg, transparent); color: var(--van-nav-tag-text-color, var(--van-nav-text-secondary)); font-family: var(--van-nav-tag-font-family, inherit); font-size: var(--van-nav-tag-font-size, 12px); }
 .select-tag-active { background: var(--van-nav-tag-active-bg, var(--van-nav-primary)); border-color: var(--van-nav-tag-active-bg, var(--van-nav-primary)); color: #ffffff; }
 .cards { order: 2; display: grid; grid-template-columns: 1fr 1fr; gap: var(--van-nav-card-gap); padding: 0 18px; }
-.card-box { display: flex; gap: 10px; align-items: center; background: color-mix(in srgb, var(--van-nav-bg-card) calc(var(--van-nav-card-bg-opacity, 1) * 100%), transparent); border-radius: var(--van-nav-card-radius); box-shadow: var(--van-nav-card-shadow); padding: var(--van-nav-card-padding); min-height: var(--van-nav-card-height, auto); transition: transform 0.2s ease; }
+.card-box { display: flex; gap: 10px; align-items: center; background: color-mix(in srgb, var(--van-nav-bg-card) calc(var(--van-nav-card-bg-opacity, 1) * 100%), transparent); border-radius: var(--van-nav-card-radius); box-shadow: var(--van-nav-card-shadow); padding: var(--van-nav-card-padding); min-height: var(--van-nav-card-height, auto); max-width: var(--van-nav-card-width, none); transition: transform 0.2s ease; }
 .card-box:hover { transform: translateY(-2px); }
 body.card-hover-off .card-box:hover { transform: none; }
 body.card-outline-mode .card-box { box-shadow: none; border: 1px solid var(--van-nav-card-border-color, var(--van-nav-border)); }
@@ -1039,7 +1041,7 @@ export const Theme: React.FC<ThemeProps> = () => {
               radius: { style: "small" },
               topbar: { transparent: false, blur: false, height: null },
               pageBg: { mode: "color", image: "", dimOpacity: "", dim: false },
-              cardExtra: { hoverLift: true, outline: false, height: null, showLogo: true, showTitle: true, showDesc: true, showTag: true, bgOpacity: "", titleFontFamily: "", descFontFamily: "", descColor: "", tagColor: "", tagBg: "", tagRadius: null, borderColor: "" },
+              cardExtra: { hoverLift: true, outline: false, height: null, width: null, showLogo: true, showTitle: true, showDesc: true, showTag: true, bgOpacity: "", titleFontFamily: "", descFontFamily: "", descColor: "", tagColor: "", tagBg: "", tagRadius: null, borderColor: "" },
               linkBtn: { buttonRadius: null },
               footer: { hidden: false, text: "", bgColor: "", fontFamily: "" },
               search: { hidden: false, position: "center", width: "60%", vertical: "top", height: 40, radius: 8, textColor: "", placeholderColor: "", placeholder: "", fontFamily: "", fontSize: 16, bgColor: "", borderColor: "" },
@@ -1247,6 +1249,9 @@ export const Theme: React.FC<ThemeProps> = () => {
                       {/* 页脚与备案 */}
                       <Card title="页脚与备案" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>页脚&amp;备案文案显示在页面底部；页脚背景留空=透明融入页面背景，使用渐变/图片背景时建议留空</span>}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                          <Form.Item name={["footer", "hidden"]} label="显示页脚" valuePropName="checked" getValueProps={(v) => ({ checked: v !== true })} getValueFromEvent={(v) => !v} tooltip="关闭后整个页脚区连同其专属设置项一并隐藏">
+                            <Switch />
+                          </Form.Item>
                           <Form.Item name={["siteSetting", "govRecord"]} label="页脚&备案文案" tooltip="显示在页面底部；留空显示默认版权信息">
                             <Input placeholder="如：© 2026 Van Nav · 京ICP备XXXXXXXX号" />
                           </Form.Item>
@@ -1258,9 +1263,6 @@ export const Theme: React.FC<ThemeProps> = () => {
                           </Form.Item>
                           <Form.Item name={["footer", "fontFamily"]} label="页脚字体" tooltip="留空跟随全局字体">
                             <Select allowClear placeholder="跟随全局" options={FONT_FAMILY_OPTIONS} />
-                          </Form.Item>
-                          <Form.Item name={["footer", "hidden"]} label="隐藏页脚" valuePropName="checked">
-                            <Switch />
                           </Form.Item>
                         </div>
                       </Card>
@@ -1275,7 +1277,7 @@ export const Theme: React.FC<ThemeProps> = () => {
                       {/* 搜索框样式 */}
           <Card title="搜索框" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["search", "hidden"]} label="隐藏搜索框" valuePropName="checked">
+              <Form.Item name={["search", "hidden"]} label="显示搜索框" valuePropName="checked" getValueProps={(v) => ({ checked: v !== true })} getValueFromEvent={(v) => !v} tooltip="关闭后整个搜索框连同其专属设置项一并隐藏">
                 <Switch />
               </Form.Item>
               {!searchHiddenWatch && (<>
@@ -1366,7 +1368,7 @@ export const Theme: React.FC<ThemeProps> = () => {
                   children: (
                     <Card title="分类标签" style={{ marginBottom: 24 }}>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-                        <Form.Item name={["tag", "hidden"]} label="隐藏分类标签" valuePropName="checked">
+                        <Form.Item name={["tag", "hidden"]} label="显示分类标签" valuePropName="checked" getValueProps={(v) => ({ checked: v !== true })} getValueFromEvent={(v) => !v} tooltip="关闭后整个分类标签栏连同其专属设置项一并隐藏">
                           <Switch />
                         </Form.Item>
                         {!tagHiddenWatch && (<>
@@ -1420,9 +1422,23 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item name={["colors", "bgCard"]} label="卡片背景色">
                 <ColorPicker showText />
               </Form.Item>
-              {cardOutlineWatch && (
-                <Form.Item name={["cardExtra", "borderColor"]} label="边框颜色" tooltip="卡片描边颜色（描边替代阴影模式下显示）；留空跟随全局边框色">
+              <Form.Item name={["cardExtra", "outline"]} label="描边替代阴影" valuePropName="checked" tooltip="开启后卡片用边框勾勒，不再投射阴影；此时第二项显示边框颜色，否则显示卡片阴影">
+                <Switch />
+              </Form.Item>
+              {cardOutlineWatch ? (
+                <Form.Item name={["cardExtra", "borderColor"]} label="边框颜色" tooltip="卡片描边颜色；留空跟随全局边框色">
                   <ColorPicker showText allowClear />
+                </Form.Item>
+              ) : (
+                <Form.Item name={["layout", "cardShadow"]} label="卡片阴影">
+                  <Select
+                    options={[
+                      { label: "无阴影", value: "none" },
+                      { label: "轻微阴影", value: "0 1px 2px rgba(0,0,0,0.03), 0 1px 6px rgba(0,0,0,0.02)" },
+                      { label: "柔和阴影", value: "0 2px 8px rgba(0,0,0,0.08)" },
+                      { label: "明显阴影", value: "0 4px 16px rgba(0,0,0,0.12)" },
+                    ]}
+                  />
                 </Form.Item>
               )}
               <Form.Item name={["layout", "cardBorderRadius"]} label="形状：方形↔圆形" tooltip="卡片四角的圆角程度，0 为方形，数值越大越圆，单位 px">
@@ -1434,26 +1450,14 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item name={["layout", "cardGap"]} label="卡片之间的距离" tooltip="只填数字，单位 px">
                 <InputNumber min={0} max={100} addonAfter="px" style={{ width: '100%' }} placeholder="16" />
               </Form.Item>
+              <Form.Item name={["cardExtra", "width"]} label="卡片宽度" tooltip="只填数字，留空则随每行列数自适应，单位 px">
+                <InputNumber min={0} max={2000} addonAfter="px" style={{ width: '100%' }} placeholder="留空自适应" />
+              </Form.Item>
               <Form.Item name={["cardExtra", "height"]} label="卡片高度" tooltip="只填数字，留空则按内容自适应，单位 px">
                 <InputNumber min={0} max={2000} addonAfter="px" style={{ width: '100%' }} placeholder="留空自适应" />
               </Form.Item>
-              <Form.Item name={["cardExtra", "bgOpacity"]} label="底色透明度" tooltip="0 全透明 - 1 不透明；留空为不透明">
+              <Form.Item name={["cardExtra", "bgOpacity"]} label="背景透明度" tooltip="卡片底色的不透明程度：0=全透明（无底色），1=不透明；留空=不透明">
                 <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} placeholder="0 - 1" />
-              </Form.Item>
-              {!cardOutlineWatch && (
-              <Form.Item name={["layout", "cardShadow"]} label="卡片阴影">
-                <Select
-                  options={[
-                    { label: "无阴影", value: "none" },
-                    { label: "轻微阴影", value: "0 1px 2px rgba(0,0,0,0.03), 0 1px 6px rgba(0,0,0,0.02)" },
-                    { label: "柔和阴影", value: "0 2px 8px rgba(0,0,0,0.08)" },
-                    { label: "明显阴影", value: "0 4px 16px rgba(0,0,0,0.12)" },
-                  ]}
-                />
-              </Form.Item>
-              )}
-              <Form.Item name={["cardExtra", "outline"]} label="描边替代阴影" valuePropName="checked" tooltip="开启后卡片用边框勾勒，不再投射阴影；此时改用下方边框颜色">
-                <Switch />
               </Form.Item>
               <Form.Item name={["cardExtra", "hoverLift"]} label="悬停上浮" valuePropName="checked" tooltip="鼠标悬停时卡片轻轻上浮">
                 <Switch />
@@ -1463,27 +1467,24 @@ export const Theme: React.FC<ThemeProps> = () => {
           {/* 卡片 Logo */}
           <Card title="卡片 Logo" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              {showLogoWatch !== false && (
-                <>
-                <Form.Item name={["cardExtra", "logoSize"]} label="Logo 大小" tooltip="只填数字，单位 px，各屏幕宽度统一生效">
+              <Form.Item name={["cardExtra", "showLogo"]} label="显示 Logo" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "logoSize"]} label="Logo 大小" tooltip="只填数字，单位 px，各屏幕宽度统一生效">
                 <InputNumber min={8} max={128} addonAfter="px" style={{ width: '100%' }} placeholder="32" />
               </Form.Item>
               <Form.Item name={["cardExtra", "logoRadius"]} label="Logo 形状：方正↔圆润" tooltip="只填数字，0 为方形，数值越大越圆润，超过 Logo 半径即为圆形，单位 px">
                 <InputNumber min={0} max={50} addonAfter="px" style={{ width: '100%' }} placeholder="0" />
-              </Form.Item>
-                              </>
-              )}
-              <Form.Item name={["cardExtra", "showLogo"]} label="隐藏 Logo" valuePropName="checked" getValueProps={(v) => ({ checked: v === false })} getValueFromEvent={(v) => !v}>
-                <Switch />
               </Form.Item>
             </div>
           </Card>
           {/* 卡片标题 */}
           <Card title="卡片标题" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              {showTitleWatch !== false && (
-                <>
-                <Form.Item name={["typography", "titleFontSize"]} label="标题字号" tooltip="只填数字，单位 px">
+              <Form.Item name={["cardExtra", "showTitle"]} label="显示 标题" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+              <Form.Item name={["typography", "titleFontSize"]} label="标题字号" tooltip="只填数字，单位 px">
                 <InputNumber min={10} max={40} addonAfter="px" style={{ width: '100%' }} placeholder="16" />
               </Form.Item>
               <Form.Item name={["typography", "titleFontWeight"]} label="标题字重">
@@ -1502,19 +1503,15 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item name={["cardExtra", "titleColor"]} label="标题颜色" tooltip="留空跟随正文字色">
                 <ColorPicker showText allowClear />
               </Form.Item>
-                              </>
-              )}
-              <Form.Item name={["cardExtra", "showTitle"]} label="隐藏标题" valuePropName="checked" getValueProps={(v) => ({ checked: v === false })} getValueFromEvent={(v) => !v}>
-                <Switch />
-              </Form.Item>
             </div>
           </Card>
           {/* 卡片描述 */}
           <Card title="卡片描述" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              {showDescWatch !== false && (
-                <>
-                <Form.Item name={["typography", "descFontSize"]} label="描述字号" tooltip="只填数字，单位 px">
+              <Form.Item name={["cardExtra", "showDesc"]} label="显示 简介" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+              <Form.Item name={["typography", "descFontSize"]} label="描述字号" tooltip="只填数字，单位 px">
                 <InputNumber min={10} max={30} addonAfter="px" style={{ width: '100%' }} placeholder="13" />
               </Form.Item>
               <Form.Item name={["cardExtra", "descFontFamily"]} label="描述字体" tooltip="留空跟随全局字体">
@@ -1523,19 +1520,15 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item name={["cardExtra", "descColor"]} label="描述颜色" tooltip="留空跟随次级文字色">
                 <ColorPicker showText allowClear />
               </Form.Item>
-                              </>
-              )}
-              <Form.Item name={["cardExtra", "showDesc"]} label="隐藏简介" valuePropName="checked" getValueProps={(v) => ({ checked: v === false })} getValueFromEvent={(v) => !v}>
-                <Switch />
-              </Form.Item>
             </div>
           </Card>
           {/* 卡片小标签 */}
           <Card title="卡片小标签" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>卡片标题旁的分类小标签</span>}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              {showTagWatch !== false && (
-                <>
-                <Form.Item name={["cardExtra", "tagColor"]} label="文字颜色" tooltip="留空跟随次级文字色">
+              <Form.Item name={["cardExtra", "showTag"]} label="显示 小标签" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "tagColor"]} label="文字颜色" tooltip="留空跟随次级文字色">
                 <ColorPicker showText allowClear />
               </Form.Item>
               <Form.Item name={["cardExtra", "tagBg"]} label="底色" tooltip="留空跟随卡片底色">
@@ -1543,11 +1536,6 @@ export const Theme: React.FC<ThemeProps> = () => {
               </Form.Item>
               <Form.Item name={["cardExtra", "tagRadius"]} label="圆角" tooltip="只填数字，单位 px">
                 <InputNumber min={0} max={20} addonAfter="px" style={{ width: '100%' }} placeholder="4" />
-              </Form.Item>
-                              </>
-              )}
-              <Form.Item name={["cardExtra", "showTag"]} label="隐藏小标签" valuePropName="checked" getValueProps={(v) => ({ checked: v === false })} getValueFromEvent={(v) => !v}>
-                <Switch />
               </Form.Item>
             </div>
           </Card>

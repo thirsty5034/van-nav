@@ -672,9 +672,12 @@ const Content = (props: any) => {
         <meta charSet="utf-8" />
         <link
           rel="icon"
-          href={
-            data?.setting?.favicon ?? "favicon.ico"
-          }
+          href={(() => {
+            const f = data?.setting?.favicon ?? 'favicon.ico';
+            // data:URI 直接使用；文件路径附加时间戳，避免浏览器 favicon 缓存导致“清除/更换后仍显示旧图标”
+            if (f.startsWith('data:')) return f;
+            return f + (f.includes('?') ? '&' : '?') + 't=' + Date.now();
+          })()}
         />
         <title>{data?.setting?.title ?? "Van Nav"}</title>
       </Helmet>

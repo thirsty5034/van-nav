@@ -174,6 +174,7 @@ type ThemeCardConfig struct {
 	HoverLift       bool   `json:"hoverLift"`       // hover 抬升动效
 	Outline         bool   `json:"outline"`         // 描边模式（边框替代阴影）
 	Height          string `json:"height"`          // 卡片高度，如 120px；空=自适应
+	Width           string `json:"width"`           // 卡片宽度，如 320px；空=自适应（随网格列数均分）
 	ShowLogo        bool   `json:"showLogo"`        // 展示 Logo
 	ShowTitle       bool   `json:"showTitle"`       // 展示标题
 	ShowDesc        bool   `json:"showDesc"`        // 展示简介
