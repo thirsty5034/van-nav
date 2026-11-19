@@ -335,6 +335,9 @@ func validateThemeConfig(config *types.ThemeConfig) error {
 	if err := validatePxField(config.Search.FontSize, "搜索框字号"); err != nil {
 		return err
 	}
+	if err := validateColorField(config.Search.BgColor, "搜索框背景颜色"); err != nil {
+		return err
+	}
 
 	// 校验分类标签配置
 	switch config.Tag.Position {
@@ -561,6 +564,7 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 		config.Search.Placeholder = strFromMap(m, "placeholder", config.Search.Placeholder)
 		config.Search.FontFamily = strFromMap(m, "fontFamily", config.Search.FontFamily)
 		config.Search.FontSize = strFromMap(m, "fontSize", config.Search.FontSize)
+		config.Search.BgColor = strFromMap(m, "bgColor", config.Search.BgColor)
 	}
 	// 解析分类标签配置（字段缺失/为空时保持默认值）
 	if m, ok := configMap["tag"].(map[string]interface{}); ok {
@@ -766,6 +770,7 @@ func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, erro
 			"placeholder":      config.Search.Placeholder,
 			"fontFamily":       config.Search.FontFamily,
 			"fontSize":         config.Search.FontSize,
+			"bgColor":          config.Search.BgColor,
 		},
 		"tag": map[string]interface{}{
 			"hidden":      config.Tag.Hidden,

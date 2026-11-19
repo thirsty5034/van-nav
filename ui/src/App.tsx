@@ -67,6 +67,8 @@ const ThemeSync = () => {
           ? 'login'
           : 'home';
       document.body.setAttribute('data-page', page);
+      // 通知 antd 主题钩子：路由已切换（admin 不吃主题配色 token）
+      window.dispatchEvent(new Event('dsh-route-change'));
       // 主题切换后重新应用CSS变量
       setTimeout(() => loadAndApplyTheme(), 50);
     };

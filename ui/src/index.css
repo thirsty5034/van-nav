@@ -51,12 +51,24 @@ body {
   font-size: var(--van-nav-base-font-size);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--van-nav-page-bg);
-  background-attachment: fixed;
   overflow-y: auto;
   overflow-x: hidden;
   overflow-anchor: none;
   color: var(--van-nav-text-primary);
+}
+
+/* 页面背景只在首页生效；管理后台/登录页使用固定底色，不随主题配色变化 */
+body[data-page="home"] {
+  background: var(--van-nav-page-bg);
+  background-attachment: fixed;
+}
+body[data-page="admin"],
+body[data-page="login"] {
+  background: #f0f2f5;
+}
+body.dark-mode[data-page="admin"],
+body.dark-mode[data-page="login"] {
+  background: #141414;
 }
 
 /* ===== 主题管理扩展：链接颜色与模式类 ===== */

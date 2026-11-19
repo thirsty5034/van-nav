@@ -81,6 +81,7 @@ export interface ThemeSearchConfig {
   placeholder?: string;
   fontFamily?: string;
   fontSize?: string;
+  bgColor?: string;
 }
 
 export interface ThemeTagConfig {
@@ -328,6 +329,7 @@ export const computeThemeVars = (config: ThemeConfig, dark: boolean): Record<str
     '--van-nav-search-placeholder-color': config.search?.placeholderColor || '',
     '--van-nav-search-font-family': config.search?.fontFamily || '',
     '--van-nav-search-font-size': config.search?.fontSize || '',
+    '--van-nav-search-bg': config.search?.bgColor || '',
     // 扩展：分类标签
     '--van-nav-tag-hidden': config.tag?.hidden ? 'true' : 'false',
     '--van-nav-tag-position': config.tag?.position || '',
@@ -343,7 +345,8 @@ export const computeThemeVars = (config: ThemeConfig, dark: boolean): Record<str
     '--van-nav-card-show-title': config.cardExtra?.showTitle === false ? 'false' : 'true',
     '--van-nav-card-show-desc': config.cardExtra?.showDesc === false ? 'false' : 'true',
     '--van-nav-card-show-tag': config.cardExtra?.showTag === false ? 'false' : 'true',
-    '--van-nav-card-bg-opacity': config.cardExtra?.bgOpacity || '',
+    // 透明度合法值 0 也要写入（空串才移除变量回退 1）；0 || '' 会把 0 吞掉导致全透明失效
+    '--van-nav-card-bg-opacity': (config.cardExtra?.bgOpacity === undefined || config.cardExtra?.bgOpacity === null || config.cardExtra?.bgOpacity === '') ? '' : String(config.cardExtra.bgOpacity),
     // 扩展：卡片标题/描述/小标签 分区自定义
     '--van-nav-card-title-font-family': config.cardExtra?.titleFontFamily || '',
     '--van-nav-card-desc-font-family': config.cardExtra?.descFontFamily || '',
@@ -424,7 +427,7 @@ export const clearThemeVars = () => {
     '--van-nav-card-height', '--van-nav-card-show-logo', '--van-nav-card-show-title',
     '--van-nav-card-show-desc', '--van-nav-card-show-tag', '--van-nav-card-bg-opacity',
     '--van-nav-footer-bg', '--van-nav-footer-font-family',
-    '--van-nav-search-font-family', '--van-nav-search-font-size',
+    '--van-nav-search-font-family', '--van-nav-search-font-size', '--van-nav-search-bg',
     '--van-nav-tag-font-family', '--van-nav-tag-font-size',
     '--van-nav-card-title-font-family', '--van-nav-card-desc-font-family',
     '--van-nav-card-desc-color', '--van-nav-card-tag-color', '--van-nav-card-tag-bg',

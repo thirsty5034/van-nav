@@ -29,10 +29,13 @@ export const useAntdTheme = () => {
     window.addEventListener("theme-change", refresh);
     window.addEventListener("storage", refresh);
     window.addEventListener("theme-config-loaded", refresh);
+    // 路由切换（进入/离开管理后台）时重算：admin 不吃主题管理配色 token
+    window.addEventListener("dsh-route-change", refresh);
     return () => {
       window.removeEventListener("theme-change", refresh);
       window.removeEventListener("storage", refresh);
       window.removeEventListener("theme-config-loaded", refresh);
+      window.removeEventListener("dsh-route-change", refresh);
     };
   }, []);
 
@@ -42,17 +45,25 @@ export const useAntdTheme = () => {
     ? cfg?.darkTheme?.colors || defaultDarkColors
     : cfg?.colors;
 
+  // 管理后台使用 antd 默认配色（仅保留夜间算法），避免主题配色污染设置页
+  const isAdminRoute = window.location.pathname.startsWith("/admin");
+
   return {
     isDark,
-    antdTheme: {
-      algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-      token: {
-        colorPrimary: colors?.primary,
-        colorBgBase: colors?.bgBase,
-        colorBgContainer: colors?.bgCard,
-        colorTextBase: colors?.textPrimary,
-        colorBorder: colors?.border,
-      },
-    },
+    antdTheme: isAdminRoute
+      ? {
+          algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+          token: {},
+        }
+      : {
+          algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+          token: {
+            colorPrimary: colors?.primary,
+            colorBgBase: colors?.bgBase,
+            colorBgContainer: colors?.bgCard,
+            colorTextBase: colors?.textPrimary,
+            colorBorder: colors?.border,
+          },
+        },
   };
 };

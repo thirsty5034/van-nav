@@ -14,11 +14,11 @@
 }
 
 /* 搜索框默认毛玻璃（主题管理接管；顶部/底部搜索共用） */
-/* 底色跟随页面背景而非卡片背景：改“卡片背景色”不应连带搜索框 */
+/* 底色：优先用户设置的搜索框背景颜色；留空跟随页面背景的半透明毛玻璃（与卡片背景色解耦） */
 .topbar .search-wraper input,
 .bottom-controls .search-wraper input,
 .topbar input#search-bar {
-  background: color-mix(in srgb, var(--van-nav-bg-base) 55%, transparent);
+  background: var(--van-nav-search-bg, color-mix(in srgb, var(--van-nav-bg-base) 55%, transparent));
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }

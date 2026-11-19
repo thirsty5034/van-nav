@@ -217,6 +217,7 @@ type ThemeSearchConfig struct {
 	Placeholder      string `json:"placeholder"`      // 占位文案；空=使用默认
 	FontFamily       string `json:"fontFamily"`       // 搜索框字体族；空=跟随全局字体
 	FontSize         string `json:"fontSize"`         // 搜索框字号，如 16px；空=默认
+	BgColor          string `json:"bgColor"`          // 搜索框背景颜色；空=跟随页面背景的半透明毛玻璃
 }
 
 // 分类标签配置
