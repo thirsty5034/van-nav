@@ -39,6 +39,12 @@ export interface ThemeCardConfig {
   titleColor?: string;
   hoverLift?: boolean;
   outline?: boolean;
+  height?: string;
+  showLogo?: boolean;
+  showTitle?: boolean;
+  showDesc?: boolean;
+  showTag?: boolean;
+  bgOpacity?: string;
 }
 
 export interface ThemeLinkConfig {
@@ -49,6 +55,30 @@ export interface ThemeLinkConfig {
 export interface ThemeFooterConfig {
   textColor?: string;
   hidden?: boolean;
+  text?: string;
+}
+
+export interface ThemeSearchConfig {
+  hidden?: boolean;
+  position?: 'left' | 'center' | 'right';
+  width?: string;
+  vertical?: 'top' | 'bottom';
+  height?: string;
+  radius?: string;
+  transparent?: boolean;
+  textColor?: string;
+  placeholderColor?: string;
+  placeholder?: string;
+}
+
+export interface ThemeTagConfig {
+  hidden?: boolean;
+  position?: 'top' | 'bottom' | 'left' | 'right';
+  transparent?: boolean;
+  bg?: string;
+  activeBg?: string;
+  textColor?: string;
+  radius?: string;
 }
 
 const toMinutes = (s?: string): number => {
@@ -195,6 +225,8 @@ export interface ThemeConfig {
   cardExtra?: ThemeCardConfig;
   linkBtn?: ThemeLinkConfig;
   footer?: ThemeFooterConfig;
+  search?: ThemeSearchConfig;
+  tag?: ThemeTagConfig;
 }
 
 // 缓存当前主题配置
@@ -266,6 +298,30 @@ export const computeThemeVars = (config: ThemeConfig, dark: boolean): Record<str
     '--van-nav-link-color': config.linkBtn?.linkColor || 'var(--van-nav-primary)',
     '--van-nav-btn-radius': config.linkBtn?.buttonRadius || '4px',
     '--van-nav-footer-text': config.footer?.textColor || 'var(--van-nav-text-secondary)',
+    // 扩展：搜索框（空值=移除变量，回退 CSS 默认）
+    '--van-nav-search-hidden': config.search?.hidden ? 'true' : 'false',
+    '--van-nav-search-position': config.search?.position || '',
+    '--van-nav-search-width': config.search?.width || '',
+    '--van-nav-search-vertical': config.search?.vertical || '',
+    '--van-nav-search-height': config.search?.height || '',
+    '--van-nav-search-radius': config.search?.radius || '',
+    '--van-nav-search-transparent': config.search?.transparent ? 'true' : 'false',
+    '--van-nav-search-text-color': config.search?.textColor || '',
+    '--van-nav-search-placeholder-color': config.search?.placeholderColor || '',
+    // 扩展：分类标签
+    '--van-nav-tag-hidden': config.tag?.hidden ? 'true' : 'false',
+    '--van-nav-tag-position': config.tag?.position || '',
+    '--van-nav-tag-bg': config.tag?.bg || '',
+    '--van-nav-tag-active-bg': config.tag?.activeBg || '',
+    '--van-nav-tag-text-color': config.tag?.textColor || '',
+    '--van-nav-tag-radius': config.tag?.radius || '',
+    // 扩展：卡片高度/展示开关/底色透明度（展示开关缺省视为展示）
+    '--van-nav-card-height': config.cardExtra?.height || '',
+    '--van-nav-card-show-logo': config.cardExtra?.showLogo === false ? 'false' : 'true',
+    '--van-nav-card-show-title': config.cardExtra?.showTitle === false ? 'false' : 'true',
+    '--van-nav-card-show-desc': config.cardExtra?.showDesc === false ? 'false' : 'true',
+    '--van-nav-card-show-tag': config.cardExtra?.showTag === false ? 'false' : 'true',
+    '--van-nav-card-bg-opacity': config.cardExtra?.bgOpacity || '',
     // 自定义 CSS 挂到变量，便于预览复用
     '--van-nav-custom-css': customCSS || '',
   };
@@ -330,6 +386,13 @@ export const clearThemeVars = () => {
     '--van-nav-page-bg',
     '--van-nav-card-logo-radius', '--van-nav-card-logo-size', '--van-nav-card-title-color',
     '--van-nav-link-color', '--van-nav-btn-radius', '--van-nav-footer-text',
+    '--van-nav-search-hidden', '--van-nav-search-position', '--van-nav-search-width',
+    '--van-nav-search-vertical', '--van-nav-search-height', '--van-nav-search-radius',
+    '--van-nav-search-transparent', '--van-nav-search-text-color', '--van-nav-search-placeholder-color',
+    '--van-nav-tag-hidden', '--van-nav-tag-position', '--van-nav-tag-bg',
+    '--van-nav-tag-active-bg', '--van-nav-tag-text-color', '--van-nav-tag-radius',
+    '--van-nav-card-height', '--van-nav-card-show-logo', '--van-nav-card-show-title',
+    '--van-nav-card-show-desc', '--van-nav-card-show-tag', '--van-nav-card-bg-opacity',
   ];
 
   customProps.forEach(prop => root.style.removeProperty(prop));

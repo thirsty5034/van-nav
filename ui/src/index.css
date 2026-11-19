@@ -170,6 +170,16 @@ input:focus-visible {
   box-shadow: var(--van-nav-card-shadow);
 }
 
+/* ===== 主题增强：卡片透明无框基础态（无底色/无边框/无阴影） ===== */
+a.card-box.card-ghost {
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+}
+a.card-box.card-ghost:hover {
+  box-shadow: none;
+}
+
 body.dark-mode .card-box {
   background-color: var(--van-nav-bg-card);
 }

@@ -172,6 +172,12 @@ type ThemeCardConfig struct {
 	TitleColor string `json:"titleColor"` // 空=跟随 textPrimary
 	HoverLift  bool   `json:"hoverLift"`  // hover 抬升动效
 	Outline    bool   `json:"outline"`    // 描边模式（边框替代阴影）
+	Height     string `json:"height"`     // 卡片高度，如 120px；空=自适应
+	ShowLogo   bool   `json:"showLogo"`   // 展示 Logo
+	ShowTitle  bool   `json:"showTitle"`  // 展示标题
+	ShowDesc   bool   `json:"showDesc"`   // 展示简介
+	ShowTag    bool   `json:"showTag"`    // 展示分类标签
+	BgOpacity  string `json:"bgOpacity"`  // 卡片底色透明度 0-1；空=不透明
 }
 
 // 链接与按钮
@@ -184,6 +190,32 @@ type ThemeLinkConfig struct {
 type ThemeFooterConfig struct {
 	TextColor string `json:"textColor"` // 空=跟随 textSecondary
 	Hidden    bool   `json:"hidden"`    // 隐藏备案区
+	Text      string `json:"text"`      // 备案/页脚文案；空=跟随站点设置
+}
+
+// 搜索框配置
+type ThemeSearchConfig struct {
+	Hidden           bool   `json:"hidden"`           // 显示/隐藏搜索框
+	Position         string `json:"position"`         // 水平位置：left/center/right
+	Width            string `json:"width"`            // 宽度占内容区比例，百分比如 60%
+	Vertical         string `json:"vertical"`         // 摆放位置：top/bottom
+	Height           string `json:"height"`           // 搜索框高度，如 40px
+	Radius           string `json:"radius"`           // 圆角，如 8px
+	Transparent      bool   `json:"transparent"`      // 透明无框
+	TextColor        string `json:"textColor"`        // 文字颜色；空=跟随 textPrimary
+	PlaceholderColor string `json:"placeholderColor"` // 占位提示颜色；空=跟随 textSecondary
+	Placeholder      string `json:"placeholder"`      // 占位文案；空=使用默认
+}
+
+// 分类标签配置
+type ThemeTagConfig struct {
+	Hidden      bool   `json:"hidden"`      // 显示/隐藏分类标签
+	Position    string `json:"position"`    // 贴边位置：top/bottom/left/right
+	Transparent bool   `json:"transparent"` // 透明无框
+	Bg          string `json:"bg"`          // 底色；空=跟随 bgCard
+	ActiveBg    string `json:"activeBg"`    // 选中底色；空=跟随 primary
+	TextColor   string `json:"textColor"`   // 文字颜色；空=跟随 textPrimary
+	Radius      string `json:"radius"`      // 圆角，如 8px
 }
 
 // 完整主题配置
@@ -202,4 +234,6 @@ type ThemeConfig struct {
 	CardExtra  ThemeCardConfig   `json:"cardExtra"`
 	LinkBtn    ThemeLinkConfig   `json:"linkBtn"`
 	Footer     ThemeFooterConfig `json:"footer"`
+	Search     ThemeSearchConfig `json:"search"`
+	Tag        ThemeTagConfig    `json:"tag"`
 }

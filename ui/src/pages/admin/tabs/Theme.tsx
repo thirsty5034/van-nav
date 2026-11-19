@@ -6,6 +6,8 @@ import {
   fetchGetTheme,
   fetchUpdateTheme,
   fetchResetTheme,
+  fetchUpdateSetting,
+  fetchUpdateSiteConfig,
   fetchListThemePresets,
   fetchSaveThemePreset,
   fetchDeleteThemePreset,
@@ -13,6 +15,7 @@ import {
   fetchExportTheme,
   fetchImportTheme,
 } from "../../../utils/api";
+import { useData } from "../hooks/useData";
 import { applyPreferredTheme, applyThemeVars, applyVarsToStyle, clearThemeVars, computeThemeVars, type ThemeConfig } from "../../../utils/theme";
 import { BgColorsOutlined, ReloadOutlined, SaveOutlined } from "@ant-design/icons";
 import { useTranslation } from '../../../i18n';
@@ -372,6 +375,12 @@ const buildConfigFromValues = (values: any) => ({
     titleColor: colorToHex(values.cardExtra?.titleColor, ""),
     hoverLift: values.cardExtra?.hoverLift !== false,
     outline: !!values.cardExtra?.outline,
+    height: values.cardExtra?.height || "",
+    showLogo: values.cardExtra?.showLogo !== false,
+    showTitle: values.cardExtra?.showTitle !== false,
+    showDesc: values.cardExtra?.showDesc !== false,
+    showTag: values.cardExtra?.showTag !== false,
+    bgOpacity: values.cardExtra?.bgOpacity != null && values.cardExtra.bgOpacity !== "" ? String(values.cardExtra.bgOpacity) : "",
   },
   linkBtn: {
     linkColor: colorToHex(values.linkBtn?.linkColor, ""),
@@ -380,6 +389,28 @@ const buildConfigFromValues = (values: any) => ({
   footer: {
     textColor: colorToHex(values.footer?.textColor, ""),
     hidden: !!values.footer?.hidden,
+    text: values.footer?.text || "",
+  },
+  search: {
+    hidden: !!values.search?.hidden,
+    position: values.search?.position || "center",
+    width: values.search?.width || "60%",
+    vertical: values.search?.vertical || "top",
+    height: values.search?.height || "40px",
+    radius: values.search?.radius || "8px",
+    transparent: !!values.search?.transparent,
+    textColor: colorToHex(values.search?.textColor, ""),
+    placeholderColor: colorToHex(values.search?.placeholderColor, ""),
+    placeholder: values.search?.placeholder || "",
+  },
+  tag: {
+    hidden: !!values.tag?.hidden,
+    position: values.tag?.position || "top",
+    transparent: !!values.tag?.transparent,
+    bg: colorToHex(values.tag?.bg, ""),
+    activeBg: colorToHex(values.tag?.activeBg, ""),
+    textColor: colorToHex(values.tag?.textColor, ""),
+    radius: values.tag?.radius || "",
   },
 });
 
@@ -510,8 +541,37 @@ export const Theme: React.FC<ThemeProps> = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isDark, setIsDark] = useState(() => document.body.classList.contains("dark-mode"));
+  // 从 settings/siteConfig 迁入的外观设置（存储不变，仅管理入口搬家）
+  const { store, reload } = useData();
   // 当前夜间策略（控制时间窗口选择器的显隐）
   const nightModeValue = Form.useWatch(["nightMode", "mode"], form);
+
+  // 把迁入的站点外观设置填充进表单（siteSetting/siteConfig 命名空间，保存时各走各的 API）
+  useEffect(() => {
+    if (store?.setting) {
+      form.setFieldsValue({
+        siteSetting: {
+          title: store.setting.title ?? "",
+          favicon: store.setting.favicon ?? "",
+          logo192: store.setting.logo192 ?? "",
+          logo512: store.setting.logo512 ?? "",
+          govRecord: store.setting.govRecord ?? "",
+          jumpTargetBlank: store.setting.jumpTargetBlank ? 1 : 0,
+          pcColumnCount: store.setting.pcColumnCount || 3,
+          showSearchEngine: store.setting.showSearchEngine !== false,
+        },
+      });
+    }
+    if (store?.siteConfig) {
+      form.setFieldsValue({
+        siteConfig: {
+          noImageMode: !!store.siteConfig.noImageMode,
+          compactMode: !!store.siteConfig.compactMode,
+          sortByClicks: !!store.siteConfig.sortByClicks,
+        },
+      });
+    }
+  }, [store, form]);
 
   // ===== 实时预览：沙箱模拟页同步 =====
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
@@ -701,30 +761,60 @@ export const Theme: React.FC<ThemeProps> = () => {
     }
   }, [loadThemeConfig, syncPreview]);
 
-  // 保存主题配置
+  // 保存配置：主题字段走 theme API；从 settings 迁入的外观字段走原 settings/siteConfig API（存储不变）
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
       // getFieldsValue(true)：包含未挂载页签中的字段，避免切页签丢配置
-      const config = buildConfigFromValues(form.getFieldsValue(true));
-      const res = await fetchUpdateTheme(config);
-      if (res?.success) {
-        message.success("主题配置已保存");
-        // 重新拉取最新主题配置并应用（含夜间策略立即生效）
-        const themeRes = await fetchGetTheme();
-        if (themeRes?.success && themeRes?.data) {
-          applyThemeVars(themeRes.data);
-          applyPreferredTheme("theme-save");
-        }
+      const all = form.getFieldsValue(true);
+      const config = buildConfigFromValues(all);
+      // 迁入字段：合并完整旧值后整体提交（后端为全量更新，避免丢未迁入字段）
+      const siteSetting = all.siteSetting ?? {};
+      const siteConfig = all.siteConfig ?? {};
+      const settingPayload = {
+        ...(store?.setting ?? {}),
+        title: siteSetting.title ?? "",
+        favicon: siteSetting.favicon ?? "",
+        logo192: siteSetting.logo192 ?? "",
+        logo512: siteSetting.logo512 ?? "",
+        govRecord: siteSetting.govRecord ?? "",
+        jumpTargetBlank: siteSetting.jumpTargetBlank === 1 || siteSetting.jumpTargetBlank === true,
+        pcColumnCount: Number(siteSetting.pcColumnCount) || 3,
+        showSearchEngine: siteSetting.showSearchEngine !== false,
+      };
+      const siteConfigPayload = {
+        ...(store?.siteConfig ?? {}),
+        noImageMode: !!siteConfig.noImageMode,
+        compactMode: !!siteConfig.compactMode,
+        sortByClicks: !!siteConfig.sortByClicks,
+      };
+      const [themeRes, settingRes, siteConfigRes] = await Promise.all([
+        fetchUpdateTheme(config),
+        fetchUpdateSetting(settingPayload),
+        fetchUpdateSiteConfig(siteConfigPayload),
+      ]);
+      const failed: string[] = [];
+      if (!themeRes?.success) failed.push("主题配置");
+      if (!settingRes?.success) failed.push("品牌/站点设置");
+      if (!siteConfigRes?.success) failed.push("卡片运行开关");
+      if (failed.length === 0) {
+        message.success("保存成功（主题与外观设置）");
       } else {
-        message.error(res?.errorMessage || "保存失败");
+        message.error(`部分保存失败：${failed.join("、")}`);
       }
+      // 重新拉取最新主题配置并应用（含夜间策略立即生效）
+      const themeGet = await fetchGetTheme();
+      if (themeGet?.success && themeGet?.data) {
+        applyThemeVars(themeGet.data);
+        applyPreferredTheme("theme-save");
+      }
+      reload();
     } catch (err: any) {
       message.error("保存失败: " + (err.message || "未知错误"));
     } finally {
       setSaving(false);
     }
-  }, []);
+  }, [store, reload]);
 
   // 重置为主题默认值
   const handleReset = useCallback(() => {
@@ -796,17 +886,21 @@ export const Theme: React.FC<ThemeProps> = () => {
               radius: { style: "small" },
               topbar: { transparent: false, blur: false, height: "" },
               pageBg: { image: "", dimOpacity: "" },
-              cardExtra: { hoverLift: true, outline: false },
+              cardExtra: { hoverLift: true, outline: false, height: "", showLogo: true, showTitle: true, showDesc: true, showTag: true, bgOpacity: "" },
               linkBtn: { buttonRadius: "" },
-              footer: { hidden: false },
+              footer: { hidden: false, text: "" },
+              search: { hidden: false, position: "center", width: "60%", vertical: "top", height: "40px", radius: "8px", transparent: false, textColor: "", placeholderColor: "", placeholder: "" },
+              tag: { hidden: false, position: "top", transparent: false, bg: "", activeBg: "", textColor: "", radius: "" },
+              siteSetting: { title: "", favicon: "", logo192: "", logo512: "", govRecord: "", jumpTargetBlank: 0, pcColumnCount: 3, showSearchEngine: true },
+              siteConfig: { noImageMode: false, compactMode: false, sortByClicks: false },
             }}
           >
             <Tabs
-              defaultActiveKey="preset"
+              defaultActiveKey="quickstart"
               items={[
                 {
-                  key: "preset",
-                  label: "预设主题",
+                  key: "quickstart",
+                  label: "快速开始",
                   children: (
                     <>
                       {/* 预设主题选择 */}
@@ -840,12 +934,46 @@ export const Theme: React.FC<ThemeProps> = () => {
             ))}
           </div>
         </Card>
+                      {/* 已保存方案一键应用 */}
+          <Card title="已保存的主题方案" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>点击方案名一键应用，需手动保存生效</span>}>
+            {presets.length === 0 ? (
+              <div style={{ color: '#999', fontSize: 13 }}>还没有保存的主题方案，可在「主题方案」页签中把当前配置存为方案。</div>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                {presets.map((p: any) => (
+                  <Button key={p.id} onClick={() => handleApplyPresetById(p.id)}>{p.name}</Button>
+                ))}
+              </div>
+            )}
+          </Card>
                     </>
                   ),
                 },
                 {
-                  key: "color",
-                  label: "色彩与背景",
+                  key: "brand",
+                  label: "品牌与图标",
+                  children: (
+                    <Card title="品牌与图标" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>站点名称与图标（原「站点设置」项，存储位置不变，随「保存配置」一并提交）</span>}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                        <Form.Item name={["siteSetting", "title"]} label="站点标题" required rules={[{ required: true, message: "请填写站点标题" }]}>
+                          <Input placeholder="站点标题" />
+                        </Form.Item>
+                        <Form.Item name={["siteSetting", "favicon"]} label="Favicon" required rules={[{ required: true, message: "请填写 Favicon 地址" }]}>
+                          <Input placeholder="/favicon.ico" />
+                        </Form.Item>
+                        <Form.Item name={["siteSetting", "logo192"]} label="Logo 192" required rules={[{ required: true, message: "请填写 192px Logo 地址" }]}>
+                          <Input placeholder="/logo192.png" />
+                        </Form.Item>
+                        <Form.Item name={["siteSetting", "logo512"]} label="Logo 512" required rules={[{ required: true, message: "请填写 512px Logo 地址" }]}>
+                          <Input placeholder="/logo512.png" />
+                        </Form.Item>
+                      </div>
+                    </Card>
+                  ),
+                },
+                {
+                  key: "pagebg",
+                  label: "页面背景",
                   children: (
                     <>
                       {/* 主题色彩配置 */}
@@ -892,6 +1020,126 @@ export const Theme: React.FC<ThemeProps> = () => {
                   ),
                 },
                 {
+                  key: "search",
+                  label: "搜索框",
+                  children: (
+                    <>
+                      {/* 搜索框样式 */}
+          <Card title="搜索框" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["search", "hidden"]} label="隐藏搜索框" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+              <Form.Item name={["search", "position"]} label="水平位置">
+                <Select
+                  options={[
+                    { label: "靠左", value: "left" },
+                    { label: "居中（默认）", value: "center" },
+                    { label: "靠右", value: "right" },
+                  ]}
+                />
+              </Form.Item>
+              <Form.Item name={["search", "width"]} label="宽度占内容区比例">
+                <Select
+                  options={[
+                    { label: "40%", value: "40%" },
+                    { label: "50%", value: "50%" },
+                    { label: "60%（默认）", value: "60%" },
+                    { label: "70%", value: "70%" },
+                    { label: "80%", value: "80%" },
+                    { label: "90%", value: "90%" },
+                    { label: "100%", value: "100%" },
+                  ]}
+                />
+              </Form.Item>
+              <Form.Item name={["search", "vertical"]} label="摆放位置">
+                <Radio.Group>
+                  <Radio.Button value="top">页面顶部</Radio.Button>
+                  <Radio.Button value="bottom">页面底部</Radio.Button>
+                </Radio.Group>
+              </Form.Item>
+              <Form.Item name={["search", "height"]} label="高矮（高度）">
+                <Input placeholder="40px" />
+              </Form.Item>
+              <Form.Item name={["search", "radius"]} label="形状：方形↔圆形">
+                <Input placeholder="8px" />
+              </Form.Item>
+              <Form.Item name={["search", "transparent"]} label="透明无框" valuePropName="checked" tooltip="开启后搜索框无底色无边框，融入背景">
+                <Switch />
+              </Form.Item>
+              <Form.Item name={["search", "textColor"]} label="文字颜色">
+                <Input placeholder="留空跟随文字主色" />
+              </Form.Item>
+              <Form.Item name={["search", "placeholderColor"]} label="提示颜色">
+                <Input placeholder="留空跟随次级文字色" />
+              </Form.Item>
+              <Form.Item name={["search", "placeholder"]} label="占位文案">
+                <Input placeholder="留空使用默认提示语" />
+              </Form.Item>
+            </div>
+          </Card>
+                      {/* 顶栏样式 */}
+          <Card title="顶栏样式" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["topbar", "transparent"]} label="顶栏融入背景" valuePropName="checked">
+                <Checkbox>背景透明（滚动内容透出）</Checkbox>
+              </Form.Item>
+              <Form.Item name={["topbar", "blur"]} label="毛玻璃" valuePropName="checked">
+                <Checkbox>背景模糊</Checkbox>
+              </Form.Item>
+              <Form.Item name={["topbar", "background"]} label="顶栏背景色" tooltip="留空跟随页面背景；勾选顶栏融入背景时忽略此项">
+                <Input placeholder="#1677ff / 留空跟随页面" />
+              </Form.Item>
+              <Form.Item name={["topbar", "textColor"]} label="顶栏文字色">
+                <Input placeholder="留空跟随文字主色" />
+              </Form.Item>
+              <Form.Item name={["topbar", "height"]} label="顶栏最小高度">
+                <Input placeholder="默认（由内容撑开）" />
+              </Form.Item>
+            </div>
+          </Card>
+                    </>
+                  ),
+                },
+                {
+                  key: "tag",
+                  label: "分类标签",
+                  children: (
+                    <Card title="分类标签" style={{ marginBottom: 24 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                        <Form.Item name={["tag", "hidden"]} label="隐藏分类标签" valuePropName="checked">
+                          <Switch />
+                        </Form.Item>
+                        <Form.Item name={["tag", "position"]} label="位置" tooltip="左右为侧边竖排，贴屏幕边缘">
+                          <Select
+                            options={[
+                              { label: "顶部（默认）", value: "top" },
+                              { label: "底部", value: "bottom" },
+                              { label: "左侧", value: "left" },
+                              { label: "右侧", value: "right" },
+                            ]}
+                          />
+                        </Form.Item>
+                        <Form.Item name={["tag", "transparent"]} label="透明无框" valuePropName="checked" tooltip="开启后标签无底色无边框，融入背景">
+                          <Switch />
+                        </Form.Item>
+                        <Form.Item name={["tag", "bg"]} label="底色">
+                          <Input placeholder="留空跟随卡片背景色" />
+                        </Form.Item>
+                        <Form.Item name={["tag", "activeBg"]} label="选中底色">
+                          <Input placeholder="留空跟随主色调" />
+                        </Form.Item>
+                        <Form.Item name={["tag", "textColor"]} label="文字颜色">
+                          <Input placeholder="留空跟随文字主色" />
+                        </Form.Item>
+                        <Form.Item name={["tag", "radius"]} label="形状：方形↔圆形">
+                          <Input placeholder="8px" />
+                        </Form.Item>
+                      </div>
+                    </Card>
+                  ),
+                },
+                {
                   key: "card",
                   label: "卡片样式",
                   children: (
@@ -912,13 +1160,13 @@ export const Theme: React.FC<ThemeProps> = () => {
           </Card>{/* 布局配置 */}
           <Card title="布局调整" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-              <Form.Item name={["layout", "cardBorderRadius"]} label="卡片圆角">
+              <Form.Item name={["layout", "cardBorderRadius"]} label="形状：方形↔圆形" tooltip="卡片四角的圆角程度，如 8px；0px 为方形">
                 <Input placeholder="8px" />
               </Form.Item>
-              <Form.Item name={["layout", "cardPadding"]} label="卡片内边距">
+              <Form.Item name={["layout", "cardPadding"]} label="卡片内部留白">
                 <Input placeholder="16px" />
               </Form.Item>
-              <Form.Item name={["layout", "cardGap"]} label="卡片间距">
+              <Form.Item name={["layout", "cardGap"]} label="卡片之间的距离">
                 <Input placeholder="12px" />
               </Form.Item>
             </div>
@@ -935,71 +1183,123 @@ export const Theme: React.FC<ThemeProps> = () => {
           </Card>{/* 卡片细项 */}
           <Card title="卡片细项" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["cardExtra", "logoSize"]} label="Logo 尺寸">
+              <Form.Item name={["cardExtra", "logoSize"]} label="Logo 大小">
                 <Input placeholder="32px" />
               </Form.Item>
-              <Form.Item name={["cardExtra", "logoRadius"]} label="Logo 圆角">
+              <Form.Item name={["cardExtra", "logoRadius"]} label="Logo 形状：方正↔圆润">
                 <Input placeholder="0px / 8px / 50%" />
               </Form.Item>
               <Form.Item name={["cardExtra", "titleColor"]} label="标题颜色">
                 <Input placeholder="留空跟随文字主色" />
               </Form.Item>
-              <Form.Item name={["cardExtra", "hoverLift"]} label="Hover 动效" valuePropName="checked" tooltip="鼠标悬停时卡片上浮">
+              <Form.Item name={["cardExtra", "hoverLift"]} label="悬停上浮" valuePropName="checked" tooltip="鼠标悬停时卡片轻轻上浮">
                 <Switch />
               </Form.Item>
-              <Form.Item name={["cardExtra", "outline"]} label="描边模式" valuePropName="checked" tooltip="开启后卡片用边框替代阴影">
+              <Form.Item name={["cardExtra", "outline"]} label="描边替代阴影" valuePropName="checked" tooltip="开启后卡片用边框勾勒，不再投射阴影">
                 <Switch />
               </Form.Item>
             </div>
-          </Card>{/* 排版配置 */}
-          <Card title="排版设置" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-              <Form.Item name={["typography", "titleFontSize"]} label="标题字号">
-                <Input placeholder="16px" />
+          </Card>{/* 卡片内容与尺寸 */}
+          <Card title="卡片内容与尺寸" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["cardExtra", "height"]} label="卡片高度" tooltip="留空则按内容自适应，如 120px">
+                <Input placeholder="留空自适应" />
               </Form.Item>
-              <Form.Item name={["typography", "titleFontWeight"]} label="标题字重">
-                <Select
-                  options={[
-                    { label: "正常 (400)", value: "400" },
-                    { label: "中等 (500)", value: "500" },
-                    { label: "半粗 (600)", value: "600" },
-                    { label: "粗体 (700)", value: "700" },
-                  ]}
-                />
+              <Form.Item name={["cardExtra", "bgOpacity"]} label="底色透明度" tooltip="0 全透明 - 1 不透明；留空为不透明">
+                <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} placeholder="0 - 1" />
               </Form.Item>
-              <Form.Item name={["typography", "descFontSize"]} label="描述字号">
-                <Input placeholder="13px" />
+              <Form.Item name={["cardExtra", "showLogo"]} label="显示 Logo" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "showTitle"]} label="显示标题" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "showDesc"]} label="显示简介" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "showTag"]} label="显示分类标签" valuePropName="checked">
+                <Switch />
               </Form.Item>
             </div>
-            
+          </Card>{/* 显示选项（自 settings 迁入） */}
+          <Card title="显示选项" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>原「站点设置/运行配置」中的显示开关，存储位置不变，随「保存配置」一并提交</span>}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["siteSetting", "pcColumnCount"]} label="每行列数" tooltip="宽屏下每行显示的卡片数量">
+                <InputNumber min={2} max={8} style={{ width: '100%' }} placeholder="3" />
+              </Form.Item>
+              <Form.Item name={["siteSetting", "showSearchEngine"]} label="附加搜索引擎卡片" valuePropName="checked" tooltip="搜索结果中是否附加搜索引擎卡片">
+                <Switch />
+              </Form.Item>
+              <Form.Item name={["siteConfig", "noImageMode"]} label="隐藏 Logo 模式" valuePropName="checked" tooltip="开启后卡片不显示站点 Logo">
+                <Switch />
+              </Form.Item>
+              <Form.Item name={["siteConfig", "compactMode"]} label="精简模式" valuePropName="checked" tooltip="开启后卡片以更紧凑的方式展示">
+                <Switch />
+              </Form.Item>
+              <Form.Item name={["siteConfig", "sortByClicks"]} label="按访问次数排序" valuePropName="checked" tooltip="开启后工具按访问次数排序（手动排序优先）">
+                <Switch />
+              </Form.Item>
+            </div>
           </Card>
                     </>
                   ),
                 },
                 {
-                  key: "topbar",
-                  label: "顶栏",
+                  key: "link",
+                  label: "链接与打开方式",
                   children: (
                     <>
-                      {/* 顶栏样式 */}
-          <Card title="顶栏样式" style={{ marginBottom: 24 }}>
+                      {/* 链接与按钮 */}
+          <Card title="链接与按钮" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["topbar", "transparent"]} label="透明顶栏" valuePropName="checked">
-                <Checkbox>背景透明（滚动内容透出）</Checkbox>
+              <Form.Item name={["linkBtn", "linkColor"]} label="链接颜色">
+                <Input placeholder="留空跟随主色调" />
               </Form.Item>
-              <Form.Item name={["topbar", "blur"]} label="毛玻璃效果" valuePropName="checked">
-                <Checkbox>背景模糊</Checkbox>
-              </Form.Item>
-              <Form.Item name={["topbar", "background"]} label="顶栏背景色" tooltip="留空跟随页面背景；勾选透明顶栏时忽略此项">
-                <Input placeholder="#1677ff / 留空跟随页面" />
-              </Form.Item>
-              <Form.Item name={["topbar", "textColor"]} label="顶栏文字色">
-                <Input placeholder="留空跟随文字主色" />
-              </Form.Item>
-              <Form.Item name={["topbar", "height"]} label="顶栏最小高度">
-                <Input placeholder="默认（由内容撑开）" />
+              <Form.Item name={["linkBtn", "buttonRadius"]} label="按钮形状：方形↔圆形">
+                <Input placeholder="4px" />
               </Form.Item>
             </div>
+          </Card>
+                      {/* 打开方式（自 settings 迁入） */}
+          <Card title="打开方式" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>原「站点设置」项，存储位置不变，随「保存配置」一并提交</span>}>
+            <div style={{ maxWidth: 360 }}>
+              <Form.Item name={["siteSetting", "jumpTargetBlank"]} label="链接打开方式" tooltip="点击工具卡片时，在新窗口还是当前页打开">
+                <Select
+                  options={[
+                    { label: "当前窗口打开", value: 0 },
+                    { label: "新窗口打开", value: 1 },
+                  ]}
+                />
+              </Form.Item>
+            </div>
+          </Card>
+                    </>
+                  ),
+                },
+                {
+                  key: "footer",
+                  label: "页脚与备案",
+                  children: (
+                    <>
+                      {/* 页脚 */}
+          <Card title="页脚 / 备案区" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["footer", "text"]} label="页脚文案" tooltip="留空则显示默认版权信息">
+                <Input placeholder="留空使用默认文案" />
+              </Form.Item>
+              <Form.Item name={["footer", "textColor"]} label="文字颜色">
+                <Input placeholder="留空跟随次级文字色" />
+              </Form.Item>
+              <Form.Item name={["footer", "hidden"]} label="隐藏页脚" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+            </div>
+          </Card>
+                      {/* 备案文案（自 settings 迁入） */}
+          <Card title="备案信息" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>原「站点设置」项，存储位置不变，随「保存配置」一并提交</span>}>
+            <Form.Item name={["siteSetting", "govRecord"]} label="备案文案">
+              <Input placeholder="如：京ICP备XXXXXXXX号" />
+            </Form.Item>
           </Card>
                     </>
                   ),
@@ -1018,35 +1318,27 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item name={["font", "baseFontSize"]} label="正文字号">
                 <Input placeholder="14px" />
               </Form.Item>
-              
+
             </div>
           </Card>
-                    </>
-                  ),
-                },
-                {
-                  key: "link",
-                  label: "链接与页脚",
-                  children: (
-                    <>
-                      {/* 链接与按钮 */}
-          <Card title="链接与按钮" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["linkBtn", "linkColor"]} label="链接颜色">
-                <Input placeholder="留空跟随主色调" />
+                      {/* 排版配置 */}
+          <Card title="标题与简介文字" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+              <Form.Item name={["typography", "titleFontSize"]} label="标题字号">
+                <Input placeholder="16px" />
               </Form.Item>
-              <Form.Item name={["linkBtn", "buttonRadius"]} label="按钮圆角">
-                <Input placeholder="4px" />
+              <Form.Item name={["typography", "titleFontWeight"]} label="标题字重">
+                <Select
+                  options={[
+                    { label: "正常 (400)", value: "400" },
+                    { label: "中等 (500)", value: "500" },
+                    { label: "半粗 (600)", value: "600" },
+                    { label: "粗体 (700)", value: "700" },
+                  ]}
+                />
               </Form.Item>
-            </div>
-          </Card>{/* 页脚 */}
-          <Card title="页脚 / 备案区" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["footer", "textColor"]} label="文字颜色">
-                <Input placeholder="留空跟随次级文字色" />
-              </Form.Item>
-              <Form.Item name={["footer", "hidden"]} label="隐藏备案区" valuePropName="checked">
-                <Switch />
+              <Form.Item name={["typography", "descFontSize"]} label="简介字号">
+                <Input placeholder="13px" />
               </Form.Item>
             </div>
           </Card>
@@ -1135,7 +1427,7 @@ export const Theme: React.FC<ThemeProps> = () => {
                 },
                 {
 key: "css",
-                  label: "自定义 CSS",
+                  label: "高级 · 自定义 CSS",
                   children: (
                     <Card
                       title="自定义CSS"

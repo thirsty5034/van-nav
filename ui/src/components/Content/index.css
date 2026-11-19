@@ -13,8 +13,9 @@
   box-sizing: border-box;
 }
 
-/* 搜索框默认毛玻璃（主题管理接管） */
+/* 搜索框默认毛玻璃（主题管理接管；顶部/底部搜索共用） */
 .topbar .search-wraper input,
+.bottom-controls .search-wraper input,
 .topbar input#search-bar {
   background: color-mix(in srgb, var(--van-nav-bg-card) 55%, transparent);
   backdrop-filter: blur(10px);
@@ -82,14 +83,14 @@
     color: var(--van-nav-text-primary);
   }
   input {
-    height: 30px;
+    height: var(--van-nav-search-height, 30px);
     font-size: 16px;
     padding: 0 16px;
-    border-radius: 4px;
+    border-radius: var(--van-nav-search-radius, 4px);
     border: 1px solid var(--van-nav-border);
     background-color: var(--van-nav-bg-base);
     outline: none;
-    color: var(--van-nav-text-secondary);
+    color: var(--van-nav-search-text-color, var(--van-nav-text-secondary));
   }
   .search {
     margin-bottom: 14px;
@@ -219,14 +220,14 @@
     color: var(--van-nav-text-primary);
   }
   input {
-    height: 36px;
+    height: var(--van-nav-search-height, 36px);
     font-size: 16px;
     padding: 0 20px;
-    border-radius: 4px;
+    border-radius: var(--van-nav-search-radius, 4px);
     border: 1px solid var(--van-nav-border);
     background-color: var(--van-nav-bg-base);
     outline: none;
-    color: var(--van-nav-text-secondary);
+    color: var(--van-nav-search-text-color, var(--van-nav-text-secondary));
   }
   .search {
     margin-bottom: 18px;
@@ -351,14 +352,14 @@
     color: var(--van-nav-text-primary);
   }
   input {
-    height: 40px;
+    height: var(--van-nav-search-height, 40px);
     font-size: 16px;
     padding: 0 22px;
-    border-radius: 4px;
+    border-radius: var(--van-nav-search-radius, 4px);
     border: 1px solid var(--van-nav-border);
     background-color: var(--van-nav-bg-base);
     outline: none;
-    color: var(--van-nav-text-secondary);
+    color: var(--van-nav-search-text-color, var(--van-nav-text-secondary));
   }
   .tag-selector {
     margin-bottom: 0;
@@ -495,15 +496,14 @@
     color: var(--van-nav-text-primary);
   }
   input {
-    height: 40px;
+    height: var(--van-nav-search-height, 40px);
     font-size: 16px;
     padding: 0 32px;
-    border-radius: 4px;
+    border-radius: var(--van-nav-search-radius, 4px);
     border: 1px solid var(--van-nav-border);
     background-color: var(--van-nav-bg-base);
     outline: none;
-    color: var(--van-nav-text-secondary);
-   
+    color: var(--van-nav-search-text-color, var(--van-nav-text-secondary));
   }
   .content {
     display: grid;
@@ -738,6 +738,166 @@ body.dark-mode .content.compact-grid .card-box {
 body.dark-mode .content.compact-grid .card-box:hover {
   background-color: #3a3a3a;
   box-shadow: 0 2px 8px rgba(255,255,255,0.1);
+}
+
+/* ===== 主题增强 T3：搜索框/标签栏/卡片消费新变量 ===== */
+
+/* 搜索框插槽：顶部占满三列；宽度（百分比）与水平位置由主题变量/类控制 */
+.search-slot {
+  grid-column-start: span 3;
+  width: var(--van-nav-search-width, 100%);
+  box-sizing: border-box;
+}
+/* 顶部搜索在网格上下文：stretch 对齐会把 auto margin 按 0 处理，须用 justify-self 对齐 */
+.topbar .search-slot.search-pos-left { justify-self: start; }
+.topbar .search-slot.search-pos-center { justify-self: center; }
+.topbar .search-slot.search-pos-right { justify-self: end; }
+/* 底部搜索在块级上下文：用 auto margin 对齐 */
+.bottom-controls .search-slot.search-pos-left { margin-right: auto; }
+.bottom-controls .search-slot.search-pos-center { margin-left: auto; margin-right: auto; }
+.bottom-controls .search-slot.search-pos-right { margin-left: auto; }
+
+/* 搜索框占位文案颜色（空值回退浏览器默认） */
+.search-slot input::placeholder {
+  color: var(--van-nav-search-placeholder-color, revert);
+}
+
+/* 搜索框透明无框 */
+.search-slot.search-transparent input,
+.search-slot.search-transparent input#search-bar {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.search-slot.search-transparent input:hover,
+.search-slot.search-transparent input:focus,
+.search-slot.search-transparent input:focus-visible {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+/* 底部搜索/标签区（search.vertical=bottom 或 tag.position=bottom 时渲染在卡片列表之后） */
+.bottom-controls {
+  margin: 0 5vw;
+  padding-bottom: 70px;
+}
+
+/* 分类标签颜色/圆角（空值回退现默认） */
+.topbar .select-tag,
+.bottom-controls .select-tag,
+.tag-rail .select-tag {
+  background-color: var(--van-nav-tag-bg, transparent);
+  color: var(--van-nav-tag-text-color, var(--van-nav-text-secondary));
+  border-radius: var(--van-nav-tag-radius, 4px);
+}
+body.dark-mode .topbar .select-tag,
+body.dark-mode .bottom-controls .select-tag,
+body.dark-mode .tag-rail .select-tag {
+  background-color: var(--van-nav-tag-bg, var(--van-nav-bg-card));
+}
+.topbar .select-tag-active,
+.bottom-controls .select-tag-active,
+.tag-rail .select-tag-active {
+  background-color: var(--van-nav-tag-active-bg, var(--van-nav-primary));
+  border-color: var(--van-nav-tag-active-bg, var(--van-nav-primary));
+}
+
+/* 分类标签透明无框：去底色去边框，保留选中态与 hover 描边 */
+.tag-transparent .select-tag {
+  background: transparent;
+  border-color: transparent;
+}
+.tag-transparent .select-tag:hover {
+  background: transparent;
+  border-color: var(--van-nav-primary);
+}
+
+/* 分类标签左右贴屏（fixed 侧边竖排） */
+.tag-rail {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 150px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 12px 10px;
+  box-sizing: border-box;
+}
+.tag-rail-left { left: 0; }
+.tag-rail-right { right: 0; }
+.tag-rail .tag-selector { width: 100%; }
+.tag-rail .tag-selector-wrapper { margin-right: 0; }
+.tag-rail .select-tag {
+  display: block;
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
+/* 侧边标签栏与主内容间距（避免遮挡） */
+@media (min-width: 700px) {
+  .content-wraper.tag-rail-spacing-left { padding-left: 170px; }
+  .content-wraper.tag-rail-spacing-right { padding-right: 170px; }
+}
+/* 窄屏：侧边栏回退为静态横向排列，保证移动端可用 */
+@media (max-width: 699px) {
+  .tag-rail {
+    position: static;
+    transform: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-width: none;
+    max-height: none;
+    overflow: visible;
+    gap: 0;
+    padding: 0;
+    margin: 8px 2vw 0;
+  }
+  .tag-rail .select-tag {
+    display: inline-block;
+    width: auto;
+    margin: 0 6px 6px 0;
+  }
+}
+@media (max-width: 500px) {
+  .bottom-controls { margin: 0 2vw; }
+}
+
+/* 卡片高度（空值=auto 回退现默认）；精简模式的固定行高优先级更高，行为不变 */
+.content-wraper .card-box {
+  height: var(--van-nav-card-height, auto);
+}
+/* 卡片底色透明度 bgOpacity（0-1，空值=1 不透明） */
+@supports (background: color-mix(in srgb, red 50%, transparent)) {
+  .content-wraper a.card-box,
+  body.dark-mode .content-wraper a.card-box {
+    background-color: color-mix(in srgb, var(--van-nav-bg-card) calc(var(--van-nav-card-bg-opacity, 1) * 100%), transparent);
+  }
+  body.dark-mode .content.compact-grid a.card-box {
+    background-color: color-mix(in srgb, var(--van-nav-bg-card) calc(var(--van-nav-card-bg-opacity, 1) * 100%), transparent);
+  }
+}
+
+/* 卡片透明无框（bgOpacity=0）：无底色/无边框/无阴影 */
+.content-wraper a.card-box.card-ghost,
+body.card-outline-mode .content-wraper a.card-box.card-ghost,
+body.dark-mode .content-wraper a.card-box.card-ghost {
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+}
+.content-wraper a.card-box.card-ghost:hover,
+body.dark-mode .content-wraper a.card-box.card-ghost:hover,
+body.dark-mode .content.compact-grid a.card-box.card-ghost:hover {
+  background-color: transparent;
+  box-shadow: none;
 }
 
 

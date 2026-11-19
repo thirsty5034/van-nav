@@ -84,9 +84,23 @@ func getDefaultThemeConfig() types.ThemeConfig {
 		Radius:    types.ThemeRadiusConfig{Style: "small"},
 		Topbar:    types.ThemeTopbarConfig{Background: "", TextColor: "", Blur: false, Height: ""},
 		PageBg:    types.ThemePageBgConfig{GradientTo: "", Image: "", DimOpacity: ""},
-		CardExtra: types.ThemeCardConfig{LogoRadius: "", LogoSize: "", TitleColor: "", HoverLift: true, Outline: false},
-		LinkBtn:   types.ThemeLinkConfig{LinkColor: "", ButtonRadius: ""},
-		Footer:    types.ThemeFooterConfig{TextColor: "", Hidden: false},
+		CardExtra: types.ThemeCardConfig{LogoRadius: "", LogoSize: "", TitleColor: "", HoverLift: true, Outline: false,
+			Height: "", ShowLogo: true, ShowTitle: true, ShowDesc: true, ShowTag: true, BgOpacity: ""},
+		LinkBtn: types.ThemeLinkConfig{LinkColor: "", ButtonRadius: ""},
+		Footer:  types.ThemeFooterConfig{TextColor: "", Hidden: false, Text: ""},
+		Search: types.ThemeSearchConfig{
+			Hidden:           false,
+			Position:         "center",
+			Width:            "60%",
+			Vertical:         "top",
+			Height:           "40px",
+			Radius:           "8px",
+			Transparent:      false,
+			TextColor:        "",
+			PlaceholderColor: "",
+			Placeholder:      "",
+		},
+		Tag: types.ThemeTagConfig{Hidden: false, Position: "top", Transparent: false, Bg: "", ActiveBg: "", TextColor: "", Radius: ""},
 	}
 }
 
@@ -255,6 +269,62 @@ func validateThemeConfig(config *types.ThemeConfig) error {
 		return err
 	}
 
+	// 校验搜索框配置
+	switch config.Search.Position {
+	case "", "left", "center", "right":
+	default:
+		return fmt.Errorf("搜索框水平位置无效，应为 left/center/right")
+	}
+	switch config.Search.Vertical {
+	case "", "top", "bottom":
+	default:
+		return fmt.Errorf("搜索框摆放位置无效，应为 top/bottom")
+	}
+	percentPattern := regexp.MustCompile(`^([1-9]\d?|100)%$`)
+	if config.Search.Width != "" && !percentPattern.MatchString(config.Search.Width) {
+		return fmt.Errorf("搜索框宽度格式无效，应为 1-100 的百分比（如 60%%）")
+	}
+	if err := validatePxField(config.Search.Height, "搜索框高度"); err != nil {
+		return err
+	}
+	if err := validatePxField(config.Search.Radius, "搜索框圆角"); err != nil {
+		return err
+	}
+	if err := validateColorField(config.Search.TextColor, "搜索框文字颜色"); err != nil {
+		return err
+	}
+	if err := validateColorField(config.Search.PlaceholderColor, "搜索框提示颜色"); err != nil {
+		return err
+	}
+
+	// 校验分类标签配置
+	switch config.Tag.Position {
+	case "", "top", "bottom", "left", "right":
+	default:
+		return fmt.Errorf("分类标签位置无效，应为 top/bottom/left/right")
+	}
+	if err := validateColorField(config.Tag.Bg, "分类标签底色"); err != nil {
+		return err
+	}
+	if err := validateColorField(config.Tag.ActiveBg, "分类标签选中底色"); err != nil {
+		return err
+	}
+	if err := validateColorField(config.Tag.TextColor, "分类标签文字颜色"); err != nil {
+		return err
+	}
+	if err := validatePxField(config.Tag.Radius, "分类标签圆角"); err != nil {
+		return err
+	}
+
+	// 校验卡片扩展配置（高度 px、底色透明度 0-1）
+	if err := validatePxField(config.CardExtra.Height, "卡片高度"); err != nil {
+		return err
+	}
+	opacityPattern := regexp.MustCompile(`^(0(\.\d+)?|1)$`)
+	if config.CardExtra.BgOpacity != "" && !opacityPattern.MatchString(config.CardExtra.BgOpacity) {
+		return fmt.Errorf("卡片底色透明度应为 0-1 之间的数字")
+	}
+
 	return nil
 }
 
@@ -385,6 +455,12 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 		config.CardExtra.TitleColor = strFromMap(m, "titleColor", config.CardExtra.TitleColor)
 		config.CardExtra.HoverLift = boolFromMap(m, "hoverLift", config.CardExtra.HoverLift)
 		config.CardExtra.Outline = boolFromMap(m, "outline", config.CardExtra.Outline)
+		config.CardExtra.Height = strFromMap(m, "height", config.CardExtra.Height)
+		config.CardExtra.ShowLogo = boolFromMap(m, "showLogo", config.CardExtra.ShowLogo)
+		config.CardExtra.ShowTitle = boolFromMap(m, "showTitle", config.CardExtra.ShowTitle)
+		config.CardExtra.ShowDesc = boolFromMap(m, "showDesc", config.CardExtra.ShowDesc)
+		config.CardExtra.ShowTag = boolFromMap(m, "showTag", config.CardExtra.ShowTag)
+		config.CardExtra.BgOpacity = strFromMap(m, "bgOpacity", config.CardExtra.BgOpacity)
 	}
 	if m, ok := configMap["linkBtn"].(map[string]interface{}); ok {
 		config.LinkBtn.LinkColor = strFromMap(m, "linkColor", config.LinkBtn.LinkColor)
@@ -393,6 +469,30 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 	if m, ok := configMap["footer"].(map[string]interface{}); ok {
 		config.Footer.TextColor = strFromMap(m, "textColor", config.Footer.TextColor)
 		config.Footer.Hidden = boolFromMap(m, "hidden", config.Footer.Hidden)
+		config.Footer.Text = strFromMap(m, "text", config.Footer.Text)
+	}
+	// 解析搜索框配置（字段缺失/为空时保持默认值）
+	if m, ok := configMap["search"].(map[string]interface{}); ok {
+		config.Search.Hidden = boolFromMap(m, "hidden", config.Search.Hidden)
+		config.Search.Position = strFromMap(m, "position", config.Search.Position)
+		config.Search.Width = strFromMap(m, "width", config.Search.Width)
+		config.Search.Vertical = strFromMap(m, "vertical", config.Search.Vertical)
+		config.Search.Height = strFromMap(m, "height", config.Search.Height)
+		config.Search.Radius = strFromMap(m, "radius", config.Search.Radius)
+		config.Search.Transparent = boolFromMap(m, "transparent", config.Search.Transparent)
+		config.Search.TextColor = strFromMap(m, "textColor", config.Search.TextColor)
+		config.Search.PlaceholderColor = strFromMap(m, "placeholderColor", config.Search.PlaceholderColor)
+		config.Search.Placeholder = strFromMap(m, "placeholder", config.Search.Placeholder)
+	}
+	// 解析分类标签配置（字段缺失/为空时保持默认值）
+	if m, ok := configMap["tag"].(map[string]interface{}); ok {
+		config.Tag.Hidden = boolFromMap(m, "hidden", config.Tag.Hidden)
+		config.Tag.Position = strFromMap(m, "position", config.Tag.Position)
+		config.Tag.Transparent = boolFromMap(m, "transparent", config.Tag.Transparent)
+		config.Tag.Bg = strFromMap(m, "bg", config.Tag.Bg)
+		config.Tag.ActiveBg = strFromMap(m, "activeBg", config.Tag.ActiveBg)
+		config.Tag.TextColor = strFromMap(m, "textColor", config.Tag.TextColor)
+		config.Tag.Radius = strFromMap(m, "radius", config.Tag.Radius)
 	}
 
 	return &config, nil
@@ -538,6 +638,12 @@ func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, erro
 			"titleColor": config.CardExtra.TitleColor,
 			"hoverLift":  config.CardExtra.HoverLift,
 			"outline":    config.CardExtra.Outline,
+			"height":     config.CardExtra.Height,
+			"showLogo":   config.CardExtra.ShowLogo,
+			"showTitle":  config.CardExtra.ShowTitle,
+			"showDesc":   config.CardExtra.ShowDesc,
+			"showTag":    config.CardExtra.ShowTag,
+			"bgOpacity":  config.CardExtra.BgOpacity,
 		},
 		"linkBtn": map[string]interface{}{
 			"linkColor":    config.LinkBtn.LinkColor,
@@ -546,6 +652,28 @@ func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, erro
 		"footer": map[string]interface{}{
 			"textColor": config.Footer.TextColor,
 			"hidden":    config.Footer.Hidden,
+			"text":      config.Footer.Text,
+		},
+		"search": map[string]interface{}{
+			"hidden":           config.Search.Hidden,
+			"position":         config.Search.Position,
+			"width":            config.Search.Width,
+			"vertical":         config.Search.Vertical,
+			"height":           config.Search.Height,
+			"radius":           config.Search.Radius,
+			"transparent":      config.Search.Transparent,
+			"textColor":        config.Search.TextColor,
+			"placeholderColor": config.Search.PlaceholderColor,
+			"placeholder":      config.Search.Placeholder,
+		},
+		"tag": map[string]interface{}{
+			"hidden":      config.Tag.Hidden,
+			"position":    config.Tag.Position,
+			"transparent": config.Tag.Transparent,
+			"bg":          config.Tag.Bg,
+			"activeBg":    config.Tag.ActiveBg,
+			"textColor":   config.Tag.TextColor,
+			"radius":      config.Tag.Radius,
 		},
 	}
 	

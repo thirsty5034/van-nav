@@ -245,9 +245,6 @@ export const Setting: React.FC<SettingProps> = (props) => {
     // settingForm 的 initialValues 已处理类型转换，这里只需处理动态加载的数据
     settingForm.setFieldsValue({
       ...(store?.setting ?? {}),
-      // 将布尔值转为数字，与 Select 的 value 类型一致
-      jumpTargetBlank: store?.setting?.jumpTargetBlank ? 1 : 0,
-      pcColumnCount: store?.setting?.pcColumnCount || 3,
     })
     siteConfigForm.setFieldsValue(store?.siteConfig ?? {})
     // 从后端设置数据同步语言偏好
@@ -275,12 +272,7 @@ export const Setting: React.FC<SettingProps> = (props) => {
   const handleUpdateWebSite = useCallback(
     async (values: any) => {
       try {
-        // 将 jumpTargetBlank 从数字转为布尔值（Ant Design Select 对 false 处理有问题）
-        const payload = {
-          ...values,
-          jumpTargetBlank: values.jumpTargetBlank === 1 || values.jumpTargetBlank === true,
-        };
-        await fetchUpdateSetting(payload);
+        await fetchUpdateSetting(values);
         message.success(t("admin.settings.msg.updateSuccess"));
       } catch (err) {
         message.warning(t("admin.settings.msg.updateFailed"));
@@ -575,78 +567,10 @@ export const Setting: React.FC<SettingProps> = (props) => {
             onFinish={handleUpdateWebSite}
             initialValues={{
               ...(store?.setting ?? {}),
-              // 将布尔值转为数字，与 Select 的 value 类型一致
-              jumpTargetBlank: store?.setting?.jumpTargetBlank ? 1 : 0,
-              pcColumnCount: store?.setting?.pcColumnCount || 3,
             }}
             labelCol={{ span: 6 }}
             form={settingForm}
           >
-            <Form.Item
-              label={t("admin.settings.site.favicon")}
-              name="favicon"
-              tooltip={t("admin.settings.site.faviconTooltip")}
-              required
-              rules={[{ required: true, message: t("admin.settings.site.faviconRequired") }]}
-
-            >
-              <Input placeholder={t("admin.settings.site.faviconPlaceholder")}></Input>
-            </Form.Item>
-            <Form.Item
-              label={t("admin.settings.site.title_label")}
-              name="title"
-              required
-              rules={[{ required: true, message: t("admin.settings.site.titleRequired") }]}
-
-
-            >
-              <Input placeholder={t("admin.settings.site.titlePlaceholder")}></Input>
-            </Form.Item>
-            <Form.Item
-              label={t("admin.settings.site.govRecord")}
-              name="govRecord"
-            >
-              <Input placeholder={t("admin.settings.site.govRecordPlaceholder")}></Input>
-            </Form.Item>
-
-
-            <Form.Item label={t("admin.settings.site.jumpTarget")} name="jumpTargetBlank" rules={[{ required: true, message: t("admin.settings.site.jumpTargetRequired") }]}
-              tooltip={t("admin.settings.site.jumpTargetTooltip")}
-                          >
-              <Select options={[
-                {
-                  label: t("admin.settings.site.jumpTarget.sameWindow"),
-                  value: 0,
-                },
-                {
-                  label: t("admin.settings.site.jumpTarget.newTab"),
-                  value: 1,
-                },
-              ]}>
-
-              </Select>
-
-            </Form.Item>
-            <Form.Item
-              label={t("admin.settings.site.logo192")}
-              name="logo192"
-              rules={[{ required: true, message: t("admin.settings.site.logo192Required") }]}
-
-              tooltip={t("admin.settings.site.logo192Tooltip")}
-
-            >
-              <Input placeholder={t("admin.settings.site.logo192Placeholder")}></Input>
-            </Form.Item>
-            <Form.Item
-              label={t("admin.settings.site.logo512")}
-              name="logo512"
-              rules={[{ required: true, message: t("admin.settings.site.logo512Required") }]}
-
-              tooltip={t("admin.settings.site.logo512Tooltip")}
-
-            >
-              <Input placeholder={t("admin.settings.site.logo512Placeholder")}></Input>
-            </Form.Item>
             <Form.Item label={t("admin.settings.site.hideAdmin")} name="hideAdmin" tooltip={t("admin.settings.site.hideAdminTooltip")} >
               <Switch defaultChecked={Boolean(store?.setting?.hideAdmin)} />
             </Form.Item>
@@ -655,12 +579,6 @@ export const Setting: React.FC<SettingProps> = (props) => {
             </Form.Item>
             <Form.Item label={t("admin.settings.site.hideJumpTarget")} name="hideToggleJumpTarget" tooltip={t("admin.settings.site.hideJumpTargetTooltip")} >
               <Switch defaultChecked={Boolean(store?.setting?.hideToggleJumpTarget)} />
-            </Form.Item>
-            <Form.Item label={t("admin.settings.site.showSearchEngine")} name="showSearchEngine" tooltip={t("admin.settings.site.showSearchEngineTooltip")} >
-              <Switch defaultChecked={store?.setting?.showSearchEngine !== false} />
-            </Form.Item>
-            <Form.Item label={t("admin.settings.site.pcColumnCount")} name="pcColumnCount" tooltip={t("admin.settings.site.pcColumnCountTooltip")}>
-              <InputNumber min={2} max={8} placeholder={t("admin.settings.site.pcColumnCountPlaceholder")} style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
               <Button type="primary" htmlType="submit">
@@ -678,20 +596,6 @@ export const Setting: React.FC<SettingProps> = (props) => {
             labelCol={{ span: 6 }}
             form={siteConfigForm}
           >
-            <Form.Item label={t("admin.settings.config.noImageMode")} name="noImageMode" tooltip={t("admin.settings.config.noImageModeTooltip")}>
-              <Switch defaultChecked={Boolean(store?.siteConfig?.noImageMode)} />
-            </Form.Item>
-            <Form.Item label={t("admin.settings.config.compactMode")} name="compactMode" tooltip={t("admin.settings.config.compactModeTooltip")}>
-              <Switch defaultChecked={Boolean(store?.siteConfig?.compactMode)} />
-            </Form.Item>
-            <Form.Item label={t("admin.settings.config.sortByClicks")} tooltip={t("admin.settings.config.sortByClicksTooltip")}>
-              <Form.Item name="sortByClicks" valuePropName="checked" noStyle>
-                <Switch defaultChecked={Boolean(store?.siteConfig?.sortByClicks)} />
-              </Form.Item>
-              <span style={{ marginLeft: 12, fontSize: 12, color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)' }}>
-                {t("admin.settings.config.sortByClicksNote")}
-              </span>
-            </Form.Item>
             <Form.Item
               label={t("admin.settings.config.faviconApiTemplate")}
               name="faviconApiTemplate"

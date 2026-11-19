@@ -15,6 +15,25 @@ import { toggleJumpTarget, syncJumpTargetFromServer } from "../../utils/setting"
 import { useTranslation } from "../../i18n";
 import { batchGetTotalScores } from "../../utils/clickTracker";
 import { buildSearchOrderedList } from "../../utils/searchOrder";
+import { getCurrentThemeConfig } from "../../utils/theme";
+
+// 订阅主题配置（参考 useAntdTheme）：配置加载完成/主题切换/跨标签页时刷新，
+// 让首页与主题预览读到同一份配置（search/tag/cardExtra 新字段）
+const useThemeConfig = () => {
+  const [config, setConfig] = useState(getCurrentThemeConfig());
+  useEffect(() => {
+    const refresh = () => setConfig(getCurrentThemeConfig());
+    window.addEventListener("theme-change", refresh);
+    window.addEventListener("storage", refresh);
+    window.addEventListener("theme-config-loaded", refresh);
+    return () => {
+      window.removeEventListener("theme-change", refresh);
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("theme-config-loaded", refresh);
+    };
+  }, []);
+  return config;
+};
 
 // 系统内置工具名称翻译映射（仅限前端硬编码的系统工具，不翻译用户数据）
 const systemToolTranslations: Record<string, Record<string, string>> = {
@@ -107,6 +126,29 @@ const Content = (props: any) => {
     const hide = data?.setting?.hideGithub === true
     return !hide;
   }, [data])
+
+  // ===== 主题新配置：搜索框/标签栏位置与卡片展示开关（空值=回退现默认） =====
+  const themeConfig = useThemeConfig();
+  const searchCfg = themeConfig?.search;
+  const tagCfg = themeConfig?.tag;
+  const cardCfg = themeConfig?.cardExtra;
+
+  const searchHidden = searchCfg?.hidden === true;
+  const tagHidden = tagCfg?.hidden === true;
+  // 搜索框摆放：顶部（现状）/底部（渲染顺序调整，放到卡片列表之后）
+  const searchAtBottom = !searchHidden && searchCfg?.vertical === 'bottom';
+  // 分类标签栏：顶部（现状）/底部（渲染顺序）/左侧/右侧贴屏（fixed 侧边竖排）
+  const tagPosition = tagCfg?.position;
+  const tagAtBottom = !tagHidden && tagPosition === 'bottom';
+  const tagSide = !tagHidden && (tagPosition === 'left' || tagPosition === 'right') ? tagPosition : null;
+  // 卡片透明无框：底色透明度为 0 时去掉底色/边框/阴影（ghost 类）
+  const cardGhost = parseFloat(cardCfg?.bgOpacity ?? '') === 0;
+
+  const searchTop = !searchHidden && !searchAtBottom;
+  const tagTop = !tagHidden && !tagAtBottom && !tagSide;
+  // 搜索框插槽：水平位置（左/中/右）+ 透明无框类；宽度由 --van-nav-search-width 控制
+  const searchSlotClass = `search-slot${searchCfg?.position ? ` search-pos-${searchCfg.position}` : ''}${searchCfg?.transparent ? ' search-transparent' : ''}`;
+  const tagTransparentClass = tagCfg?.transparent ? ' tag-transparent' : '';
 
   const showAdmin = useMemo(() => {
     const hide = data?.setting?.hideAdmin === true;
@@ -469,6 +511,11 @@ const Content = (props: any) => {
           noImageMode={data?.siteConfig?.noImageMode || false}
           compactMode={data?.siteConfig?.compactMode || false}
           jumpTargetBlank={data?.setting?.jumpTargetBlank}
+          showLogo={cardCfg?.showLogo}
+          showTitle={cardCfg?.showTitle}
+          showDesc={cardCfg?.showDesc}
+          showTag={cardCfg?.showTag}
+          ghost={cardGhost}
           onClick={() => {
             resetSearch();
             if (item.url === "toggleJumpTarget") {
@@ -481,7 +528,7 @@ const Content = (props: any) => {
     });
     // eslint-disable-next-line
   // eslint-disable-next-line
-  }, [filteredData, visibleCount, searchString, data?.siteConfig?.noImageMode, data?.siteConfig?.compactMode]);
+  }, [filteredData, visibleCount, searchString, data?.siteConfig?.noImageMode, data?.siteConfig?.compactMode, cardCfg?.showLogo, cardCfg?.showTitle, cardCfg?.showDesc, cardCfg?.showTag, cardGhost]);
 
   // 标签/搜索变化：按视口重置首屏可见数
   useEffect(() => {
@@ -602,6 +649,22 @@ const Content = (props: any) => {
     }
   };
 
+  const searchBar = (
+    <SearchBar
+      searchString={val}
+      setSearchText={handleSetSearchText}
+      onCompositionStart={handleCompositionStart}
+      onCompositionEnd={handleCompositionEnd}
+    />
+  );
+  const tagSelector = (
+    <TagSelector
+      tags={data?.catelogs ?? ['全部工具']}
+      currTag={currTag}
+      onTagChange={handleSetCurrTag}
+    />
+  );
+
   return (
     <>
       <Helmet>
@@ -614,26 +677,28 @@ const Content = (props: any) => {
         />
         <title>{data?.setting?.title ?? "Van Nav"}</title>
       </Helmet>
-      <div className="topbar">
-        <div className="content">
-          <SearchBar
-            searchString={val}
-            setSearchText={handleSetSearchText}
-            onCompositionStart={handleCompositionStart}
-            onCompositionEnd={handleCompositionEnd}
-          />
-          <TagSelector
-            tags={data?.catelogs ?? ['全部工具']}
-            currTag={currTag}
-            onTagChange={handleSetCurrTag}
-          />
+      {(searchTop || tagTop) && (
+        <div className="topbar">
+          <div className={`content${tagTransparentClass}`}>
+            {searchTop && <div className={searchSlotClass}>{searchBar}</div>}
+            {tagTop && tagSelector}
+          </div>
         </div>
-      </div>
-      <div className="content-wraper">
+      )}
+      {!tagHidden && tagSide && (
+        <div className={`tag-rail tag-rail-${tagSide}${tagTransparentClass}`}>{tagSelector}</div>
+      )}
+      <div className={`content-wraper${tagSide ? ` tag-rail-spacing-${tagSide}` : ''}`}>
         <div className={`content cards ${data?.siteConfig?.compactMode ? 'compact-grid' : ''}`} style={gridStyle}>
           {loading ? <Loading></Loading> : renderCardsV2()}
         </div>
       </div>
+      {(searchAtBottom || tagAtBottom) && (
+        <div className={`bottom-controls${tagTransparentClass}`}>
+          {searchAtBottom && <div className={searchSlotClass}>{searchBar}</div>}
+          {tagAtBottom && tagSelector}
+        </div>
+      )}
       {data?.setting?.govRecord && (
         <div className="record-wraper">
           <a href="https://beian.miit.gov.cn" target="_blank" rel="noreferrer">{data.setting.govRecord}</a>

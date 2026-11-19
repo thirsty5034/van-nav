@@ -1,9 +1,11 @@
 package service
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
+	"github.com/mereith/nav/database"
 	"github.com/mereith/nav/types"
 )
 
@@ -155,5 +157,283 @@ func TestValidateThemeConfigExtended(t *testing.T) {
 	c.Font.BaseFontSize = "big"
 	if err := validateThemeConfig(&c); err == nil {
 		t.Errorf("非法字号应被拒绝")
+	}
+}
+
+// ==================== 搜索框/分类标签/卡片扩展（定稿方案 v3） ====================
+
+func TestValidateThemeConfigSearch(t *testing.T) {
+	base := getDefaultThemeConfig()
+
+	// 合法：水平位置枚举
+	for _, pos := range []string{"left", "center", "right"} {
+		c := base
+		c.Search.Position = pos
+		if err := validateThemeConfig(&c); err != nil {
+			t.Errorf("搜索框水平位置 %q 应合法, got %v", pos, err)
+		}
+	}
+
+	// 非法水平位置
+	c := base
+	c.Search.Position = "middle"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("搜索框水平位置 middle 应被拒绝")
+	}
+
+	// 合法：摆放位置枚举
+	for _, v := range []string{"top", "bottom"} {
+		c := base
+		c.Search.Vertical = v
+		if err := validateThemeConfig(&c); err != nil {
+			t.Errorf("搜索框摆放位置 %q 应合法, got %v", v, err)
+		}
+	}
+
+	// 非法摆放位置
+	c = base
+	c.Search.Vertical = "middle"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("搜索框摆放位置 middle 应被拒绝")
+	}
+
+	// 合法宽度百分比（1-100）
+	for _, w := range []string{"1%", "60%", "100%"} {
+		c := base
+		c.Search.Width = w
+		if err := validateThemeConfig(&c); err != nil {
+			t.Errorf("搜索框宽度 %q 应合法, got %v", w, err)
+		}
+	}
+
+	// 非法宽度百分比
+	for _, w := range []string{"0%", "101%", "60", "abc%", "-10%"} {
+		c := base
+		c.Search.Width = w
+		if err := validateThemeConfig(&c); err == nil {
+			t.Errorf("搜索框宽度 %q 应被拒绝", w)
+		}
+	}
+
+	// 高度/圆角需为 px 值
+	c = base
+	c.Search.Height = "40"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("搜索框高度缺 px 单位应被拒绝")
+	}
+	c = base
+	c.Search.Radius = "8px"
+	if err := validateThemeConfig(&c); err != nil {
+		t.Errorf("搜索框圆角 8px 应合法, got %v", err)
+	}
+
+	// 文字/提示颜色格式
+	c = base
+	c.Search.TextColor = "#123456"
+	c.Search.PlaceholderColor = "#abcdef"
+	if err := validateThemeConfig(&c); err != nil {
+		t.Errorf("合法搜索框颜色应通过, got %v", err)
+	}
+	c = base
+	c.Search.PlaceholderColor = "red"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("非法搜索框提示颜色应被拒绝")
+	}
+
+	// 布尔开关不影响合法性
+	c = base
+	c.Search.Hidden = true
+	c.Search.Transparent = true
+	if err := validateThemeConfig(&c); err != nil {
+		t.Errorf("搜索框布尔开关应合法, got %v", err)
+	}
+}
+
+func TestValidateThemeConfigTag(t *testing.T) {
+	base := getDefaultThemeConfig()
+
+	// 合法：四向贴边枚举
+	for _, pos := range []string{"top", "bottom", "left", "right"} {
+		c := base
+		c.Tag.Position = pos
+		if err := validateThemeConfig(&c); err != nil {
+			t.Errorf("分类标签位置 %q 应合法, got %v", pos, err)
+		}
+	}
+
+	// 非法位置
+	c := base
+	c.Tag.Position = "middle"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("分类标签位置 middle 应被拒绝")
+	}
+
+	// 颜色与圆角合法值
+	c = base
+	c.Tag.Bg = "#112233"
+	c.Tag.ActiveBg = "#445566"
+	c.Tag.TextColor = "#778899"
+	c.Tag.Radius = "6px"
+	if err := validateThemeConfig(&c); err != nil {
+		t.Errorf("合法分类标签配置应通过, got %v", err)
+	}
+
+	// 非法底色
+	c = base
+	c.Tag.Bg = "white"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("非法分类标签底色应被拒绝")
+	}
+
+	// 圆角仅支持 px，百分比应被拒绝
+	c = base
+	c.Tag.Radius = "50%"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("分类标签圆角百分比应被拒绝")
+	}
+
+	// 布尔开关不影响合法性
+	c = base
+	c.Tag.Hidden = true
+	c.Tag.Transparent = true
+	if err := validateThemeConfig(&c); err != nil {
+		t.Errorf("分类标签布尔开关应合法, got %v", err)
+	}
+}
+
+func TestValidateThemeConfigCardShowFlags(t *testing.T) {
+	base := getDefaultThemeConfig()
+
+	// 展示开关全关仍合法（布尔值本身不做格式校验）
+	c := base
+	c.CardExtra.ShowLogo = false
+	c.CardExtra.ShowTitle = false
+	c.CardExtra.ShowDesc = false
+	c.CardExtra.ShowTag = false
+	if err := validateThemeConfig(&c); err != nil {
+		t.Errorf("卡片展示开关全关应合法, got %v", err)
+	}
+
+	// 卡片高度 px 校验
+	c = base
+	c.CardExtra.Height = "120px"
+	if err := validateThemeConfig(&c); err != nil {
+		t.Errorf("卡片高度 120px 应合法, got %v", err)
+	}
+	c = base
+	c.CardExtra.Height = "tall"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("非法卡片高度应被拒绝")
+	}
+
+	// 底色透明度 0-1
+	c = base
+	c.CardExtra.BgOpacity = "0.5"
+	if err := validateThemeConfig(&c); err != nil {
+		t.Errorf("卡片底色透明度 0.5 应合法, got %v", err)
+	}
+	c = base
+	c.CardExtra.BgOpacity = "1.5"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("超范围卡片底色透明度应被拒绝")
+	}
+}
+
+func TestThemeConfigSearchTagRoundTrip(t *testing.T) {
+	database.InitDB()
+	defer database.DeleteThemeConfig()
+
+	base := getDefaultThemeConfig()
+	base.Search.Hidden = true
+	base.Search.Position = "left"
+	base.Search.Width = "80%"
+	base.Search.Vertical = "bottom"
+	base.Search.Height = "48px"
+	base.Search.Radius = "12px"
+	base.Search.Transparent = true
+	base.Search.TextColor = "#123456"
+	base.Search.PlaceholderColor = "#654321"
+	base.Search.Placeholder = "搜索站点"
+	base.Tag.Hidden = true
+	base.Tag.Position = "left"
+	base.Tag.Transparent = true
+	base.Tag.Bg = "#112233"
+	base.Tag.ActiveBg = "#445566"
+	base.Tag.TextColor = "#778899"
+	base.Tag.Radius = "6px"
+	base.CardExtra.Height = "120px"
+	base.CardExtra.ShowLogo = false
+	base.CardExtra.ShowTitle = false
+	base.CardExtra.ShowDesc = false
+	base.CardExtra.ShowTag = false
+	base.CardExtra.BgOpacity = "0.5"
+	base.Footer.Text = "备案信息"
+
+	if err := SaveThemeConfig(base); err != nil {
+		t.Fatalf("保存主题配置失败: %v", err)
+	}
+	got, err := GetThemeConfig()
+	if err != nil {
+		t.Fatalf("读取主题配置失败: %v", err)
+	}
+
+	if got.Search.Position != "left" || got.Search.Width != "80%" || got.Search.Vertical != "bottom" ||
+		got.Search.Height != "48px" || got.Search.Radius != "12px" || !got.Search.Hidden ||
+		!got.Search.Transparent || got.Search.TextColor != "#123456" ||
+		got.Search.PlaceholderColor != "#654321" || got.Search.Placeholder != "搜索站点" {
+		t.Errorf("搜索框配置往返不一致, got %+v", got.Search)
+	}
+	if got.Tag.Position != "left" || !got.Tag.Hidden || !got.Tag.Transparent ||
+		got.Tag.Bg != "#112233" || got.Tag.ActiveBg != "#445566" ||
+		got.Tag.TextColor != "#778899" || got.Tag.Radius != "6px" {
+		t.Errorf("分类标签配置往返不一致, got %+v", got.Tag)
+	}
+	if got.CardExtra.Height != "120px" || got.CardExtra.ShowLogo || got.CardExtra.ShowTitle ||
+		got.CardExtra.ShowDesc || got.CardExtra.ShowTag || got.CardExtra.BgOpacity != "0.5" {
+		t.Errorf("卡片扩展配置往返不一致, got %+v", got.CardExtra)
+	}
+	if got.Footer.Text != "备案信息" {
+		t.Errorf("页脚文案往返不一致, got %q", got.Footer.Text)
+	}
+}
+
+func TestGetThemeConfigLegacyFallback(t *testing.T) {
+	database.InitDB()
+	defer database.DeleteThemeConfig()
+
+	// 旧版配置 JSON：无 search/tag/cardExtra 扩展与 footer.text 字段
+	legacyJSON := `{"version":"1.0","colors":{"primary":"#1677ff","bgBase":"#f5f5f5","bgCard":"#ffffff","textPrimary":"#000000e0","textSecondary":"#000000a6","border":"#d9d9d9"},"layout":{"cardBorderRadius":"8px","cardShadow":"0 1px 2px rgba(0,0,0,0.03)","cardPadding":"16px","cardGap":"16px"},"typography":{"titleFontSize":"15px","titleFontWeight":"600","descFontSize":"13px"},"customCSS":"","nightMode":{"mode":"system","start":"18:00","end":"08:00"}}`
+	var legacy map[string]interface{}
+	if err := json.Unmarshal([]byte(legacyJSON), &legacy); err != nil {
+		t.Fatalf("解析旧配置失败: %v", err)
+	}
+	if err := database.SaveThemeConfig(legacy); err != nil {
+		t.Fatalf("写入旧配置失败: %v", err)
+	}
+
+	got, err := GetThemeConfig()
+	if err != nil {
+		t.Fatalf("读取主题配置失败: %v", err)
+	}
+
+	// 搜索框应回退文档默认值
+	if got.Search.Hidden || got.Search.Position != "center" || got.Search.Width != "60%" ||
+		got.Search.Vertical != "top" || got.Search.Height != "40px" || got.Search.Radius != "8px" ||
+		got.Search.Transparent {
+		t.Errorf("旧数据搜索框应回退默认值, got %+v", got.Search)
+	}
+	// 分类标签应回退文档默认值
+	if got.Tag.Hidden || got.Tag.Position != "top" || got.Tag.Transparent {
+		t.Errorf("旧数据分类标签应回退默认值, got %+v", got.Tag)
+	}
+	// 卡片展示开关应默认全开，新字段为空
+	if !got.CardExtra.ShowLogo || !got.CardExtra.ShowTitle || !got.CardExtra.ShowDesc || !got.CardExtra.ShowTag {
+		t.Errorf("旧数据卡片展示开关应默认全开, got %+v", got.CardExtra)
+	}
+	if got.CardExtra.Height != "" || got.CardExtra.BgOpacity != "" {
+		t.Errorf("旧数据卡片高度/透明度应为空, got %+v", got.CardExtra)
+	}
+	if got.Footer.Text != "" {
+		t.Errorf("旧数据页脚文案应为空, got %q", got.Footer.Text)
 	}
 }
