@@ -472,6 +472,7 @@ const buildConfigFromValues = (values: any) => ({
     tagColor: colorToHex(values.cardExtra?.tagColor, ""),
     tagBg: colorToHex(values.cardExtra?.tagBg, ""),
     tagRadius: numToPxOrEmpty(values.cardExtra?.tagRadius),
+    borderColor: colorToHex(values.cardExtra?.borderColor, ""),
   },
   linkBtn: {
     linkColor: colorToHex(values.linkBtn?.linkColor, ""),
@@ -541,7 +542,7 @@ body.search-right .search-wraper { margin-left: auto; margin-right: 16px; }
 .search-wraper input {
   width: 100%; height: var(--van-nav-search-height, 40px); padding: 0 14px;
   border: 1px solid var(--van-nav-border); border-radius: var(--van-nav-search-radius, var(--van-nav-radius-global));
-  background: color-mix(in srgb, var(--van-nav-bg-card) 55%, transparent);
+  background: color-mix(in srgb, var(--van-nav-bg-base) 55%, transparent);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   color: var(--van-nav-search-text-color, var(--van-nav-text-primary)); outline: none;
   font-family: var(--van-nav-search-font-family, inherit); font-size: var(--van-nav-search-font-size, 14px);
@@ -566,7 +567,7 @@ body.tag-transparent .select-tag:hover { border-color: var(--van-nav-primary); }
 .card-box { display: flex; gap: 10px; align-items: center; background: var(--van-nav-bg-card); border-radius: var(--van-nav-card-radius); box-shadow: var(--van-nav-card-shadow); padding: var(--van-nav-card-padding); min-height: var(--van-nav-card-height, auto); transition: transform 0.2s ease; }
 .card-box:hover { transform: translateY(-2px); }
 body.card-hover-off .card-box:hover { transform: none; }
-body.card-outline-mode .card-box { box-shadow: none; border: 1px solid var(--van-nav-border); }
+body.card-outline-mode .card-box { box-shadow: none; border: 1px solid var(--van-nav-card-border-color, var(--van-nav-border)); }
 .card-left { flex-shrink: 0; }
 .card-left img { width: var(--van-nav-card-logo-size, 32px); height: var(--van-nav-card-logo-size, 32px); border-radius: var(--van-nav-card-logo-radius, 0px); display: block; }
 .card-right { flex: 1; overflow: hidden; }
@@ -661,6 +662,10 @@ export const Theme: React.FC<ThemeProps> = () => {
   const nightModeValue = Form.useWatch(["nightMode", "mode"], form);
   // 背景模式：颜色/渐变 与 图片 二选一
   const pageBgMode = Form.useWatch(["pageBg", "mode"], form);
+  // 隐藏联动：隐藏某功能后，该功能的其他设置项一并隐藏
+  const searchHiddenWatch = Form.useWatch(["search", "hidden"], form);
+  const tagHiddenWatch = Form.useWatch(["tag", "hidden"], form);
+  const footerHiddenWatch = Form.useWatch(["footer", "hidden"], form);
 
   // 把迁入的站点外观设置填充进表单（siteSetting/siteConfig 命名空间，保存时各走各的 API）
   useEffect(() => {
@@ -699,7 +704,8 @@ export const Theme: React.FC<ThemeProps> = () => {
       const doc = previewIframeRef.current?.contentDocument;
       if (!doc || !doc.body) return;
       // getFieldsValue(true)：包含未挂载页签中的字段
-      const config = buildConfigFromValues(form.getFieldsValue(true));
+      const allValues = form.getFieldsValue(true);
+      const config = buildConfigFromValues(allValues);
       const vars = computeThemeVars(config, isDark);
       applyVarsToStyle(doc.body.style, vars);
       let styleEl = doc.getElementById("preview-custom-css") as HTMLStyleElement | null;
@@ -722,9 +728,9 @@ export const Theme: React.FC<ThemeProps> = () => {
       doc.body.classList.toggle("tag-left", tagCfg.position === "left");
       doc.body.classList.toggle("tag-right", tagCfg.position === "right");
       doc.body.classList.toggle("tag-transparent", tagCfg.transparent === true);
-      // 页脚文案：主题 footer.text 优先，空则显示示例
+      // 页脚文案：页脚文案优先，其次备案文案，均空显示示例
       const footerEl = doc.getElementById("preview-footer");
-      if (footerEl) footerEl.textContent = config.footer?.text || "© 主题实时预览 · 备案信息示例";
+      if (footerEl) footerEl.textContent = config.footer?.text || allValues.siteSetting?.govRecord || "© 主题实时预览 · 备案信息示例";
       doc.body.classList.toggle("card-hover-off", cardCfg.hoverLift === false);
       doc.body.classList.toggle("card-outline-mode", cardCfg.outline === true);
       doc.body.classList.toggle("footer-hidden", config.footer?.hidden === true);
@@ -1024,7 +1030,7 @@ export const Theme: React.FC<ThemeProps> = () => {
               radius: { style: "small" },
               topbar: { transparent: false, blur: false, height: null },
               pageBg: { mode: "color", image: "", dimOpacity: "", dim: false },
-              cardExtra: { hoverLift: true, outline: false, height: null, showLogo: true, showTitle: true, showDesc: true, showTag: true, bgOpacity: "", titleFontFamily: "", descFontFamily: "", descColor: "", tagColor: "", tagBg: "", tagRadius: null },
+              cardExtra: { hoverLift: true, outline: false, height: null, showLogo: true, showTitle: true, showDesc: true, showTag: true, bgOpacity: "", titleFontFamily: "", descFontFamily: "", descColor: "", tagColor: "", tagBg: "", tagRadius: null, borderColor: "" },
               linkBtn: { buttonRadius: null },
               footer: { hidden: false, text: "", bgColor: "", fontFamily: "" },
               search: { hidden: false, position: "center", width: "60%", vertical: "top", height: 40, radius: 8, transparent: false, textColor: "", placeholderColor: "", placeholder: "", fontFamily: "", fontSize: 16 },
@@ -1216,15 +1222,9 @@ export const Theme: React.FC<ThemeProps> = () => {
                           </Form.Item>
                         </div>
                       </Card>
-                      {/* 链接与打开方式 */}
-                      <Card title="链接与打开方式" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>工具卡片即链接；此处控制链接颜色与点击打开方式</span>}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-                          <Form.Item name={["colors", "primary"]} label="主题色" tooltip="影响链接、选中标签等强调元素的颜色">
-                            <ColorPicker showText />
-                          </Form.Item>
-                          <Form.Item name={["linkBtn", "linkColor"]} label="链接颜色" tooltip="留空跟随主题色">
-                            <ColorPicker showText allowClear />
-                          </Form.Item>
+                      {/* 打开方式 */}
+                      <Card title="打开方式" style={{ marginBottom: 24 }} extra={<span style={{ fontSize: 12, color: '#999' }}>点击工具卡片时的打开行为</span>}>
+                        <div style={{ maxWidth: 360 }}>
                           <Form.Item name={["siteSetting", "jumpTargetBlank"]} label="链接打开方式" tooltip="点击工具卡片时，在新窗口还是当前页打开">
                             <Select
                               options={[
@@ -1253,9 +1253,11 @@ export const Theme: React.FC<ThemeProps> = () => {
                           <Form.Item name={["footer", "hidden"]} label="隐藏页脚" valuePropName="checked">
                             <Switch />
                           </Form.Item>
+                          {!footerHiddenWatch && (<>
                           <Form.Item name={["siteSetting", "govRecord"]} label="备案文案">
                             <Input placeholder="如：京ICP备XXXXXXXX号" />
                           </Form.Item>
+                          </>)}
                         </div>
                       </Card>
                     </>
@@ -1272,6 +1274,7 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item name={["search", "hidden"]} label="隐藏搜索框" valuePropName="checked">
                 <Switch />
               </Form.Item>
+              {!searchHiddenWatch && (<>
               <Form.Item name={["search", "position"]} label="水平位置">
                 <Select
                   options={[
@@ -1324,6 +1327,7 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item name={["search", "placeholder"]} label="占位文案">
                 <Input placeholder="留空使用默认提示语" />
               </Form.Item>
+              </>)}
             </div>
           </Card>
                       {/* 顶栏样式 */}
@@ -1358,6 +1362,7 @@ export const Theme: React.FC<ThemeProps> = () => {
                         <Form.Item name={["tag", "hidden"]} label="隐藏分类标签" valuePropName="checked">
                           <Switch />
                         </Form.Item>
+                        {!tagHiddenWatch && (<>
                         <Form.Item name={["tag", "position"]} label="位置" tooltip="左右为侧边竖排，贴屏幕边缘">
                           <Select
                             options={[
@@ -1374,6 +1379,9 @@ export const Theme: React.FC<ThemeProps> = () => {
                         <Form.Item name={["tag", "bg"]} label="底色" tooltip="留空跟随卡片底色">
                           <ColorPicker showText allowClear />
                         </Form.Item>
+                        <Form.Item name={["colors", "primary"]} label="主题色" tooltip="全局强调色，当前主要影响分类标签选中底色与输入框聚焦边框">
+                          <ColorPicker showText />
+                        </Form.Item>
                         <Form.Item name={["tag", "activeBg"]} label="选中底色" tooltip="留空跟随主题色">
                           <ColorPicker showText allowClear />
                         </Form.Item>
@@ -1389,6 +1397,7 @@ export const Theme: React.FC<ThemeProps> = () => {
                         <Form.Item name={["tag", "fontSize"]} label="字号" tooltip="只填数字，单位 px">
                           <InputNumber min={10} max={24} addonAfter="px" style={{ width: '100%' }} placeholder="13" />
                         </Form.Item>
+                        </>)}
                       </div>
                     </Card>
                   ),
@@ -1404,7 +1413,7 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item name={["colors", "bgCard"]} label="卡片背景色">
                 <ColorPicker showText />
               </Form.Item>
-              <Form.Item name={["colors", "border"]} label="边框颜色" tooltip="卡片描边、搜索框与标签边框；留空使用默认">
+              <Form.Item name={["cardExtra", "borderColor"]} label="边框颜色" tooltip="卡片描边颜色（描边替代阴影模式下显示）；留空跟随全局边框色">
                 <ColorPicker showText allowClear />
               </Form.Item>
               <Form.Item name={["layout", "cardBorderRadius"]} label="形状：方形↔圆形" tooltip="卡片四角的圆角程度，0 为方形，数值越大越圆，单位 px">
@@ -1522,12 +1531,6 @@ export const Theme: React.FC<ThemeProps> = () => {
                 <InputNumber min={2} max={8} style={{ width: '100%' }} placeholder="3" />
               </Form.Item>
               <Form.Item name={["siteSetting", "showSearchEngine"]} label="附加搜索引擎卡片" valuePropName="checked" tooltip="搜索结果中是否附加搜索引擎卡片">
-                <Switch />
-              </Form.Item>
-              <Form.Item name={["siteConfig", "noImageMode"]} label="隐藏 Logo 模式" valuePropName="checked" tooltip="开启后卡片不显示站点 Logo">
-                <Switch />
-              </Form.Item>
-              <Form.Item name={["siteConfig", "compactMode"]} label="精简模式" valuePropName="checked" tooltip="开启后卡片以更紧凑的方式展示">
                 <Switch />
               </Form.Item>
               <Form.Item name={["siteConfig", "sortByClicks"]} label="按访问次数排序" valuePropName="checked" tooltip="开启后工具按访问次数排序（手动排序优先）">

@@ -387,6 +387,9 @@ func validateThemeConfig(config *types.ThemeConfig) error {
 	if err := validateFontFamilyField(config.CardExtra.DescFontFamily, "卡片描述字体"); err != nil {
 		return err
 	}
+	if err := validateColorField(config.CardExtra.BorderColor, "卡片描边颜色"); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -531,6 +534,7 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 		config.CardExtra.TagColor = strFromMap(m, "tagColor", config.CardExtra.TagColor)
 		config.CardExtra.TagBg = strFromMap(m, "tagBg", config.CardExtra.TagBg)
 		config.CardExtra.TagRadius = strFromMap(m, "tagRadius", config.CardExtra.TagRadius)
+		config.CardExtra.BorderColor = strFromMap(m, "borderColor", config.CardExtra.BorderColor)
 	}
 	if m, ok := configMap["linkBtn"].(map[string]interface{}); ok {
 		config.LinkBtn.LinkColor = strFromMap(m, "linkColor", config.LinkBtn.LinkColor)
@@ -736,6 +740,7 @@ func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, erro
 			"tagColor":        config.CardExtra.TagColor,
 			"tagBg":           config.CardExtra.TagBg,
 			"tagRadius":       config.CardExtra.TagRadius,
+			"borderColor":     config.CardExtra.BorderColor,
 		},
 		"linkBtn": map[string]interface{}{
 			"linkColor":    config.LinkBtn.LinkColor,

@@ -52,6 +52,7 @@ export interface ThemeCardConfig {
   tagColor?: string;
   tagBg?: string;
   tagRadius?: string;
+  borderColor?: string;
 }
 
 export interface ThemeLinkConfig {
@@ -350,6 +351,7 @@ export const computeThemeVars = (config: ThemeConfig, dark: boolean): Record<str
     '--van-nav-card-tag-color': config.cardExtra?.tagColor || '',
     '--van-nav-card-tag-bg': config.cardExtra?.tagBg || '',
     '--van-nav-card-tag-radius': config.cardExtra?.tagRadius || '',
+    '--van-nav-card-border-color': config.cardExtra?.borderColor || '',
     // 自定义 CSS 挂到变量，便于预览复用
     '--van-nav-custom-css': customCSS || '',
   };
@@ -426,7 +428,7 @@ export const clearThemeVars = () => {
     '--van-nav-tag-font-family', '--van-nav-tag-font-size',
     '--van-nav-card-title-font-family', '--van-nav-card-desc-font-family',
     '--van-nav-card-desc-color', '--van-nav-card-tag-color', '--van-nav-card-tag-bg',
-    '--van-nav-card-tag-radius',
+    '--van-nav-card-tag-radius', '--van-nav-card-border-color',
   ];
 
   customProps.forEach(prop => root.style.removeProperty(prop));

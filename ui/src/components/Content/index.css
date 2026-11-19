@@ -14,10 +14,11 @@
 }
 
 /* 搜索框默认毛玻璃（主题管理接管；顶部/底部搜索共用） */
+/* 底色跟随页面背景而非卡片背景：改“卡片背景色”不应连带搜索框 */
 .topbar .search-wraper input,
 .bottom-controls .search-wraper input,
 .topbar input#search-bar {
-  background: color-mix(in srgb, var(--van-nav-bg-card) 55%, transparent);
+  background: color-mix(in srgb, var(--van-nav-bg-base) 55%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -836,6 +837,16 @@ body.dark-mode .tag-transparent .select-tag {
 body.dark-mode .tag-transparent .select-tag:hover {
   background: transparent;
   border-color: var(--van-nav-primary);
+}
+
+/* 透明无框模式下选中标签仍保留底色（与预览一致） */
+.tag-transparent .select-tag-active {
+  background-color: var(--van-nav-tag-active-bg, var(--van-nav-primary));
+  border-color: var(--van-nav-tag-active-bg, var(--van-nav-primary));
+}
+body.dark-mode .tag-transparent .select-tag-active {
+  background-color: var(--van-nav-tag-active-bg, var(--van-nav-primary));
+  border-color: var(--van-nav-tag-active-bg, var(--van-nav-primary));
 }
 
 /* 分类标签左右贴屏（fixed 侧边竖排） */

@@ -185,6 +185,7 @@ type ThemeCardConfig struct {
 	TagColor        string `json:"tagColor"`        // 卡内小标签文字色；空=跟随 textSecondary
 	TagBg           string `json:"tagBg"`           // 卡内小标签底色；空=跟随 bgCard
 	TagRadius       string `json:"tagRadius"`       // 卡内小标签圆角；空=4px
+	BorderColor     string `json:"borderColor"`     // 卡片描边颜色（描边模式）；空=跟随全局边框色
 }
 
 // 链接与按钮
