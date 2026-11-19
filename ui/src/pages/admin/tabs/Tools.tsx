@@ -502,7 +502,9 @@ export const Tools: React.FC<ToolsProps> = (props) => {
           if (!catelogName || catelogName === "") {
             show = show && true;
           } else {
-            show = show && mutiSearch(item.catelog, catelogName);
+            // 分类筛选必须全等匹配：工具表存的是分类名，模糊/拼音匹配会把
+            // 「工具技术」误筛进「工具」/「技术」（名称互为子串）
+            show = show && item.catelog === catelogName;
           }
           return show;
         })
