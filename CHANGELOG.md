@@ -3,6 +3,15 @@
 本文件记录本项目（[thirsty5034/van-nav](https://github.com/thirsty5034/van-nav)）的更新日志。上游项目（[Mereithhh/van-nav](https://github.com/Mereithhh/van-nav)）的历史记录附在末尾。
 
 
+## [2.5.1] - 2026-11-20
+
+### 🔒 Security
+
+- **Go 依赖与工具链漏洞清零**：工具链升级至 go1.26.11，golang.org/x/crypto 升至 v0.59.0、x/net 升至 v0.63.0、x/text 升至 v0.44.0，`govulncheck` 报告的全部标准库与模块漏洞清零
+- **前端依赖漏洞清零**：新增 33 项 `pnpm.overrides` 钉住传递依赖修复版本（shell-quote、proxy-addr、axios、body-parser、webpack-dev-server 等），`pnpm audit` 报告的 71 项漏洞（2 critical / 41 high / 23 moderate / 5 low）全部清零
+
+---
+
 ## [2.5.0] - 2026-11-20
 
 ### 🚀 New Features
