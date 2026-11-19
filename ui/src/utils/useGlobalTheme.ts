@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { initTheme, decodeTheme } from './theme';
+import { applyPreferredTheme } from './theme';
 
 /**
  * 全局主题监听 Hook
@@ -7,33 +7,19 @@ import { initTheme, decodeTheme } from './theme';
  */
 export const useGlobalTheme = () => {
   useEffect(() => {
-    const applyTheme = () => {
-      const theme = initTheme();
-      const decodedTheme = decodeTheme(theme);
-      const isDark = decodedTheme.includes('dark');
-      const body = document.querySelector('body');
-      const html = document.documentElement;
-      if (body) {
-        body.classList.toggle('dark-mode', isDark);
-      }
-      if (html) {
-        html.classList.toggle('dark', isDark);
-      }
-    };
-
     // 初始应用主题
-    applyTheme();
+    applyPreferredTheme('global-hook');
 
     // 监听 storage 事件（跨标签页同步）
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'theme') {
-        applyTheme();
+        applyPreferredTheme('storage');
       }
     };
 
     // 监听自定义 theme-change 事件（同页面内同步）
     const handleThemeChange = () => {
-      applyTheme();
+      applyPreferredTheme('theme-change');
     };
 
     window.addEventListener('storage', handleStorageChange);

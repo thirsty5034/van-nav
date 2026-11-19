@@ -1,8 +1,9 @@
-import { Button, Card, ColorPicker, Form, Input, message, Modal, Select, Space, Spin } from "antd";
+import { Button, Card, ColorPicker, Form, Input, message, Modal, Radio, Select, Space, Spin, TimePicker } from "antd";
+import dayjs from "dayjs";
 import type { Color } from "antd/es/color-picker";
 import { useCallback, useEffect, useState } from "react";
 import { fetchGetTheme, fetchUpdateTheme, fetchResetTheme } from "../../../utils/api";
-import { applyThemeVars, clearThemeVars, type ThemeConfig } from "../../../utils/theme";
+import { applyPreferredTheme, applyThemeVars, clearThemeVars, type ThemeConfig } from "../../../utils/theme";
 import { BgColorsOutlined, ReloadOutlined, SaveOutlined } from "@ant-design/icons";
 import { useTranslation } from '../../../i18n';
 
@@ -306,6 +307,13 @@ const colorToHex = (color: any, defaultVal: string): string => {
 
 export interface ThemeProps {}
 
+// 夜间配色预设（仅填充 darkTheme 表单，不写入数据库）
+const nightPresets: { name: string; colors: Record<string, string> }[] = [
+  { name: "深邃蓝", colors: { primary: "#4096ff", bgBase: "#0f1115", bgCard: "#1d1f24", textPrimary: "#ffffffe0", textSecondary: "#ffffffa6", border: "#333333" } },
+  { name: "石墨黑", colors: { primary: "#8b8b8b", bgBase: "#0a0a0a", bgCard: "#171717", textPrimary: "#f5f5f5e0", textSecondary: "#a3a3a3a6", border: "#2e2e2e" } },
+  { name: "暗夜紫", colors: { primary: "#7c5cff", bgBase: "#13111c", bgCard: "#1e1b2e", textPrimary: "#f0eeffe0", textSecondary: "#b8b3cfa6", border: "#332e47" } },
+];
+
 export const Theme: React.FC<ThemeProps> = () => {
   const { t: _t } = useTranslation();
   const [form] = Form.useForm();
@@ -313,6 +321,8 @@ export const Theme: React.FC<ThemeProps> = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isDark, setIsDark] = useState(() => document.body.classList.contains("dark-mode"));
+  // 当前夜间策略（控制时间窗口选择器的显隐）
+  const nightModeValue = Form.useWatch(["nightMode", "mode"], form);
 
   // 监听主题变化
   useEffect(() => {
@@ -328,7 +338,13 @@ export const Theme: React.FC<ThemeProps> = () => {
     try {
       const res = await fetchGetTheme();
       if (res?.success && res?.data) {
-        form.setFieldsValue(res.data);
+        const data = res.data;
+        // TimePicker 需要 dayjs 值：把后端 HH:mm 字符串转换
+        if (data.nightMode) {
+          if (typeof data.nightMode.start === "string") data.nightMode.start = dayjs(data.nightMode.start, "HH:mm");
+          if (typeof data.nightMode.end === "string") data.nightMode.end = dayjs(data.nightMode.end, "HH:mm");
+        }
+        form.setFieldsValue(data);
       }
     } catch (err) {
       console.error("加载主题配置失败:", err);
@@ -364,15 +380,32 @@ export const Theme: React.FC<ThemeProps> = () => {
         },
         typography: values.typography || {},
         customCSS: values.customCSS || "",
+        nightMode: {
+          mode: values.nightMode?.mode || "system",
+          start: values.nightMode?.start?.format ? values.nightMode.start.format("HH:mm") : (values.nightMode?.start || "18:00"),
+          end: values.nightMode?.end?.format ? values.nightMode.end.format("HH:mm") : (values.nightMode?.end || "08:00"),
+        },
+        darkTheme: {
+          colors: {
+            primary: colorToHex(values.darkTheme?.colors?.primary, "#4096ff"),
+            bgBase: colorToHex(values.darkTheme?.colors?.bgBase, "#0f1115"),
+            bgCard: colorToHex(values.darkTheme?.colors?.bgCard, "#1d1f24"),
+            textPrimary: colorToHex(values.darkTheme?.colors?.textPrimary, "#ffffffe0"),
+            textSecondary: colorToHex(values.darkTheme?.colors?.textSecondary, "#ffffffa6"),
+            border: colorToHex(values.darkTheme?.colors?.border, "#333333"),
+          },
+          customCSS: values.darkTheme?.customCSS || "",
+        },
       };
 
       const res = await fetchUpdateTheme(config);
       if (res?.success) {
         message.success("主题配置已保存");
-        // 重新拉取最新主题配置并应用
+        // 重新拉取最新主题配置并应用（含夜间策略立即生效）
         const themeRes = await fetchGetTheme();
         if (themeRes?.success && themeRes?.data) {
           applyThemeVars(themeRes.data);
+          applyPreferredTheme("theme-save");
         }
       } else {
         message.error(res?.errorMessage || "保存失败");
@@ -479,6 +512,8 @@ export const Theme: React.FC<ThemeProps> = () => {
         descFontSize: "13px",
       },
       customCSS: "",
+      nightMode: { mode: "system", start: null, end: null },
+      darkTheme: { customCSS: "" },
           }}
         >
           {/* 主题色彩配置 */}
@@ -503,6 +538,82 @@ export const Theme: React.FC<ThemeProps> = () => {
                 <ColorPicker showText />
               </Form.Item>
             </div>
+          </Card>
+
+          {/* 夜间模式 */}
+          <Card
+            title="夜间模式"
+            style={{ marginBottom: 24 }}
+            extra={<span style={{ fontSize: 12, color: '#999' }}>访客未手动切换主题时，按此策略自动进入夜间</span>}
+          >
+            <Form.Item name={["nightMode", "mode"]} label="自动策略">
+              <Radio.Group>
+                <Radio.Button value="system">跟随系统</Radio.Button>
+                <Radio.Button value="scheduled">定时切换</Radio.Button>
+                <Radio.Button value="off">关闭自动</Radio.Button>
+              </Radio.Group>
+            </Form.Item>
+            {nightModeValue === "scheduled" && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', marginBottom: 8 }}>
+                <Form.Item name={["nightMode", "start"]} label="夜间开始" rules={[{ required: true, message: "请选择开始时间" }]}>
+                  <TimePicker format="HH:mm" minuteStep={5} placeholder="18:00" popupClassName={isDark ? "nav-dark-picker-dropdown" : ""} />
+                </Form.Item>
+                <Form.Item name={["nightMode", "end"]} label="夜间结束" rules={[{ required: true, message: "请选择结束时间" }]}>
+                  <TimePicker format="HH:mm" minuteStep={5} placeholder="08:00" popupClassName={isDark ? "nav-dark-picker-dropdown" : ""} />
+                </Form.Item>
+                <span style={{ fontSize: 12, color: '#999' }}>支持跨午夜，例如 18:00 - 08:00；时段内自动进入夜间</span>
+              </div>
+            )}
+            <div style={{ marginBottom: 8, fontWeight: 500 }}>夜间配色（变暗时生效，布局排版与日间共享）</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+              {nightPresets.map((p) => (
+                <Button
+                  key={p.name}
+                  size="small"
+                  onClick={() => form.setFieldsValue({ darkTheme: { colors: p.colors } })}
+                  title="填充夜间配色，需保存后生效"
+                >
+                  <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 3, backgroundColor: p.colors.bgCard, marginRight: 6, border: '1px solid #ccc' }} />
+                  {p.name}
+                </Button>
+              ))}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+              <Form.Item name={["darkTheme", "colors", "primary"]} label="主色调">
+                <ColorPicker showText />
+              </Form.Item>
+              <Form.Item name={["darkTheme", "colors", "bgBase"]} label="页面背景色">
+                <ColorPicker showText />
+              </Form.Item>
+              <Form.Item name={["darkTheme", "colors", "bgCard"]} label="卡片背景色">
+                <ColorPicker showText />
+              </Form.Item>
+              <Form.Item name={["darkTheme", "colors", "textPrimary"]} label="主文字颜色">
+                <ColorPicker showText />
+              </Form.Item>
+              <Form.Item name={["darkTheme", "colors", "textSecondary"]} label="次文字颜色">
+                <ColorPicker showText />
+              </Form.Item>
+              <Form.Item name={["darkTheme", "colors", "border"]} label="边框颜色">
+                <ColorPicker showText />
+              </Form.Item>
+            </div>
+            <Form.Item
+              name={["darkTheme", "customCSS"]}
+              label="夜间自定义 CSS"
+              rules={[
+                {
+                  validator: (_, value) => {
+                    if (value && value.length > 10240) {
+                      return Promise.reject(new Error("夜间自定义CSS长度不能超过10KB"));
+                    }
+                    return Promise.resolve();
+                  },
+                },
+              ]}
+            >
+              <Input.TextArea rows={4} placeholder={`/* 仅夜间生效的自定义CSS */`} />
+            </Form.Item>
           </Card>
 
           {/* 布局配置 */}

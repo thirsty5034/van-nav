@@ -124,11 +124,28 @@ type ThemeTypography struct {
 	DescFontSize    string `json:"descFontSize"`
 }
 
+// 夜间模式策略配置
+type NightModeConfig struct {
+	// Mode: system=跟随系统 scheduled=定时窗口 off=关闭自动
+	Mode string `json:"mode"`
+	// Start/End: HH:mm，scheduled 模式的夜间窗口，支持跨午夜（如 18:00-08:00）
+	Start string `json:"start,omitempty"`
+	End   string `json:"end,omitempty"`
+}
+
+// 夜间主题配色（变暗时应用；布局排版与日间共享）
+type DarkThemeConfig struct {
+	Colors    ThemeColors `json:"colors"`
+	CustomCSS string      `json:"customCSS"`
+}
+
 // 完整主题配置
 type ThemeConfig struct {
-	Version    string         `json:"version"`
-	Colors     ThemeColors    `json:"colors"`
-	Layout     ThemeLayout    `json:"layout"`
+	Version    string          `json:"version"`
+	Colors     ThemeColors     `json:"colors"`
+	Layout     ThemeLayout     `json:"layout"`
 	Typography ThemeTypography `json:"typography"`
-	CustomCSS  string         `json:"customCSS"`
+	CustomCSS  string          `json:"customCSS"`
+	NightMode  NightModeConfig `json:"nightMode"`
+	DarkTheme  DarkThemeConfig `json:"darkTheme"`
 }

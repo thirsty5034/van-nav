@@ -1,60 +1,107 @@
-export function decodeAuto() {
-  const d = new Date().getHours();
-  const night = d > 18 || d < 8;
-  if (typeof window == "undefined") {
-    if (night) {
-      return "auto-dark";
-    } else {
-      return "auto-light";
-    }
-  }
-  if (night || window.matchMedia("(prefers-color-scheme: dark)").matches) {
-    return "auto-dark";
-  } else {
-    return "auto-light";
-  }
+// ==================== 夜间模式策略 ====================
+
+export interface NightModeConfig {
+  mode: 'system' | 'scheduled' | 'off';
+  start?: string;
+  end?: string;
 }
 
-export const decodeTheme = (t: "auto" | "light" | "dark") => {
-  if (t === "auto") {
-    return decodeAuto();
-  } else {
-    return t;
-  }
+export interface DarkThemeConfig {
+  colors: ThemeColors;
+  customCSS: string;
+}
+
+const toMinutes = (s?: string): number => {
+  if (!s || !/^\d{1,2}:\d{2}$/.test(s)) return NaN;
+  const [h, m] = s.split(':').map(Number);
+  return h * 60 + m;
 };
 
-export const applyTheme = (t: string, source: string, disableLog: boolean) => {
-  if (t.includes("light")) {
-    const bodyEl = document.querySelector("body")!;
-    bodyEl.classList.toggle("dark-mode", false);
-    if (!disableLog) {
-      console.log(`[Apply Theme][${source}] ${t}`);
-    }
-  } else {
-    const bodyEl = document.querySelector("body")!;
-    bodyEl.classList.toggle("dark-mode", true);
-    if (!disableLog) {
-      console.log(`[Apply Theme][${source}] ${t}`);
-    }
-  }
-  // 主题切换后重新应用CSS变量
-  reapplyThemeVars();
+/**
+ * 判定 now 是否落在夜间窗口内（纯函数，支持跨午夜如 18:00-08:00）。
+ * start === end 视为全天夜间；非法时间返回 false。
+ */
+export const isInNightWindow = (now: Date, start?: string, end?: string): boolean => {
+  const s = toMinutes(start);
+  const e = toMinutes(end);
+  if (Number.isNaN(s) || Number.isNaN(e)) return false;
+  const cur = now.getHours() * 60 + now.getMinutes();
+  if (s === e) return true;
+  if (s < e) return cur >= s && cur < e;
+  return cur >= s || cur < e; // 跨午夜环形区间
 };
 
-export const initTheme = () => {
+/**
+ * 亮暗决策唯一入口：
+ * - 手动偏好 light/dark 直接生效
+ * - auto 按全站夜间策略解码：system=跟随系统；scheduled=时间窗口；off=不自动
+ */
+export const resolveIsDark = (
+  pref: string,
+  nightMode?: Partial<NightModeConfig>
+): boolean => {
+  if (pref === 'dark') return true;
+  if (pref === 'light') return false;
+  const mode = nightMode?.mode || 'system';
+  if (mode === 'off') return false;
+  if (mode === 'scheduled') {
+    return isInNightWindow(new Date(), nightMode?.start || '18:00', nightMode?.end || '08:00');
+  }
+  // system（缺省）
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  return false;
+};
+
+export const initTheme = (): 'auto' | 'light' | 'dark' => {
   if (typeof localStorage == "undefined") {
     return "auto";
   }
-  // 2 种情况：1. 自动。2.手动
   if (!("theme" in localStorage) || localStorage.theme === "auto") {
     return "auto";
-  } else {
-    if (localStorage.theme === "dark") {
-      return "dark";
-    } else {
-      return "light";
-    }
   }
+  return localStorage.theme === "dark" ? "dark" : "light";
+};
+
+/**
+ * 统一主题应用入口：读访客偏好 → 按夜间策略决策 → 切换样式类 → 应用对应配色变量。
+ * 页面各处（DarkSwitch / ThemeSync / 全局监听）一律调用本函数，避免解码规则分散。
+ */
+export const applyPreferredTheme = (source: string) => {
+  const pref = initTheme();
+  const cfg = getCurrentThemeConfig();
+  const isDark = resolveIsDark(pref, cfg?.nightMode);
+  const body = document.querySelector('body');
+  const html = document.documentElement;
+  if (body) body.classList.toggle('dark-mode', isDark);
+  if (html) html.classList.toggle('dark', isDark);
+  // 主题切换后重新应用CSS变量（暗色走夜间配色）
+  reapplyThemeVars();
+  console.log(`[Apply Theme][${source}] ${isDark ? 'dark' : 'light'} (pref=${pref}, mode=${cfg?.nightMode?.mode || 'system'})`);
+};
+
+/**
+ * 全局主题观察器（单例）：
+ * - 系统亮暗变化时即时响应（matchMedia）
+ * - 每分钟检查一次，保证定时窗口跨过起止边界时自动切换
+ * 仅当访客偏好为 auto 时才实际重算应用。
+ */
+let watcherStarted = false;
+export const startThemeWatcher = () => {
+  if (watcherStarted || typeof window === 'undefined') return;
+  watcherStarted = true;
+  const tick = () => {
+    if (initTheme() !== 'auto') return; // 手动偏好时不自动干预
+    applyPreferredTheme('watcher');
+  };
+  try {
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    mql.addEventListener('change', tick);
+  } catch {
+    // matchMedia 不可用时仅靠定时检查
+  }
+  setInterval(tick, 60 * 1000);
 };
 
 /**
@@ -97,6 +144,8 @@ export interface ThemeConfig {
   layout: ThemeLayout;
   typography: ThemeTypography;
   customCSS: string;
+  nightMode?: NightModeConfig;
+  darkTheme?: DarkThemeConfig;
 }
 
 // 缓存当前主题配置
@@ -112,10 +161,12 @@ export const getCurrentThemeConfig = (): ThemeConfig | null => {
   return currentThemeConfig;
 };
 
-// 应用主题CSS变量到:root
-export const applyThemeVars = (config: ThemeConfig) => {
+// 应用主题CSS变量到:root（暗色时优先使用夜间配色）
+export const applyThemeVars = (config: ThemeConfig, isDark?: boolean) => {
   const root = document.documentElement;
-  const colors = config.colors;
+  const dark = isDark ?? (document.querySelector('body')?.classList.contains('dark-mode') ?? false);
+  const colors = dark && config.darkTheme?.colors ? config.darkTheme.colors : config.colors;
+  const customCSS = dark && config.darkTheme?.customCSS ? config.darkTheme.customCSS : config.customCSS;
   
   // 应用色彩变量
   root.style.setProperty('--van-nav-primary', colors.primary);
@@ -143,7 +194,7 @@ export const applyThemeVars = (config: ThemeConfig) => {
     styleEl.id = 'van-nav-custom-css';
     document.head.appendChild(styleEl);
   }
-  styleEl.textContent = config.customCSS || '';
+  styleEl.textContent = customCSS || '';
   
   // 缓存配置
   setCurrentThemeConfig(config);

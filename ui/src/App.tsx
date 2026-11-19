@@ -2,7 +2,7 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { App as AntApp } from 'antd';
 import { Spin } from 'antd';
-import { decodeTheme, initTheme, applyThemeVars } from './utils/theme';
+import { applyPreferredTheme, applyThemeVars, startThemeWatcher } from './utils/theme';
 import { fetchGetTheme } from './utils/api';
 import { I18nProvider } from './i18n';
 import './App.css';
@@ -32,15 +32,17 @@ const ThemeSync = () => {
       const res = await fetchGetTheme();
       if (res?.success && res?.data && Object.keys(res.data).length > 0) {
         applyThemeVars(res.data);
+        applyPreferredTheme('theme-config');
       }
     } catch (err) {
       console.error('加载主题配置失败:', err);
     }
   };
 
-  // 初始加载主题配置
+  // 初始加载主题配置 + 启动全局主题观察器（系统变化/定时窗口）
   useEffect(() => {
     loadAndApplyTheme();
+    startThemeWatcher();
   }, []);
 
   // 监听主题变化事件（跨标签页同步）
@@ -54,18 +56,7 @@ const ThemeSync = () => {
 
   useEffect(() => {
     const applyThemeToBody = () => {
-      const theme = initTheme();
-      const decodedTheme = decodeTheme(theme);
-      const isDark = decodedTheme.includes('dark');
-      const body = document.querySelector('body');
-      const html = document.querySelector('html');
-      if (body) {
-        body.classList.toggle('dark-mode', isDark);
-      }
-      // 同时给 html 添加 dark 类，让 Tailwind 的 dark: 前缀生效
-      if (html) {
-        html.classList.toggle('dark', isDark);
-      }
+      applyPreferredTheme('route');
       // 主题切换后重新应用CSS变量
       setTimeout(() => loadAndApplyTheme(), 50);
     };
@@ -78,17 +69,7 @@ const ThemeSync = () => {
     // 监听 localStorage 变化（跨标签页同步）
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'theme') {
-        const theme = initTheme();
-        const decodedTheme = decodeTheme(theme);
-        const isDark = decodedTheme.includes('dark');
-        const body = document.querySelector('body');
-        const html = document.querySelector('html');
-        if (body) {
-          body.classList.toggle('dark-mode', isDark);
-        }
-        if (html) {
-          html.classList.toggle('dark', isDark);
-        }
+        applyPreferredTheme('storage');
       }
     };
 
@@ -108,18 +89,8 @@ const LoadingFallback = () => {
 
   useEffect(() => {
     const applyThemeFromStorage = () => {
-      const theme = initTheme();
-      const decodedTheme = decodeTheme(theme);
-      const isDark = decodedTheme.includes('dark');
-      setIsDarkMode(isDark);
-      const body = document.querySelector('body');
-      const html = document.querySelector('html');
-      if (body) {
-        body.classList.toggle('dark-mode', isDark);
-      }
-      if (html) {
-        html.classList.toggle('dark', isDark);
-      }
+      applyPreferredTheme('loading');
+      setIsDarkMode(document.body.classList.contains('dark-mode'));
     };
 
     applyThemeFromStorage();

@@ -33,6 +33,21 @@ func init() {
 	}
 }
 
+// 默认夜间配色（内置暗色）
+func getDefaultDarkTheme() types.DarkThemeConfig {
+	return types.DarkThemeConfig{
+		Colors: types.ThemeColors{
+			Primary:       "#4096ff",
+			BgBase:        "#0f1115",
+			BgCard:        "#1d1f24",
+			TextPrimary:   "#ffffffe0",
+			TextSecondary: "#ffffffa6",
+			Border:        "#333333",
+		},
+		CustomCSS: "",
+	}
+}
+
 // 默认主题配置
 func getDefaultThemeConfig() types.ThemeConfig {
 	return types.ThemeConfig{
@@ -58,6 +73,12 @@ func getDefaultThemeConfig() types.ThemeConfig {
 			DescFontSize:    "13px",
 		},
 		CustomCSS: "",
+		NightMode: types.NightModeConfig{
+			Mode:  "system",
+			Start: "18:00",
+			End:   "08:00",
+		},
+		DarkTheme: getDefaultDarkTheme(),
 	}
 }
 
@@ -118,7 +139,7 @@ func isDataURL(css string) bool {
 func validateThemeConfig(config *types.ThemeConfig) error {
 	// 校验颜色值格式（支持6位和8位hex）
 	colorPattern := regexp.MustCompile(`^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$`)
-	
+
 	// 校验亮色主题颜色
 	if !colorPattern.MatchString(config.Colors.Primary) {
 		return fmt.Errorf("亮色主题主色调格式无效")
@@ -129,16 +150,38 @@ func validateThemeConfig(config *types.ThemeConfig) error {
 	if !colorPattern.MatchString(config.Colors.BgCard) {
 		return fmt.Errorf("亮色主题卡片背景色格式无效")
 	}
-	
+
+	// 校验夜间主题颜色
+	if !colorPattern.MatchString(config.DarkTheme.Colors.Primary) {
+		return fmt.Errorf("夜间主题主色调格式无效")
+	}
+	if !colorPattern.MatchString(config.DarkTheme.Colors.BgBase) {
+		return fmt.Errorf("夜间主题背景色格式无效")
+	}
+	if !colorPattern.MatchString(config.DarkTheme.Colors.BgCard) {
+		return fmt.Errorf("夜间主题卡片背景色格式无效")
+	}
+
+	// 校验夜间模式策略
+	if !isValidNightModeMode(config.NightMode.Mode) {
+		return fmt.Errorf("夜间模式策略无效，应为 system/scheduled/off")
+	}
+	if config.NightMode.Mode == "scheduled" {
+		timePattern := regexp.MustCompile(`^([01]\d|2[0-3]):[0-5]\d$`)
+		if !timePattern.MatchString(config.NightMode.Start) || !timePattern.MatchString(config.NightMode.End) {
+			return fmt.Errorf("夜间时间窗口格式无效，应为 HH:mm")
+		}
+	}
+
 	// 校验布局数值（使用正则提取数字）
 	pxPattern := regexp.MustCompile(`^(\d+(?:\.\d+)?)px$`)
-	
+
 	if match := pxPattern.FindStringSubmatch(config.Layout.CardBorderRadius); match != nil {
 		// 允许 0-50px
 	} else if config.Layout.CardBorderRadius != "0" {
 		return fmt.Errorf("卡片圆角格式无效，应为 0-50px")
 	}
-	
+
 	return nil
 }
 
@@ -220,8 +263,59 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 	if v, ok := configMap["version"].(string); ok {
 		config.Version = v
 	}
-	
+
+	// 解析夜间模式策略（字段缺失/非法时保持默认 system + 18:00-08:00）
+	if nm, ok := configMap["nightMode"].(map[string]interface{}); ok {
+		if v, ok := nm["mode"].(string); ok && isValidNightModeMode(v) {
+			config.NightMode.Mode = v
+		}
+		if v, ok := nm["start"].(string); ok && v != "" {
+			config.NightMode.Start = v
+		}
+		if v, ok := nm["end"].(string); ok && v != "" {
+			config.NightMode.End = v
+		}
+	}
+
+	// 解析夜间主题配色
+	if dt, ok := configMap["darkTheme"].(map[string]interface{}); ok {
+		if colors, ok := dt["colors"].(map[string]interface{}); ok {
+			config.DarkTheme.Colors = colorsFromMap(colors, config.DarkTheme.Colors)
+		}
+		if v, ok := dt["customCSS"].(string); ok {
+			config.DarkTheme.CustomCSS = v
+		}
+	}
+
 	return &config, nil
+}
+
+// isValidNightModeMode 夜间模式策略合法性
+func isValidNightModeMode(mode string) bool {
+	return mode == "system" || mode == "scheduled" || mode == "off"
+}
+
+// colorsFromMap 从 map 解析颜色配置，缺省字段回退 fallback
+func colorsFromMap(colors map[string]interface{}, fallback types.ThemeColors) types.ThemeColors {
+	if v, ok := colors["primary"].(string); ok {
+		fallback.Primary = v
+	}
+	if v, ok := colors["bgBase"].(string); ok {
+		fallback.BgBase = v
+	}
+	if v, ok := colors["bgCard"].(string); ok {
+		fallback.BgCard = v
+	}
+	if v, ok := colors["textPrimary"].(string); ok {
+		fallback.TextPrimary = v
+	}
+	if v, ok := colors["textSecondary"].(string); ok {
+		fallback.TextSecondary = v
+	}
+	if v, ok := colors["border"].(string); ok {
+		fallback.Border = v
+	}
+	return fallback
 }
 
 // SaveThemeConfig 保存主题配置
@@ -237,10 +331,17 @@ func SaveThemeConfig(config types.ThemeConfig) error {
 		return fmt.Errorf("自定义CSS校验失败: %w", err)
 	}
 	config.CustomCSS = sanitizedCSS
-	
+
+	// 2.5 净化夜间自定义CSS
+	sanitizedDarkCSS, err := sanitizeCustomCSS(config.DarkTheme.CustomCSS)
+	if err != nil {
+		return fmt.Errorf("夜间自定义CSS校验失败: %w", err)
+	}
+	config.DarkTheme.CustomCSS = sanitizedDarkCSS
+
 	// 3. 设置版本号
 	config.Version = "1.0"
-	
+
 	// 4. 转换为map存储
 	configMap := map[string]interface{}{
 		"version": config.Version,
@@ -265,6 +366,22 @@ func SaveThemeConfig(config types.ThemeConfig) error {
 			"descFontSize":    config.Typography.DescFontSize,
 		},
 		"customCSS": config.CustomCSS,
+		"nightMode": map[string]interface{}{
+			"mode":  config.NightMode.Mode,
+			"start": config.NightMode.Start,
+			"end":   config.NightMode.End,
+		},
+		"darkTheme": map[string]interface{}{
+			"colors": map[string]interface{}{
+				"primary":       config.DarkTheme.Colors.Primary,
+				"bgBase":        config.DarkTheme.Colors.BgBase,
+				"bgCard":        config.DarkTheme.Colors.BgCard,
+				"textPrimary":   config.DarkTheme.Colors.TextPrimary,
+				"textSecondary": config.DarkTheme.Colors.TextSecondary,
+				"border":        config.DarkTheme.Colors.Border,
+			},
+			"customCSS": config.DarkTheme.CustomCSS,
+		},
 	}
 	
 	// 5. 保存到数据库
