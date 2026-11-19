@@ -13,6 +13,15 @@
   box-sizing: border-box;
 }
 
+/* 搜索框默认毛玻璃（主题管理接管） */
+.topbar .search-wraper input,
+.topbar input#search-bar {
+  background: color-mix(in srgb, var(--van-nav-bg-card) 55%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+
 :root {
   --width-small: 500px;
   --width-medium: 700px;

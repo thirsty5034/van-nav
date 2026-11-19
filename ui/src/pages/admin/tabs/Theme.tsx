@@ -1,4 +1,4 @@
-import { Button, Card, Checkbox, ColorPicker, Form, Input, InputNumber, message, Modal, Radio, Select, Space, Spin, Switch, TimePicker } from "antd";
+import { Button, Card, Checkbox, ColorPicker, Form, Input, InputNumber, message, Modal, Radio, Select, Space, Spin, Switch, Tabs, TimePicker } from "antd";
 import dayjs from "dayjs";
 import type { Color } from "antd/es/color-picker";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -383,44 +383,67 @@ const buildConfigFromValues = (values: any) => ({
   },
 });
 
-// 实时预览：把当前表单值映射为 CSS 变量同步到 iframe 文档（防抖 300ms）
+// 实时预览：静态模拟首页结构（无 iframe、无脚本），避免焦点抢占与页面跳动
 const ThemePreview: React.FC<{ form: any }> = ({ form }) => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const mockRef = useRef<HTMLDivElement>(null);
   const values = Form.useWatch([], form);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        const doc = iframeRef.current?.contentDocument;
-        if (!doc || !values || !doc.body) return;
+        const el = mockRef.current;
+        if (!el || !values) return;
         const config = buildConfigFromValues(values);
-        const dark = doc.body.classList.contains("dark-mode");
+        const dark = document.body.classList.contains("dark-mode");
         const vars = computeThemeVars(config, dark);
-        applyVarsToStyle(doc.body.style, vars);
-        let styleEl = doc.getElementById("van-nav-preview-css") as HTMLStyleElement | null;
+        applyVarsToStyle(el.style, vars);
+        let styleEl = el.querySelector("#van-nav-preview-css") as HTMLStyleElement | null;
         if (!styleEl) {
-          styleEl = doc.createElement("style");
+          styleEl = document.createElement("style");
           styleEl.id = "van-nav-preview-css";
-          doc.head.appendChild(styleEl);
+          el.appendChild(styleEl);
         }
         styleEl.textContent = vars["--van-nav-custom-css"] || "";
-        doc.body.classList.toggle("card-hover-off", config.cardExtra?.hoverLift === false);
-        doc.body.classList.toggle("card-outline-mode", config.cardExtra?.outline === true);
-        doc.body.classList.toggle("footer-hidden", config.footer?.hidden === true);
+        el.classList.toggle("card-outline-mode", config.cardExtra?.outline === true);
+        el.classList.toggle("footer-hidden", config.footer?.hidden === true);
       } catch {
-        // iframe 文档未就绪时忽略本次同步
+        // 忽略预览同步异常
       }
     }, 300);
     return () => clearTimeout(timer);
   }, [values]);
 
+  const sampleCards = [
+    { name: "GitHub", desc: "全球开源代码托管及开发者协作平台", color: "#24292f" },
+    { name: "百度", desc: "全球领先的中文搜索引擎", color: "#2932e1" },
+    { name: "哔哩哔哩", desc: "国内知名的年轻世代潮流文化社区", color: "#fb7299" },
+    { name: "DeepL 翻译", desc: "结合AI深度学习的高准确率翻译工具", color: "#0f2b46" },
+    { name: "知乎", desc: "中文互联网高质量问答社区", color: "#0084ff" },
+    { name: "Notion", desc: "全能型一体化知识库与协作工具", color: "#111111" },
+  ];
+
   return (
-    <iframe
-      ref={iframeRef}
-      src="/"
-      title="主题实时预览"
-      style={{ width: "100%", height: 460, border: "1px solid #d9d9d9", borderRadius: 8 }}
-    />
+    <div ref={mockRef} className="theme-preview-mock">
+      <div className="tp-search">按任意键直接开始搜索</div>
+      <div className="tp-tags">
+        <span className="tp-tag tp-tag-active">全部工具</span>
+        <span className="tp-tag">常用</span>
+        <span className="tp-tag">技术</span>
+        <span className="tp-tag">社区</span>
+      </div>
+      <div className="tp-cards">
+        {sampleCards.map((c) => (
+          <div className="tp-card" key={c.name}>
+            <div className="tp-logo" style={{ backgroundColor: c.color }}>{c.name.slice(0, 1)}</div>
+            <div>
+              <div className="tp-title">{c.name}</div>
+              <div className="tp-desc">{c.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="tp-footer">© 主题预览 · 备案信息示例</div>
+    </div>
   );
 };
 
@@ -506,8 +529,8 @@ export const Theme: React.FC<ThemeProps> = () => {
       return;
     }
     try {
-      const values = await form.validateFields();
-      const config = buildConfigFromValues(values);
+      // getFieldsValue(true)：包含未挂载页签中的字段，避免切页签丢配置
+      const config = buildConfigFromValues(form.getFieldsValue(true));
       const res = await fetchSaveThemePreset(0, presetName.trim(), config);
       if (res?.success) {
         message.success("主题方案已保存");
@@ -602,10 +625,11 @@ export const Theme: React.FC<ThemeProps> = () => {
   }, [loadThemeConfig]);
 
   // 保存主题配置
-  const handleSave = useCallback(async (values: any) => {
+  const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      const config = buildConfigFromValues(values);
+      // getFieldsValue(true)：包含未挂载页签中的字段，避免切页签丢配置
+      const config = buildConfigFromValues(form.getFieldsValue(true));
       const res = await fetchUpdateTheme(config);
       if (res?.success) {
         message.success("主题配置已保存");
@@ -660,9 +684,54 @@ export const Theme: React.FC<ThemeProps> = () => {
   }, [form]);
 
   return (
-    <div className="overflow-auto">
+    <div className="theme-page-layout">
       <Spin spinning={loading}>
-        {/* 预设主题选择 */}
+        <div className="theme-page-main">
+          <Form
+            form={form}
+            layout="vertical"
+            initialValues={{
+              version: "1.0",
+              colors: {
+                primary: "#1677ff",
+                bgBase: "#f5f5f5",
+                bgCard: "#ffffff",
+                textPrimary: "#000000e0",
+                textSecondary: "#000000a6",
+                border: "#d9d9d9",
+              },
+              layout: {
+                cardBorderRadius: "8px",
+                cardShadow: "0 1px 2px rgba(0,0,0,0.03), 0 1px 6px rgba(0,0,0,0.02)",
+                cardPadding: "16px",
+                cardGap: "16px",
+              },
+              typography: {
+                titleFontSize: "15px",
+                titleFontWeight: "600",
+                descFontSize: "13px",
+              },
+              customCSS: "",
+              nightMode: { mode: "system", start: null, end: null },
+              darkTheme: { customCSS: "" },
+              font: { family: "", baseFontSize: "14px" },
+              radius: { style: "small" },
+              topbar: { transparent: false, blur: false, height: "" },
+              pageBg: { image: "", dimOpacity: "" },
+              cardExtra: { hoverLift: true, outline: false },
+              linkBtn: { buttonRadius: "" },
+              footer: { hidden: false },
+            }}
+          >
+            <Tabs
+              defaultActiveKey="basic"
+              items={[
+                {
+                  key: "basic",
+                  label: "色彩与排版",
+                  children: (
+                    <>
+                      {/* 预设主题选择 */}
         <Card
           title={
             <span>
@@ -693,95 +762,7 @@ export const Theme: React.FC<ThemeProps> = () => {
             ))}
           </div>
         </Card>
-
-        {/* 主题方案（多套可切换）与导入导出 */}
-        <Card
-          title="主题方案"
-          style={{ marginBottom: 24 }}
-          extra={
-            <Space>
-              <Button size="small" onClick={() => setPresetModalOpen(true)}>把当前配置存为方案</Button>
-              <Button size="small" onClick={handleExport}>导出 JSON</Button>
-              <Button size="small" onClick={() => importFileRef.current?.click()}>导入 JSON</Button>
-              <input
-                ref={importFileRef}
-                type="file"
-                accept="application/json"
-                style={{ display: 'none' }}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleImportFile(f);
-                  e.target.value = '';
-                }}
-              />
-            </Space>
-          }
-        >
-          {presets.length === 0 ? (
-            <div style={{ color: '#999', fontSize: 13 }}>
-              还没有保存的主题方案。配置好当前主题后，可将其存为命名方案，之后一键应用。
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-              {presets.map((p: any) => (
-                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 4, border: '1px solid #eee', borderRadius: 6, padding: '4px 8px' }}>
-                  <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-                  <Button type="link" size="small" onClick={() => handleApplyPresetById(p.id)}>应用</Button>
-                  <Button type="link" size="small" danger onClick={() => handleDeletePreset(p.id)}>删除</Button>
-                </div>
-              ))}
-            </div>
-          )}
-          <Modal
-            title="保存为主题方案"
-            open={presetModalOpen}
-            onOk={handleSaveAsPreset}
-            onCancel={() => setPresetModalOpen(false)}
-            okText="保存"
-            cancelText="取消"
-          >
-            <Input value={presetName} onChange={(e) => setPresetName(e.target.value)} placeholder="方案名称，例如：默认蓝 / 护眼夜话" />
-          </Modal>
-        </Card>
-
-        <Form
-          form={form}
-          onFinish={handleSave}
-          layout="vertical"
-          initialValues={{
-            version: "1.0",
-            colors: {
-              primary: "#1677ff",
-              bgBase: "#f5f5f5",
-              bgCard: "#ffffff",
-              textPrimary: "#000000e0",
-              textSecondary: "#000000a6",
-              border: "#d9d9d9",
-            },
-                  layout: {
-        cardBorderRadius: "8px",
-        cardShadow: "0 1px 2px rgba(0,0,0,0.03), 0 1px 6px rgba(0,0,0,0.02)",
-        cardPadding: "16px",
-        cardGap: "16px",
-      },
-      typography: {
-        titleFontSize: "15px",
-        titleFontWeight: "600",
-        descFontSize: "13px",
-      },
-      customCSS: "",
-      nightMode: { mode: "system", start: null, end: null },
-      darkTheme: { customCSS: "" },
-      font: { family: "", baseFontSize: "14px" },
-      radius: { style: "small" },
-      topbar: { transparent: false, blur: false, height: "" },
-      pageBg: { image: "", dimOpacity: "" },
-      cardExtra: { hoverLift: true, outline: false },
-      linkBtn: { buttonRadius: "" },
-      footer: { hidden: false },
-          }}
-        >
-          {/* 主题色彩配置 */}
+                      {/* 主题色彩配置 */}
           <Card title="主题色彩" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
               <Form.Item name={["colors", "primary"]} label="主色调">
@@ -804,84 +785,7 @@ export const Theme: React.FC<ThemeProps> = () => {
               </Form.Item>
             </div>
           </Card>
-
-          {/* 夜间模式 */}
-          <Card
-            title="夜间模式"
-            style={{ marginBottom: 24 }}
-            extra={<span style={{ fontSize: 12, color: '#999' }}>访客未手动切换主题时，按此策略自动进入夜间</span>}
-          >
-            <Form.Item name={["nightMode", "mode"]} label="自动策略">
-              <Radio.Group>
-                <Radio.Button value="system">跟随系统</Radio.Button>
-                <Radio.Button value="scheduled">定时切换</Radio.Button>
-                <Radio.Button value="off">关闭自动</Radio.Button>
-              </Radio.Group>
-            </Form.Item>
-            {nightModeValue === "scheduled" && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', marginBottom: 8 }}>
-                <Form.Item name={["nightMode", "start"]} label="夜间开始" rules={[{ required: true, message: "请选择开始时间" }]}>
-                  <TimePicker format="HH:mm" minuteStep={5} placeholder="18:00" popupClassName={isDark ? "nav-dark-picker-dropdown" : ""} />
-                </Form.Item>
-                <Form.Item name={["nightMode", "end"]} label="夜间结束" rules={[{ required: true, message: "请选择结束时间" }]}>
-                  <TimePicker format="HH:mm" minuteStep={5} placeholder="08:00" popupClassName={isDark ? "nav-dark-picker-dropdown" : ""} />
-                </Form.Item>
-                <span style={{ fontSize: 12, color: '#999' }}>支持跨午夜，例如 18:00 - 08:00；时段内自动进入夜间</span>
-              </div>
-            )}
-            <div style={{ marginBottom: 8, fontWeight: 500 }}>夜间配色（变暗时生效，布局排版与日间共享）</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-              {nightPresets.map((p) => (
-                <Button
-                  key={p.name}
-                  size="small"
-                  onClick={() => form.setFieldsValue({ darkTheme: { colors: p.colors } })}
-                  title="填充夜间配色，需保存后生效"
-                >
-                  <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 3, backgroundColor: p.colors.bgCard, marginRight: 6, border: '1px solid #ccc' }} />
-                  {p.name}
-                </Button>
-              ))}
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-              <Form.Item name={["darkTheme", "colors", "primary"]} label="主色调">
-                <ColorPicker showText />
-              </Form.Item>
-              <Form.Item name={["darkTheme", "colors", "bgBase"]} label="页面背景色">
-                <ColorPicker showText />
-              </Form.Item>
-              <Form.Item name={["darkTheme", "colors", "bgCard"]} label="卡片背景色">
-                <ColorPicker showText />
-              </Form.Item>
-              <Form.Item name={["darkTheme", "colors", "textPrimary"]} label="主文字颜色">
-                <ColorPicker showText />
-              </Form.Item>
-              <Form.Item name={["darkTheme", "colors", "textSecondary"]} label="次文字颜色">
-                <ColorPicker showText />
-              </Form.Item>
-              <Form.Item name={["darkTheme", "colors", "border"]} label="边框颜色">
-                <ColorPicker showText />
-              </Form.Item>
-            </div>
-            <Form.Item
-              name={["darkTheme", "customCSS"]}
-              label="夜间自定义 CSS"
-              rules={[
-                {
-                  validator: (_, value) => {
-                    if (value && value.length > 10240) {
-                      return Promise.reject(new Error("夜间自定义CSS长度不能超过10KB"));
-                    }
-                    return Promise.resolve();
-                  },
-                },
-              ]}
-            >
-              <Input.TextArea rows={4} placeholder={`/* 仅夜间生效的自定义CSS */`} />
-            </Form.Item>
-          </Card>
-
-          {/* 布局配置 */}
+                      {/* 布局配置 */}
           <Card title="布局调整" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
               <Form.Item name={["layout", "cardBorderRadius"]} label="卡片圆角">
@@ -905,8 +809,7 @@ export const Theme: React.FC<ThemeProps> = () => {
               />
             </Form.Item>
           </Card>
-
-          {/* 排版配置 */}
+                      {/* 排版配置 */}
           <Card title="排版设置" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
               <Form.Item name={["typography", "titleFontSize"]} label="标题字号">
@@ -928,8 +831,157 @@ export const Theme: React.FC<ThemeProps> = () => {
             </div>
             
           </Card>
-
-            {/* 字体与圆角 */}
+                    </>
+                  ),
+                },
+                {
+                  key: "night",
+                  label: "夜间模式",
+                  children: (
+                    <Card
+                      title="夜间模式"
+                      style={{ marginBottom: 24 }}
+                      extra={<span style={{ fontSize: 12, color: '#999' }}>访客未手动切换主题时，按此策略自动进入夜间</span>}
+                    >
+                      <Form.Item name={["nightMode", "mode"]} label="自动策略">
+                        <Radio.Group>
+                          <Radio.Button value="system">跟随系统</Radio.Button>
+                          <Radio.Button value="scheduled">定时切换</Radio.Button>
+                          <Radio.Button value="off">关闭自动</Radio.Button>
+                        </Radio.Group>
+                      </Form.Item>
+                      {nightModeValue === "scheduled" && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', marginBottom: 8 }}>
+                          <Form.Item name={["nightMode", "start"]} label="夜间开始" rules={[{ required: true, message: "请选择开始时间" }]}>
+                            <TimePicker format="HH:mm" minuteStep={5} placeholder="18:00" popupClassName={isDark ? "nav-dark-picker-dropdown" : ""} />
+                          </Form.Item>
+                          <Form.Item name={["nightMode", "end"]} label="夜间结束" rules={[{ required: true, message: "请选择结束时间" }]}>
+                            <TimePicker format="HH:mm" minuteStep={5} placeholder="08:00" popupClassName={isDark ? "nav-dark-picker-dropdown" : ""} />
+                          </Form.Item>
+                          <span style={{ fontSize: 12, color: '#999' }}>支持跨午夜，例如 18:00 - 08:00；时段内自动进入夜间</span>
+                        </div>
+                      )}
+                      <div style={{ marginBottom: 8, fontWeight: 500 }}>夜间配色（变暗时生效，布局排版与日间共享）</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                        {nightPresets.map((p) => (
+                          <Button
+                            key={p.name}
+                            size="small"
+                            onClick={() => form.setFieldsValue({ darkTheme: { colors: p.colors } })}
+                            title="填充夜间配色，需保存后生效"
+                          >
+                            <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 3, backgroundColor: p.colors.bgCard, marginRight: 6, border: '1px solid #ccc' }} />
+                            {p.name}
+                          </Button>
+                        ))}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+                        <Form.Item name={["darkTheme", "colors", "primary"]} label="主色调">
+                          <ColorPicker showText />
+                        </Form.Item>
+                        <Form.Item name={["darkTheme", "colors", "bgBase"]} label="页面背景色">
+                          <ColorPicker showText />
+                        </Form.Item>
+                        <Form.Item name={["darkTheme", "colors", "bgCard"]} label="卡片背景色">
+                          <ColorPicker showText />
+                        </Form.Item>
+                        <Form.Item name={["darkTheme", "colors", "textPrimary"]} label="主文字颜色">
+                          <ColorPicker showText />
+                        </Form.Item>
+                        <Form.Item name={["darkTheme", "colors", "textSecondary"]} label="次文字颜色">
+                          <ColorPicker showText />
+                        </Form.Item>
+                        <Form.Item name={["darkTheme", "colors", "border"]} label="边框颜色">
+                          <ColorPicker showText />
+                        </Form.Item>
+                      </div>
+                      <Form.Item
+                        name={["darkTheme", "customCSS"]}
+                        label="夜间自定义 CSS"
+                        rules={[
+                          {
+                            validator: (_, value) => {
+                              if (value && value.length > 10240) {
+                                return Promise.reject(new Error("夜间自定义CSS长度不能超过10KB"));
+                              }
+                              return Promise.resolve();
+                            },
+                          },
+                        ]}
+                      >
+                        <Input.TextArea rows={4} placeholder="/* 仅夜间生效的自定义CSS */" />
+                      </Form.Item>
+                    </Card>
+                  ),
+                },
+                { key: "topbar", label: "顶栏与背景", children: (<>{/* 顶栏样式 */}
+          <Card title="顶栏样式" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["topbar", "transparent"]} label="透明顶栏" valuePropName="checked">
+                <Checkbox>背景透明（滚动内容透出）</Checkbox>
+              </Form.Item>
+              <Form.Item name={["topbar", "blur"]} label="毛玻璃效果" valuePropName="checked">
+                <Checkbox>背景模糊</Checkbox>
+              </Form.Item>
+              <Form.Item name={["topbar", "background"]} label="顶栏背景色" tooltip="留空跟随页面背景；勾选透明顶栏时忽略此项">
+                <Input placeholder="#1677ff / 留空跟随页面" />
+              </Form.Item>
+              <Form.Item name={["topbar", "textColor"]} label="顶栏文字色">
+                <Input placeholder="留空跟随文字主色" />
+              </Form.Item>
+              <Form.Item name={["topbar", "height"]} label="顶栏最小高度">
+                <Input placeholder="默认（由内容撑开）" />
+              </Form.Item>
+            </div>
+          </Card>{/* 页面背景 */}
+          <Card title="页面背景" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["pageBg", "gradientTo"]} label="渐变第二色" tooltip="留空为纯色；填写后与页面背景色形成纵向渐变">
+                <Input placeholder="留空 = 纯色" />
+              </Form.Item>
+              <Form.Item name={["pageBg", "dimOpacity"]} label="背景暗色遮罩" tooltip="叠加在背景图上的黑色遮罩透明度">
+                <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} placeholder="0 - 1" />
+              </Form.Item>
+              <Form.Item
+                name={["pageBg", "image"]}
+                label="背景图片"
+                tooltip="支持 data: 协议或站内路径（如 /bg.webp），禁止外链"
+              >
+                <Input placeholder="data:image/png;base64,... 或 /bg.webp" />
+              </Form.Item>
+            </div>
+          </Card></>) },
+                { key: "card", label: "卡片与链接", children: (<>{/* 卡片细项 */}
+          <Card title="卡片细项" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["cardExtra", "logoSize"]} label="Logo 尺寸">
+                <Input placeholder="32px" />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "logoRadius"]} label="Logo 圆角">
+                <Input placeholder="0px / 8px / 50%" />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "titleColor"]} label="标题颜色">
+                <Input placeholder="留空跟随文字主色" />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "hoverLift"]} label="Hover 动效" valuePropName="checked" tooltip="鼠标悬停时卡片上浮">
+                <Switch />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "outline"]} label="描边模式" valuePropName="checked" tooltip="开启后卡片用边框替代阴影">
+                <Switch />
+              </Form.Item>
+            </div>
+          </Card>{/* 链接与按钮 */}
+          <Card title="链接与按钮" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["linkBtn", "linkColor"]} label="链接颜色">
+                <Input placeholder="留空跟随主色调" />
+              </Form.Item>
+              <Form.Item name={["linkBtn", "buttonRadius"]} label="按钮圆角">
+                <Input placeholder="4px" />
+              </Form.Item>
+            </div>
+          </Card></>) },
+                { key: "font", label: "字体与页脚", children: (<>{/* 字体与圆角 */}
           <Card title="字体与圆角" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
               <Form.Item name={["font", "family"]} label="字体族" tooltip="留空使用系统默认字体栈，多个字体用逗号分隔">
@@ -949,82 +1001,7 @@ export const Theme: React.FC<ThemeProps> = () => {
                 />
               </Form.Item>
             </div>
-          </Card>
-
-          {/* 顶栏样式 */}
-          <Card title="顶栏样式" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["topbar", "transparent"]} label="透明顶栏" valuePropName="checked">
-                <Checkbox>背景透明（滚动内容透出）</Checkbox>
-              </Form.Item>
-              <Form.Item name={["topbar", "blur"]} label="毛玻璃效果" valuePropName="checked">
-                <Checkbox>背景模糊</Checkbox>
-              </Form.Item>
-              <Form.Item name={["topbar", "background"]} label="顶栏背景色" tooltip="留空跟随页面背景；勾选透明顶栏时忽略此项">
-                <Input placeholder="#1677ff / 留空跟随页面" />
-              </Form.Item>
-              <Form.Item name={["topbar", "textColor"]} label="顶栏文字色">
-                <Input placeholder="留空跟随文字主色" />
-              </Form.Item>
-              <Form.Item name={["topbar", "height"]} label="顶栏最小高度">
-                <Input placeholder="默认（由内容撑开）" />
-              </Form.Item>
-            </div>
-          </Card>
-
-          {/* 页面背景 */}
-          <Card title="页面背景" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["pageBg", "gradientTo"]} label="渐变第二色" tooltip="留空为纯色；填写后与页面背景色形成纵向渐变">
-                <Input placeholder="留空 = 纯色" />
-              </Form.Item>
-              <Form.Item name={["pageBg", "dimOpacity"]} label="背景暗色遮罩" tooltip="叠加在背景图上的黑色遮罩透明度">
-                <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} placeholder="0 - 1" />
-              </Form.Item>
-              <Form.Item
-                name={["pageBg", "image"]}
-                label="背景图片"
-                tooltip="支持 data: 协议或站内路径（如 /bg.webp），禁止外链"
-              >
-                <Input placeholder="data:image/png;base64,... 或 /bg.webp" />
-              </Form.Item>
-            </div>
-          </Card>
-
-          {/* 卡片细项 */}
-          <Card title="卡片细项" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["cardExtra", "logoSize"]} label="Logo 尺寸">
-                <Input placeholder="32px" />
-              </Form.Item>
-              <Form.Item name={["cardExtra", "logoRadius"]} label="Logo 圆角">
-                <Input placeholder="0px / 8px / 50%" />
-              </Form.Item>
-              <Form.Item name={["cardExtra", "titleColor"]} label="标题颜色">
-                <Input placeholder="留空跟随文字主色" />
-              </Form.Item>
-              <Form.Item name={["cardExtra", "hoverLift"]} label="Hover 动效" valuePropName="checked" tooltip="鼠标悬停时卡片上浮">
-                <Switch />
-              </Form.Item>
-              <Form.Item name={["cardExtra", "outline"]} label="描边模式" valuePropName="checked" tooltip="开启后卡片用边框替代阴影">
-                <Switch />
-              </Form.Item>
-            </div>
-          </Card>
-
-          {/* 链接与按钮 */}
-          <Card title="链接与按钮" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["linkBtn", "linkColor"]} label="链接颜色">
-                <Input placeholder="留空跟随主色调" />
-              </Form.Item>
-              <Form.Item name={["linkBtn", "buttonRadius"]} label="按钮圆角">
-                <Input placeholder="4px" />
-              </Form.Item>
-            </div>
-          </Card>
-
-          {/* 页脚 */}
+          </Card>{/* 页脚 */}
           <Card title="页脚 / 备案区" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
               <Form.Item name={["footer", "textColor"]} label="文字颜色">
@@ -1034,55 +1011,107 @@ export const Theme: React.FC<ThemeProps> = () => {
                 <Switch />
               </Form.Item>
             </div>
-          </Card>
-
-        {/* 自定义CSS */}
-          <Card
-            title="自定义CSS"
-            style={{ marginBottom: 24 }}
-            extra={<span style={{ fontSize: 12, color: '#ff4d4f' }}>⚠️ 高级功能，最大10KB</span>}
-          >
-            <Form.Item
-              name="customCSS"
-              rules={[
+          </Card></>) },
                 {
-                  validator: (_, value) => {
-                    if (value && value.length > 10240) {
-                      return Promise.reject(new Error("自定义CSS长度不能超过10KB"));
-                    }
-                    return Promise.resolve();
-                  },
+                  key: "css",
+                  label: "自定义 CSS",
+                  children: (
+                    <Card
+                      title="自定义CSS"
+                      style={{ marginBottom: 24 }}
+                      extra={<span style={{ fontSize: 12, color: '#ff4d4f' }}>⚠️ 高级功能，最大10KB</span>}
+                    >
+                      <Form.Item
+                        name="customCSS"
+                        rules={[
+                          {
+                            validator: (_, value) => {
+                              if (value && value.length > 10240) {
+                                return Promise.reject(new Error("自定义CSS长度不能超过10KB"));
+                              }
+                              return Promise.resolve();
+                            },
+                          },
+                        ]}
+                      >
+                        <Input.TextArea
+                          rows={6}
+                          placeholder={`/* 在此输入自定义CSS */\n.card-box {\n  /* 自定义样式 */\n}`}
+                        />
+                      </Form.Item>
+                      <div style={{ fontSize: 12, color: '#999' }}>
+                        <p>⚠️ 注意事项：</p>
+                        <ul style={{ margin: 0, paddingLeft: 20 }}>
+                          <li>自定义CSS优先级最高，可能覆盖上述配置</li>
+                          <li>支持按页面定向：body[data-page="home" / "admin" / "login"]</li>
+                          <li>支持按分类定向：卡片带有 data-catelog="分类名" 属性</li>
+                          <li>禁止使用 expression()、behavior 等危险关键字</li>
+                          <li>禁止使用非 data: 协议的 url() 引用外部资源</li>
+                        </ul>
+                      </div>
+                    </Card>
+                  ),
+                },
+                {
+                  key: "presets",
+                  label: "主题方案",
+                  children: (
+                    <Card
+                      title="主题方案"
+                      style={{ marginBottom: 24 }}
+                      extra={
+                        <Space>
+                          <Button size="small" onClick={() => setPresetModalOpen(true)}>把当前配置存为方案</Button>
+                          <Button size="small" onClick={handleExport}>导出 JSON</Button>
+                          <Button size="small" onClick={() => importFileRef.current?.click()}>导入 JSON</Button>
+                          <input
+                            ref={importFileRef}
+                            type="file"
+                            accept="application/json"
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) handleImportFile(f);
+                              e.target.value = '';
+                            }}
+                          />
+                        </Space>
+                      }
+                    >
+                      {presets.length === 0 ? (
+                        <div style={{ color: '#999', fontSize: 13 }}>
+                          还没有保存的主题方案。配置好当前主题后，可将其存为命名方案，之后一键应用。
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                          {presets.map((p: any) => (
+                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 4, border: '1px solid #eee', borderRadius: 6, padding: '4px 8px' }}>
+                              <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                              <Button type="link" size="small" onClick={() => handleApplyPresetById(p.id)}>应用</Button>
+                              <Button type="link" size="small" danger onClick={() => handleDeletePreset(p.id)}>删除</Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <Modal
+                        title="保存为主题方案"
+                        open={presetModalOpen}
+                        onOk={handleSaveAsPreset}
+                        onCancel={() => setPresetModalOpen(false)}
+                        okText="保存"
+                        cancelText="取消"
+                      >
+                        <Input value={presetName} onChange={(e) => setPresetName(e.target.value)} placeholder="方案名称，例如：默认蓝 / 护眼夜话" />
+                      </Modal>
+                    </Card>
+                  ),
                 },
               ]}
-            >
-              <Input.TextArea
-                rows={6}
-                placeholder={`/* 在此输入自定义CSS */\n.card-box {\n  /* 自定义样式 */\n}`}
-              />
-            </Form.Item>
-            <div style={{ fontSize: 12, color: '#999' }}>
-              <p>⚠️ 注意事项：</p>
-              <ul style={{ margin: 0, paddingLeft: 20 }}>
-                <li>自定义CSS优先级最高，可能覆盖上述配置</li>
-                <li>禁止使用 expression()、behavior 等危险关键字</li>
-                <li>禁止使用非 data: 协议的 url() 引用外部资源</li>
-              </ul>
-            </div>
-          </Card>
-
-          {/* 实时预览 */}
-          <Card
-            title="实时预览"
-            style={{ marginBottom: 24 }}
-            extra={<span style={{ fontSize: 12, color: '#999' }}>按当前表单值实时渲染（防抖 300ms），保存前即可查看效果</span>}
-          >
-            <ThemePreview form={form} />
-          </Card>
-
-          {/* 操作按钮 */}
+            />
+            {/* 操作按钮 */}
           <Form.Item>
             <Space>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving} size="large">
+              <Button type="primary" icon={<SaveOutlined />} loading={saving} size="large" onClick={handleSave}>
                 保存配置
               </Button>
               <Button icon={<ReloadOutlined />} onClick={handleReset} size="large">
@@ -1090,7 +1119,16 @@ export const Theme: React.FC<ThemeProps> = () => {
               </Button>
             </Space>
           </Form.Item>
-        </Form>
+          </Form>
+        </div>
+        <div className="theme-page-preview">
+          <Card
+            title="实时预览"
+            extra={<span style={{ fontSize: 12, color: '#999' }}>随当前配置实时变化</span>}
+          >
+            <ThemePreview form={form} />
+          </Card>
+        </div>
       </Spin>
     </div>
   );

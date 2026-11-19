@@ -217,7 +217,7 @@ export const computeThemeVars = (config: ThemeConfig, dark: boolean): Record<str
   const radiusMap: Record<string, string> = { none: '0px', small: '4px', medium: '8px', large: '16px' };
 
   const topbarBg = config.topbar?.background
-    || (config.topbar?.blur ? 'color-mix(in srgb, var(--van-nav-bg-base) 80%, transparent)' : 'var(--van-nav-bg-base)');
+    || (config.topbar?.blur ? 'color-mix(in srgb, var(--van-nav-bg-base) 80%, transparent)' : 'transparent');
 
   let pageBg = 'var(--van-nav-bg-base)';
   if (config.pageBg?.gradientTo) {

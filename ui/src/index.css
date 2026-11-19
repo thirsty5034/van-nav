@@ -32,7 +32,7 @@
   --van-nav-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --van-nav-base-font-size: 14px;
   --van-nav-radius-global: 4px;
-  --van-nav-topbar-bg: var(--van-nav-bg-base);
+  --van-nav-topbar-bg: transparent;
   --van-nav-topbar-text: var(--van-nav-text-primary);
   --van-nav-topbar-height: auto;
   --van-nav-topbar-filter: none;
@@ -208,3 +208,67 @@ body.dark-mode .card-tag {
 #van-nav-custom-css {
   /* 由前端动态生成 */
 }
+
+/* ===== 主题实时预览（静态模拟，无 iframe 副作用） ===== */
+.theme-page-layout { display: block; }
+.theme-page-main { min-width: 0; }
+.theme-page-preview { margin-top: 24px; }
+@media (min-width: 1500px) {
+  .theme-page-layout { display: flex; gap: 24px; align-items: flex-start; }
+  .theme-page-main { flex: 1 1 auto; }
+  .theme-page-preview { width: 460px; flex-shrink: 0; position: sticky; top: 16px; margin-top: 0; }
+}
+.theme-preview-mock {
+  border-radius: 10px;
+  padding: 18px;
+  background: var(--van-nav-page-bg);
+  background-attachment: fixed;
+  color: var(--van-nav-text-primary);
+  font-family: var(--van-nav-font-family);
+  border: 1px solid var(--van-nav-border);
+  min-height: 420px;
+}
+.theme-preview-mock .tp-search {
+  background: color-mix(in srgb, var(--van-nav-bg-card) 55%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--van-nav-border);
+  border-radius: var(--van-nav-radius-global);
+  color: var(--van-nav-text-secondary);
+  padding: 10px 16px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.theme-preview-mock .tp-tags { margin-bottom: 14px; }
+.theme-preview-mock .tp-tag {
+  display: inline-block; padding: 3px 12px; margin-right: 8px; margin-bottom: 6px;
+  border: 1px solid var(--van-nav-border); border-radius: var(--van-nav-radius-global);
+  color: var(--van-nav-text-secondary); font-size: 12px;
+}
+.theme-preview-mock .tp-tag-active { border-color: var(--van-nav-primary); color: var(--van-nav-primary); }
+.theme-preview-mock .tp-cards { display: grid; grid-template-columns: 1fr 1fr; gap: var(--van-nav-card-gap); }
+.theme-preview-mock .tp-card {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--van-nav-bg-card);
+  border-radius: var(--van-nav-card-radius);
+  box-shadow: var(--van-nav-card-shadow);
+  padding: var(--van-nav-card-padding);
+}
+.theme-preview-mock.card-outline-mode .tp-card { box-shadow: none; border: 1px solid var(--van-nav-border); }
+.theme-preview-mock .tp-logo {
+  width: var(--van-nav-card-logo-size, 32px); height: var(--van-nav-card-logo-size, 32px);
+  border-radius: var(--van-nav-card-logo-radius, 0px);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600; flex-shrink: 0;
+}
+.theme-preview-mock .tp-title {
+  color: var(--van-nav-card-title-color, var(--van-nav-text-primary));
+  font-size: var(--van-nav-title-size, 16px); font-weight: var(--van-nav-title-weight, 600);
+}
+.theme-preview-mock .tp-desc {
+  color: var(--van-nav-text-secondary); font-size: var(--van-nav-desc-size, 13px); margin-top: 2px;
+}
+.theme-preview-mock .tp-footer {
+  margin-top: 16px; text-align: center; color: var(--van-nav-footer-text, var(--van-nav-text-secondary)); font-size: 12px;
+}
+.theme-preview-mock.footer-hidden .tp-footer { display: none; }
