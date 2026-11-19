@@ -214,7 +214,7 @@ body.dark-mode .card-tag {
 .theme-page-layout { display: flex; gap: 24px; align-items: flex-start; }
 .theme-page-main { flex: 1 1 auto; min-width: 0; }
 .theme-page-preview { width: 480px; flex-shrink: 0; position: sticky; top: 16px; }
-@media (max-width: 1500px) {
+@media (max-width: 1024px) {
   .theme-page-layout { flex-direction: column; }
   .theme-page-preview { width: 100%; position: static; }
 }
