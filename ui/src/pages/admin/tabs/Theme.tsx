@@ -941,11 +941,10 @@ export const Theme: React.FC<ThemeProps> = () => {
         compactMode: !!siteConfig.compactMode,
         sortByClicks: !!siteConfig.sortByClicks,
       };
-      const [themeRes, settingRes, siteConfigRes] = await Promise.all([
-        fetchUpdateTheme(config),
-        fetchUpdateSetting(settingPayload),
-        fetchUpdateSiteConfig(siteConfigPayload),
-      ]);
+      // 串行提交：三个写请求并发会触发 SQLite 写锁冲突（SQLITE_BUSY），改为顺序执行
+      const themeRes = await fetchUpdateTheme(config);
+      const settingRes = await fetchUpdateSetting(settingPayload);
+      const siteConfigRes = await fetchUpdateSiteConfig(siteConfigPayload);
       const failed: string[] = [];
       if (!themeRes?.success) failed.push("主题配置");
       if (!settingRes?.success) failed.push("品牌/站点设置");

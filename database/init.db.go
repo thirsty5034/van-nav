@@ -28,7 +28,9 @@ func InitDB() {
 	utils.PathExistsOrCreate("./data")
 	dir := "./data"
 	dbPath := filepath.Join(dir, "nav.db")
-	dbPath = dbPath + "?_journal=WAL&_timeout=5000&_busy_timeout=5000&_txlock=immediate&_synchronous=NORMAL"
+	// modernc/sqlite 驱动的 DSN 参数为 _pragma=xxx(vvv) 形式；
+	// busy_timeout 必须在此设置（连接池每个连接各自生效），并发写库时等待而非立即报 SQLITE_BUSY
+	dbPath = dbPath + "?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=synchronous(NORMAL)&_txlock=immediate"
 	DB, err = sql.Open("sqlite", dbPath)
 	utils.CheckErr(err)
 
