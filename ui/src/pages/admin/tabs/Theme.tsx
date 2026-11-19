@@ -1,4 +1,4 @@
-import { Button, Card, Checkbox, ColorPicker, Form, Input, InputNumber, message, Modal, Radio, Select, Space, Spin, Switch, Tabs, TimePicker } from "antd";
+import { Button, Card, Checkbox, ColorPicker, Form, Input, InputNumber, message, Modal, Radio, Select, Space, Spin, Switch, Tabs, TimePicker, Upload } from "antd";
 import dayjs from "dayjs";
 import type { Color } from "antd/es/color-picker";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -17,7 +17,7 @@ import {
 } from "../../../utils/api";
 import { useData } from "../hooks/useData";
 import { applyPreferredTheme, applyThemeVars, applyVarsToStyle, clearThemeVars, computeThemeVars, type ThemeConfig } from "../../../utils/theme";
-import { BgColorsOutlined, ReloadOutlined, SaveOutlined } from "@ant-design/icons";
+import { BgColorsOutlined, ReloadOutlined, SaveOutlined, UploadOutlined } from "@ant-design/icons";
 import { useTranslation } from '../../../i18n';
 
 // 渐变毛玻璃预设主题的自定义CSS
@@ -1037,9 +1037,33 @@ export const Theme: React.FC<ThemeProps> = () => {
               <Form.Item
                 name={["pageBg", "image"]}
                 label="背景图片"
-                tooltip="支持 data: 协议或站内路径（如 /bg.webp），禁止外链"
+                tooltip="上传后以 data: 协议存储；也可填写站内路径（如 /bg.webp），禁止外链"
               >
-                <Input placeholder="data:image/png;base64,... 或 /bg.webp" />
+                <Upload
+                  accept="image/png,image/jpeg,image/webp"
+                  maxCount={1}
+                  showUploadList={false}
+                  beforeUpload={(file) => {
+                    const ok = ["image/png", "image/jpeg", "image/webp"].includes(file.type);
+                    if (!ok) {
+                      message.error("仅支持 png/jpeg/webp 图片");
+                      return false;
+                    }
+                    if (file.size > 500 * 1024) {
+                      message.error("背景图片不能超过 500KB");
+                      return false;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      form.setFieldsValue({ pageBg: { image: reader.result } });
+                      syncPreview();
+                    };
+                    reader.readAsDataURL(file);
+                    return false;
+                  }}
+                >
+                  <Button icon={<UploadOutlined />}>上传背景图片</Button>
+                </Upload>
               </Form.Item>
             </div>
           </Card>
