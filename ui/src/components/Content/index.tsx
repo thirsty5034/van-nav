@@ -132,6 +132,9 @@ const Content = (props: any) => {
   const searchCfg = themeConfig?.search;
   const tagCfg = themeConfig?.tag;
   const cardCfg = themeConfig?.cardExtra;
+  const footerCfg = themeConfig?.footer;
+  // 页脚文案：主题配置的 footer.text 优先，空则回退站点设置的备案文案
+  const footerText = footerCfg?.text || data?.setting?.govRecord || '';
 
   const searchHidden = searchCfg?.hidden === true;
   const tagHidden = tagCfg?.hidden === true;
@@ -699,9 +702,9 @@ const Content = (props: any) => {
           {tagAtBottom && tagSelector}
         </div>
       )}
-      {data?.setting?.govRecord && (
+      {footerText && (
         <div className="record-wraper">
-          <a href="https://beian.miit.gov.cn" target="_blank" rel="noreferrer">{data.setting.govRecord}</a>
+          <a href="https://beian.miit.gov.cn" target="_blank" rel="noreferrer">{footerText}</a>
         </div>
       )}
       <div className="floating-actions">

@@ -57,7 +57,8 @@
     height: 24px;
   }
   .select-tag {
-    font-size: 13px;
+    font-size: var(--van-nav-tag-font-size, 13px);
+    font-family: var(--van-nav-tag-font-family, inherit);
     padding: 2px 6px;
     height: 24.5px;
     min-width: 62px;
@@ -84,7 +85,8 @@
   }
   input {
     height: var(--van-nav-search-height, 30px);
-    font-size: 16px;
+    font-size: var(--van-nav-search-font-size, 16px);
+    font-family: var(--van-nav-search-font-family, inherit);
     padding: 0 16px;
     border-radius: var(--van-nav-search-radius, 4px);
     border: 1px solid var(--van-nav-border);
@@ -155,7 +157,7 @@
     display: inline-block;
     color: var(--van-nav-card-title-color, var(--van-nav-text-primary));
     font-weight: 500;
-    font-size: 12px;
+    font-size: var(--van-nav-title-size, 12px);
     margin-top: 3px;
     overflow: hidden;
     white-space: nowrap;
@@ -194,7 +196,8 @@
     height: 30px;
   }
   .select-tag {
-    font-size: 13px;
+    font-size: var(--van-nav-tag-font-size, 13px);
+    font-family: var(--van-nav-tag-font-family, inherit);
     padding: 2px 8px;
     min-width: 70px;
     line-height: 20px;
@@ -221,7 +224,8 @@
   }
   input {
     height: var(--van-nav-search-height, 36px);
-    font-size: 16px;
+    font-size: var(--van-nav-search-font-size, 16px);
+    font-family: var(--van-nav-search-font-family, inherit);
     padding: 0 20px;
     border-radius: var(--van-nav-search-radius, 4px);
     border: 1px solid var(--van-nav-border);
@@ -300,12 +304,12 @@
     text-align: center;
   }
   .card-left > img {
-    width: 36px;
-    height: 36px;
+    width: var(--van-nav-card-logo-size, 36px);
+    height: var(--van-nav-card-logo-size, 36px);
   }
   .card-left embed {
-    width: 36px;
-    height: 36px;
+    width: var(--van-nav-card-logo-size, 36px);
+    height: var(--van-nav-card-logo-size, 36px);
   }
   .card-right {
     margin-right: 0px;
@@ -328,7 +332,8 @@
     height: 30px;
   }
   .select-tag {
-    font-size: 13px;
+    font-size: var(--van-nav-tag-font-size, 13px);
+    font-family: var(--van-nav-tag-font-family, inherit);
     padding: 2px 10px;
     min-width: 74px;
     line-height: 20px;
@@ -353,7 +358,8 @@
   }
   input {
     height: var(--van-nav-search-height, 40px);
-    font-size: 16px;
+    font-size: var(--van-nav-search-font-size, 16px);
+    font-family: var(--van-nav-search-font-family, inherit);
     padding: 0 22px;
     border-radius: var(--van-nav-search-radius, 4px);
     border: 1px solid var(--van-nav-border);
@@ -416,14 +422,14 @@
     display: none;
   }
   .card-tag {
-    color: var(--van-nav-text-secondary);
+    color: var(--van-nav-card-tag-color, var(--van-nav-text-secondary));
     font-size: 13px;
-    background-color: var(--van-nav-bg-card);
+    background-color: var(--van-nav-card-tag-bg, var(--van-nav-bg-card));
     display: inline-block;
     box-sizing: border-box;
     padding: 0x;
     line-height: 20px;
-    border-radius: 2px;
+    border-radius: var(--van-nav-card-tag-radius, 2px);
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -436,6 +442,7 @@
   .card-right-title {
     display: inline-block;
     color: var(--van-nav-card-title-color, var(--van-nav-text-primary));
+    font-family: var(--van-nav-card-title-font-family, inherit);
     font-size: var(--van-nav-title-size, 16px);
     margin-right: 7px;
     overflow: hidden;
@@ -444,12 +451,12 @@
     text-overflow: ellipsis;
   }
   .card-left > img {
-    width: 40px;
-    height: 40px;
+    width: var(--van-nav-card-logo-size, 40px);
+    height: var(--van-nav-card-logo-size, 40px);
   }
   .card-left embed {
-    width: 40px;
-    height: 40px;
+    width: var(--van-nav-card-logo-size, 40px);
+    height: var(--van-nav-card-logo-size, 40px);
   }
 }
 
@@ -471,7 +478,8 @@
     height: 40px;
   }
   .select-tag {
-    font-size: 14px;
+    font-size: var(--van-nav-tag-font-size, 14px);
+    font-family: var(--van-nav-tag-font-family, inherit);
     padding: 2px 10px;
     min-width: 85px;
     line-height: 20px;
@@ -497,7 +505,8 @@
   }
   input {
     height: var(--van-nav-search-height, 40px);
-    font-size: 16px;
+    font-size: var(--van-nav-search-font-size, 16px);
+    font-family: var(--van-nav-search-font-family, inherit);
     padding: 0 32px;
     border-radius: var(--van-nav-search-radius, 4px);
     border: 1px solid var(--van-nav-border);
@@ -549,7 +558,8 @@
     width: 100%;
   }
   .card-right-bottom {
-    color: var(--van-nav-text-secondary);
+    color: var(--van-nav-card-desc-color, var(--van-nav-text-secondary));
+    font-family: var(--van-nav-card-desc-font-family, inherit);
     font-size: var(--van-nav-desc-size, 13px);
     width: 100%;
     overflow: hidden;
@@ -559,13 +569,13 @@
     line-clamp: 2;
   }
   .card-tag {
-    color: var(--van-nav-text-secondary);
+    color: var(--van-nav-card-tag-color, var(--van-nav-text-secondary));
     font-size: 12px;
-    background-color: var(--van-nav-border);
+    background-color: var(--van-nav-card-tag-bg, var(--van-nav-border));
     display: inline-block;
     box-sizing: border-box;
     padding: 0 8px;
-    border-radius: 2px;
+    border-radius: var(--van-nav-card-tag-radius, 2px);
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -579,6 +589,7 @@
   .card-right-title {
     display: inline-block;
     color: var(--van-nav-card-title-color, var(--van-nav-text-primary));
+    font-family: var(--van-nav-card-title-font-family, inherit);
     font-size: var(--van-nav-title-size, 16px);
     font-weight: var(--van-nav-title-weight, 600);
     margin-right: 7px;
@@ -596,12 +607,12 @@
     overflow: hidden;
   }
   .card-left > img {
-    width: 48px;
-    height: 48px;
+    width: var(--van-nav-card-logo-size, 48px);
+    height: var(--van-nav-card-logo-size, 48px);
   }
   .card-left embed {
-    width: 48px;
-    height: 48px;
+    width: var(--van-nav-card-logo-size, 48px);
+    height: var(--van-nav-card-logo-size, 48px);
   }
 }
 .content-wraper {
@@ -620,7 +631,8 @@
   right: 0;
   text-align: center;
   padding: 12px 0;
-  background-color: var(--van-nav-bg-base);
+  background-color: var(--van-nav-footer-bg, transparent);
+  font-family: var(--van-nav-footer-font-family, inherit);
   z-index: 100;
 }
 
@@ -812,6 +824,16 @@ body.dark-mode .tag-rail .select-tag {
   border-color: transparent;
 }
 .tag-transparent .select-tag:hover {
+  background: transparent;
+  border-color: var(--van-nav-primary);
+}
+
+/* 暗色下透明无框需同特异度覆盖，压过 body.dark-mode .select-tag 的底色/边框 */
+body.dark-mode .tag-transparent .select-tag {
+  background: transparent;
+  border-color: transparent;
+}
+body.dark-mode .tag-transparent .select-tag:hover {
   background: transparent;
   border-color: var(--van-nav-primary);
 }

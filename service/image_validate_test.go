@@ -95,3 +95,77 @@ func TestUpdateSettingRejectsOversizeFavicon(t *testing.T) {
 		t.Errorf("超 200KB favicon 应被拒绝并提示大小, got %v", err)
 	}
 }
+
+func TestValidateThemeConfigNewFields(t *testing.T) {
+	base := getDefaultThemeConfig()
+
+	// 非法背景模式
+	c := base
+	c.PageBg.Mode = "video"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("非法背景模式应被拒绝")
+	}
+
+	// 页脚背景色非法
+	c = base
+	c.Footer.BgColor = "red"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("非法页脚背景色应被拒绝")
+	}
+
+	// 字体族 CSS 注入拦截
+	c = base
+	c.Search.FontFamily = "x; } body { display:none }"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("字体族注入应被拒绝")
+	}
+
+	// 搜索框字号非法
+	c = base
+	c.Search.FontSize = "big"
+	if err := validateThemeConfig(&c); err == nil {
+		t.Errorf("非法搜索框字号应被拒绝")
+	}
+}
+
+func TestBuildThemeConfigMapNormalizesPageBgMode(t *testing.T) {
+	base := getDefaultThemeConfig()
+
+	// 未设置 mode 且有图片 → image
+	c := base
+	c.PageBg.Mode = ""
+	c.PageBg.Image = "data:image/png;base64,iVBORw0KGgo="
+	m, err := buildThemeConfigMap(c)
+	if err != nil {
+		t.Fatalf("buildThemeConfigMap failed: %v", err)
+	}
+	pb := m["pageBg"].(map[string]interface{})
+	if pb["mode"] != "image" {
+		t.Errorf("有图时应归一化为 image, got %v", pb["mode"])
+	}
+
+	// 未设置 mode 且无图 → color
+	c = base
+	c.PageBg.Mode = ""
+	m, err = buildThemeConfigMap(c)
+	if err != nil {
+		t.Fatalf("buildThemeConfigMap failed: %v", err)
+	}
+	pb = m["pageBg"].(map[string]interface{})
+	if pb["mode"] != "color" {
+		t.Errorf("无图时应归一化为 color, got %v", pb["mode"])
+	}
+
+	// 显式 color 模式时忽略图片字段（图片保留但不参与模式判断）
+	c = base
+	c.PageBg.Mode = "color"
+	c.PageBg.Image = "data:image/png;base64,iVBORw0KGgo="
+	m, err = buildThemeConfigMap(c)
+	if err != nil {
+		t.Fatalf("buildThemeConfigMap failed: %v", err)
+	}
+	pb = m["pageBg"].(map[string]interface{})
+	if pb["mode"] != "color" {
+		t.Errorf("显式 color 应保留, got %v", pb["mode"])
+	}
+}

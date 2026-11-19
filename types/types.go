@@ -160,6 +160,7 @@ type ThemeTopbarConfig struct {
 
 // 页面背景增强
 type ThemePageBgConfig struct {
+	Mode       string `json:"mode"`       // 背景模式：color=纯色/渐变 image=背景图片（二选一；空=按 image 是否存在推断）
 	GradientTo string `json:"gradientTo"` // 渐变第二色（空=纯色 bgBase）
 	Image      string `json:"image"`      // data: 协议或站内相对路径
 	DimOpacity string `json:"dimOpacity"` // 背景暗色遮罩 0-1
@@ -167,17 +168,23 @@ type ThemePageBgConfig struct {
 
 // 卡片细项
 type ThemeCardConfig struct {
-	LogoRadius string `json:"logoRadius"` // 如 8px / 50%
-	LogoSize   string `json:"logoSize"`   // 如 40px
-	TitleColor string `json:"titleColor"` // 空=跟随 textPrimary
-	HoverLift  bool   `json:"hoverLift"`  // hover 抬升动效
-	Outline    bool   `json:"outline"`    // 描边模式（边框替代阴影）
-	Height     string `json:"height"`     // 卡片高度，如 120px；空=自适应
-	ShowLogo   bool   `json:"showLogo"`   // 展示 Logo
-	ShowTitle  bool   `json:"showTitle"`  // 展示标题
-	ShowDesc   bool   `json:"showDesc"`   // 展示简介
-	ShowTag    bool   `json:"showTag"`    // 展示分类标签
-	BgOpacity  string `json:"bgOpacity"`  // 卡片底色透明度 0-1；空=不透明
+	LogoRadius      string `json:"logoRadius"`      // 如 8px / 50%
+	LogoSize        string `json:"logoSize"`        // 如 40px
+	TitleColor      string `json:"titleColor"`      // 空=跟随 textPrimary
+	HoverLift       bool   `json:"hoverLift"`       // hover 抬升动效
+	Outline         bool   `json:"outline"`         // 描边模式（边框替代阴影）
+	Height          string `json:"height"`          // 卡片高度，如 120px；空=自适应
+	ShowLogo        bool   `json:"showLogo"`        // 展示 Logo
+	ShowTitle       bool   `json:"showTitle"`       // 展示标题
+	ShowDesc        bool   `json:"showDesc"`        // 展示简介
+	ShowTag         bool   `json:"showTag"`         // 展示分类标签
+	BgOpacity       string `json:"bgOpacity"`       // 卡片底色透明度 0-1；空=不透明
+	TitleFontFamily string `json:"titleFontFamily"` // 标题字体族；空=跟随全局字体
+	DescFontFamily  string `json:"descFontFamily"`  // 描述字体族；空=跟随全局字体
+	DescColor       string `json:"descColor"`       // 描述颜色；空=跟随 textSecondary
+	TagColor        string `json:"tagColor"`        // 卡内小标签文字色；空=跟随 textSecondary
+	TagBg           string `json:"tagBg"`           // 卡内小标签底色；空=跟随 bgCard
+	TagRadius       string `json:"tagRadius"`       // 卡内小标签圆角；空=4px
 }
 
 // 链接与按钮
@@ -189,8 +196,10 @@ type ThemeLinkConfig struct {
 // 页脚/备案区
 type ThemeFooterConfig struct {
 	TextColor string `json:"textColor"` // 空=跟随 textSecondary
+	BgColor   string `json:"bgColor"`   // 页脚背景色；空=透明融入页面背景
 	Hidden    bool   `json:"hidden"`    // 隐藏备案区
 	Text      string `json:"text"`      // 备案/页脚文案；空=跟随站点设置
+	FontFamily string `json:"fontFamily"` // 页脚字体族；空=跟随全局字体
 }
 
 // 搜索框配置
@@ -205,6 +214,8 @@ type ThemeSearchConfig struct {
 	TextColor        string `json:"textColor"`        // 文字颜色；空=跟随 textPrimary
 	PlaceholderColor string `json:"placeholderColor"` // 占位提示颜色；空=跟随 textSecondary
 	Placeholder      string `json:"placeholder"`      // 占位文案；空=使用默认
+	FontFamily       string `json:"fontFamily"`       // 搜索框字体族；空=跟随全局字体
+	FontSize         string `json:"fontSize"`         // 搜索框字号，如 16px；空=默认
 }
 
 // 分类标签配置
@@ -216,6 +227,8 @@ type ThemeTagConfig struct {
 	ActiveBg    string `json:"activeBg"`    // 选中底色；空=跟随 primary
 	TextColor   string `json:"textColor"`   // 文字颜色；空=跟随 textPrimary
 	Radius      string `json:"radius"`      // 圆角，如 8px
+	FontFamily  string `json:"fontFamily"`  // 标签字体族；空=跟随全局字体
+	FontSize    string `json:"fontSize"`    // 标签字号，如 13px；空=默认
 }
 
 // 完整主题配置

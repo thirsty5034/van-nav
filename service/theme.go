@@ -157,6 +157,23 @@ func isDataURL(css string) bool {
 	return true
 }
 
+// fontFamilyPattern 字体族白名单：禁止 CSS 结构字符（字体族会进入样式变量）
+var fontFamilyPattern = regexp.MustCompile(`^[^;{}<>\\` + "`" + `]*$`)
+
+// validateFontFamilyField 字体族校验：长度限制 + 禁止 CSS 结构字符；空=跟随全局
+func validateFontFamilyField(v, name string) error {
+	if v == "" {
+		return nil
+	}
+	if len(v) > 200 {
+		return fmt.Errorf("%s过长", name)
+	}
+	if !fontFamilyPattern.MatchString(v) {
+		return fmt.Errorf("%s含非法字符", name)
+	}
+	return nil
+}
+
 // validateThemeConfig 校验主题配置的有效性
 func validateThemeConfig(config *types.ThemeConfig) error {
 	// 校验颜色值格式（支持6位和8位hex）
@@ -240,6 +257,11 @@ func validateThemeConfig(config *types.ThemeConfig) error {
 	if err := validateColorField(config.PageBg.GradientTo, "背景渐变色"); err != nil {
 		return err
 	}
+	switch config.PageBg.Mode {
+	case "", "color", "image":
+	default:
+		return fmt.Errorf("背景模式无效，应为 color/image")
+	}
 	if config.PageBg.Image != "" && !strings.HasPrefix(config.PageBg.Image, "/") &&
 		!strings.HasPrefix(config.PageBg.Image, "images/") {
 		if !strings.HasPrefix(config.PageBg.Image, "data:") {
@@ -273,6 +295,12 @@ func validateThemeConfig(config *types.ThemeConfig) error {
 	if err := validateColorField(config.Footer.TextColor, "页脚文字颜色"); err != nil {
 		return err
 	}
+	if err := validateColorField(config.Footer.BgColor, "页脚背景颜色"); err != nil {
+		return err
+	}
+	if err := validateFontFamilyField(config.Footer.FontFamily, "页脚字体"); err != nil {
+		return err
+	}
 
 	// 校验搜索框配置
 	switch config.Search.Position {
@@ -301,6 +329,12 @@ func validateThemeConfig(config *types.ThemeConfig) error {
 	if err := validateColorField(config.Search.PlaceholderColor, "搜索框提示颜色"); err != nil {
 		return err
 	}
+	if err := validateFontFamilyField(config.Search.FontFamily, "搜索框字体"); err != nil {
+		return err
+	}
+	if err := validatePxField(config.Search.FontSize, "搜索框字号"); err != nil {
+		return err
+	}
 
 	// 校验分类标签配置
 	switch config.Tag.Position {
@@ -320,6 +354,12 @@ func validateThemeConfig(config *types.ThemeConfig) error {
 	if err := validatePxField(config.Tag.Radius, "分类标签圆角"); err != nil {
 		return err
 	}
+	if err := validateFontFamilyField(config.Tag.FontFamily, "分类标签字体"); err != nil {
+		return err
+	}
+	if err := validatePxField(config.Tag.FontSize, "分类标签字号"); err != nil {
+		return err
+	}
 
 	// 校验卡片扩展配置（高度 px、底色透明度 0-1）
 	if err := validatePxField(config.CardExtra.Height, "卡片高度"); err != nil {
@@ -328,6 +368,24 @@ func validateThemeConfig(config *types.ThemeConfig) error {
 	opacityPattern := regexp.MustCompile(`^(0(\.\d+)?|1)$`)
 	if config.CardExtra.BgOpacity != "" && !opacityPattern.MatchString(config.CardExtra.BgOpacity) {
 		return fmt.Errorf("卡片底色透明度应为 0-1 之间的数字")
+	}
+	if err := validateColorField(config.CardExtra.DescColor, "卡片描述颜色"); err != nil {
+		return err
+	}
+	if err := validateColorField(config.CardExtra.TagColor, "卡片标签文字颜色"); err != nil {
+		return err
+	}
+	if err := validateColorField(config.CardExtra.TagBg, "卡片标签底色"); err != nil {
+		return err
+	}
+	if err := validatePxField(config.CardExtra.TagRadius, "卡片标签圆角"); err != nil {
+		return err
+	}
+	if err := validateFontFamilyField(config.CardExtra.TitleFontFamily, "卡片标题字体"); err != nil {
+		return err
+	}
+	if err := validateFontFamilyField(config.CardExtra.DescFontFamily, "卡片描述字体"); err != nil {
+		return err
 	}
 
 	return nil
@@ -450,6 +508,7 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 		config.Topbar.Height = strFromMap(m, "height", config.Topbar.Height)
 	}
 	if m, ok := configMap["pageBg"].(map[string]interface{}); ok {
+		config.PageBg.Mode = strFromMap(m, "mode", config.PageBg.Mode)
 		config.PageBg.GradientTo = strFromMap(m, "gradientTo", config.PageBg.GradientTo)
 		config.PageBg.Image = strFromMap(m, "image", config.PageBg.Image)
 		config.PageBg.DimOpacity = strFromMap(m, "dimOpacity", config.PageBg.DimOpacity)
@@ -466,6 +525,12 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 		config.CardExtra.ShowDesc = boolFromMap(m, "showDesc", config.CardExtra.ShowDesc)
 		config.CardExtra.ShowTag = boolFromMap(m, "showTag", config.CardExtra.ShowTag)
 		config.CardExtra.BgOpacity = strFromMap(m, "bgOpacity", config.CardExtra.BgOpacity)
+		config.CardExtra.TitleFontFamily = strFromMap(m, "titleFontFamily", config.CardExtra.TitleFontFamily)
+		config.CardExtra.DescFontFamily = strFromMap(m, "descFontFamily", config.CardExtra.DescFontFamily)
+		config.CardExtra.DescColor = strFromMap(m, "descColor", config.CardExtra.DescColor)
+		config.CardExtra.TagColor = strFromMap(m, "tagColor", config.CardExtra.TagColor)
+		config.CardExtra.TagBg = strFromMap(m, "tagBg", config.CardExtra.TagBg)
+		config.CardExtra.TagRadius = strFromMap(m, "tagRadius", config.CardExtra.TagRadius)
 	}
 	if m, ok := configMap["linkBtn"].(map[string]interface{}); ok {
 		config.LinkBtn.LinkColor = strFromMap(m, "linkColor", config.LinkBtn.LinkColor)
@@ -473,8 +538,10 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 	}
 	if m, ok := configMap["footer"].(map[string]interface{}); ok {
 		config.Footer.TextColor = strFromMap(m, "textColor", config.Footer.TextColor)
+		config.Footer.BgColor = strFromMap(m, "bgColor", config.Footer.BgColor)
 		config.Footer.Hidden = boolFromMap(m, "hidden", config.Footer.Hidden)
 		config.Footer.Text = strFromMap(m, "text", config.Footer.Text)
+		config.Footer.FontFamily = strFromMap(m, "fontFamily", config.Footer.FontFamily)
 	}
 	// 解析搜索框配置（字段缺失/为空时保持默认值）
 	if m, ok := configMap["search"].(map[string]interface{}); ok {
@@ -488,6 +555,8 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 		config.Search.TextColor = strFromMap(m, "textColor", config.Search.TextColor)
 		config.Search.PlaceholderColor = strFromMap(m, "placeholderColor", config.Search.PlaceholderColor)
 		config.Search.Placeholder = strFromMap(m, "placeholder", config.Search.Placeholder)
+		config.Search.FontFamily = strFromMap(m, "fontFamily", config.Search.FontFamily)
+		config.Search.FontSize = strFromMap(m, "fontSize", config.Search.FontSize)
 	}
 	// 解析分类标签配置（字段缺失/为空时保持默认值）
 	if m, ok := configMap["tag"].(map[string]interface{}); ok {
@@ -498,6 +567,8 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 		config.Tag.ActiveBg = strFromMap(m, "activeBg", config.Tag.ActiveBg)
 		config.Tag.TextColor = strFromMap(m, "textColor", config.Tag.TextColor)
 		config.Tag.Radius = strFromMap(m, "radius", config.Tag.Radius)
+		config.Tag.FontFamily = strFromMap(m, "fontFamily", config.Tag.FontFamily)
+		config.Tag.FontSize = strFromMap(m, "fontSize", config.Tag.FontSize)
 	}
 
 	return &config, nil
@@ -579,6 +650,15 @@ func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, erro
 	// 3. 设置版本号
 	config.Version = "1.0"
 
+	// 3.5 背景模式归一化：颜色与图片二选一；未显式选择时按是否已有图片推断（兼容旧数据）
+	if config.PageBg.Mode == "" {
+		if config.PageBg.Image != "" {
+			config.PageBg.Mode = "image"
+		} else {
+			config.PageBg.Mode = "color"
+		}
+	}
+
 	// 4. 转换为map存储
 	configMap := map[string]interface{}{
 		"version": config.Version,
@@ -633,22 +713,29 @@ func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, erro
 			"height":     config.Topbar.Height,
 		},
 		"pageBg": map[string]interface{}{
+			"mode":       config.PageBg.Mode,
 			"gradientTo": config.PageBg.GradientTo,
 			"image":      config.PageBg.Image,
 			"dimOpacity": config.PageBg.DimOpacity,
 		},
 		"cardExtra": map[string]interface{}{
-			"logoRadius": config.CardExtra.LogoRadius,
-			"logoSize":   config.CardExtra.LogoSize,
-			"titleColor": config.CardExtra.TitleColor,
-			"hoverLift":  config.CardExtra.HoverLift,
-			"outline":    config.CardExtra.Outline,
-			"height":     config.CardExtra.Height,
-			"showLogo":   config.CardExtra.ShowLogo,
-			"showTitle":  config.CardExtra.ShowTitle,
-			"showDesc":   config.CardExtra.ShowDesc,
-			"showTag":    config.CardExtra.ShowTag,
-			"bgOpacity":  config.CardExtra.BgOpacity,
+			"logoRadius":      config.CardExtra.LogoRadius,
+			"logoSize":        config.CardExtra.LogoSize,
+			"titleColor":      config.CardExtra.TitleColor,
+			"hoverLift":       config.CardExtra.HoverLift,
+			"outline":         config.CardExtra.Outline,
+			"height":          config.CardExtra.Height,
+			"showLogo":        config.CardExtra.ShowLogo,
+			"showTitle":       config.CardExtra.ShowTitle,
+			"showDesc":        config.CardExtra.ShowDesc,
+			"showTag":         config.CardExtra.ShowTag,
+			"bgOpacity":       config.CardExtra.BgOpacity,
+			"titleFontFamily": config.CardExtra.TitleFontFamily,
+			"descFontFamily":  config.CardExtra.DescFontFamily,
+			"descColor":       config.CardExtra.DescColor,
+			"tagColor":        config.CardExtra.TagColor,
+			"tagBg":           config.CardExtra.TagBg,
+			"tagRadius":       config.CardExtra.TagRadius,
 		},
 		"linkBtn": map[string]interface{}{
 			"linkColor":    config.LinkBtn.LinkColor,
@@ -656,8 +743,10 @@ func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, erro
 		},
 		"footer": map[string]interface{}{
 			"textColor": config.Footer.TextColor,
+			"bgColor":   config.Footer.BgColor,
 			"hidden":    config.Footer.Hidden,
 			"text":      config.Footer.Text,
+			"fontFamily": config.Footer.FontFamily,
 		},
 		"search": map[string]interface{}{
 			"hidden":           config.Search.Hidden,
@@ -670,6 +759,8 @@ func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, erro
 			"textColor":        config.Search.TextColor,
 			"placeholderColor": config.Search.PlaceholderColor,
 			"placeholder":      config.Search.Placeholder,
+			"fontFamily":       config.Search.FontFamily,
+			"fontSize":         config.Search.FontSize,
 		},
 		"tag": map[string]interface{}{
 			"hidden":      config.Tag.Hidden,
@@ -679,6 +770,8 @@ func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, erro
 			"activeBg":    config.Tag.ActiveBg,
 			"textColor":   config.Tag.TextColor,
 			"radius":      config.Tag.Radius,
+			"fontFamily":  config.Tag.FontFamily,
+			"fontSize":    config.Tag.FontSize,
 		},
 	}
 	

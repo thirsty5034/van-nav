@@ -28,6 +28,7 @@ export interface ThemeTopbarConfig {
 }
 
 export interface ThemePageBgConfig {
+  mode?: 'color' | 'image';
   gradientTo?: string;
   image?: string;
   dimOpacity?: string;
@@ -45,6 +46,12 @@ export interface ThemeCardConfig {
   showDesc?: boolean;
   showTag?: boolean;
   bgOpacity?: string;
+  titleFontFamily?: string;
+  descFontFamily?: string;
+  descColor?: string;
+  tagColor?: string;
+  tagBg?: string;
+  tagRadius?: string;
 }
 
 export interface ThemeLinkConfig {
@@ -54,8 +61,10 @@ export interface ThemeLinkConfig {
 
 export interface ThemeFooterConfig {
   textColor?: string;
+  bgColor?: string;
   hidden?: boolean;
   text?: string;
+  fontFamily?: string;
 }
 
 export interface ThemeSearchConfig {
@@ -69,6 +78,8 @@ export interface ThemeSearchConfig {
   textColor?: string;
   placeholderColor?: string;
   placeholder?: string;
+  fontFamily?: string;
+  fontSize?: string;
 }
 
 export interface ThemeTagConfig {
@@ -79,6 +90,8 @@ export interface ThemeTagConfig {
   activeBg?: string;
   textColor?: string;
   radius?: string;
+  fontFamily?: string;
+  fontSize?: string;
 }
 
 const toMinutes = (s?: string): number => {
@@ -251,11 +264,13 @@ export const computeThemeVars = (config: ThemeConfig, dark: boolean): Record<str
   const topbarBg = config.topbar?.background
     || (config.topbar?.blur ? 'color-mix(in srgb, var(--van-nav-bg-base) 80%, transparent)' : 'transparent');
 
+  // 背景模式二选一：color=纯色/渐变，image=背景图片；旧数据无 mode 时按是否有图片推断
+  const bgMode = config.pageBg?.mode === 'image' || (!config.pageBg?.mode && !!config.pageBg?.image) ? 'image' : 'color';
   let pageBg = 'var(--van-nav-bg-base)';
-  if (config.pageBg?.gradientTo) {
+  if (bgMode === 'color' && config.pageBg?.gradientTo) {
     pageBg = `linear-gradient(180deg, var(--van-nav-bg-base), ${config.pageBg.gradientTo})`;
   }
-  if (config.pageBg?.image) {
+  if (bgMode === 'image' && config.pageBg?.image) {
     const dim = config.pageBg.dimOpacity
       ? `linear-gradient(rgba(0,0,0,${config.pageBg.dimOpacity}),rgba(0,0,0,${config.pageBg.dimOpacity})),`
       : '';
@@ -298,6 +313,8 @@ export const computeThemeVars = (config: ThemeConfig, dark: boolean): Record<str
     '--van-nav-link-color': config.linkBtn?.linkColor || 'var(--van-nav-primary)',
     '--van-nav-btn-radius': config.linkBtn?.buttonRadius || '4px',
     '--van-nav-footer-text': config.footer?.textColor || 'var(--van-nav-text-secondary)',
+    '--van-nav-footer-bg': config.footer?.bgColor || '',
+    '--van-nav-footer-font-family': config.footer?.fontFamily || '',
     // 扩展：搜索框（空值=移除变量，回退 CSS 默认）
     '--van-nav-search-hidden': config.search?.hidden ? 'true' : 'false',
     '--van-nav-search-position': config.search?.position || '',
@@ -308,6 +325,8 @@ export const computeThemeVars = (config: ThemeConfig, dark: boolean): Record<str
     '--van-nav-search-transparent': config.search?.transparent ? 'true' : 'false',
     '--van-nav-search-text-color': config.search?.textColor || '',
     '--van-nav-search-placeholder-color': config.search?.placeholderColor || '',
+    '--van-nav-search-font-family': config.search?.fontFamily || '',
+    '--van-nav-search-font-size': config.search?.fontSize || '',
     // 扩展：分类标签
     '--van-nav-tag-hidden': config.tag?.hidden ? 'true' : 'false',
     '--van-nav-tag-position': config.tag?.position || '',
@@ -315,6 +334,8 @@ export const computeThemeVars = (config: ThemeConfig, dark: boolean): Record<str
     '--van-nav-tag-active-bg': config.tag?.activeBg || '',
     '--van-nav-tag-text-color': config.tag?.textColor || '',
     '--van-nav-tag-radius': config.tag?.radius || '',
+    '--van-nav-tag-font-family': config.tag?.fontFamily || '',
+    '--van-nav-tag-font-size': config.tag?.fontSize || '',
     // 扩展：卡片高度/展示开关/底色透明度（展示开关缺省视为展示）
     '--van-nav-card-height': config.cardExtra?.height || '',
     '--van-nav-card-show-logo': config.cardExtra?.showLogo === false ? 'false' : 'true',
@@ -322,6 +343,13 @@ export const computeThemeVars = (config: ThemeConfig, dark: boolean): Record<str
     '--van-nav-card-show-desc': config.cardExtra?.showDesc === false ? 'false' : 'true',
     '--van-nav-card-show-tag': config.cardExtra?.showTag === false ? 'false' : 'true',
     '--van-nav-card-bg-opacity': config.cardExtra?.bgOpacity || '',
+    // 扩展：卡片标题/描述/小标签 分区自定义
+    '--van-nav-card-title-font-family': config.cardExtra?.titleFontFamily || '',
+    '--van-nav-card-desc-font-family': config.cardExtra?.descFontFamily || '',
+    '--van-nav-card-desc-color': config.cardExtra?.descColor || '',
+    '--van-nav-card-tag-color': config.cardExtra?.tagColor || '',
+    '--van-nav-card-tag-bg': config.cardExtra?.tagBg || '',
+    '--van-nav-card-tag-radius': config.cardExtra?.tagRadius || '',
     // 自定义 CSS 挂到变量，便于预览复用
     '--van-nav-custom-css': customCSS || '',
   };
@@ -393,6 +421,12 @@ export const clearThemeVars = () => {
     '--van-nav-tag-active-bg', '--van-nav-tag-text-color', '--van-nav-tag-radius',
     '--van-nav-card-height', '--van-nav-card-show-logo', '--van-nav-card-show-title',
     '--van-nav-card-show-desc', '--van-nav-card-show-tag', '--van-nav-card-bg-opacity',
+    '--van-nav-footer-bg', '--van-nav-footer-font-family',
+    '--van-nav-search-font-family', '--van-nav-search-font-size',
+    '--van-nav-tag-font-family', '--van-nav-tag-font-size',
+    '--van-nav-card-title-font-family', '--van-nav-card-desc-font-family',
+    '--van-nav-card-desc-color', '--van-nav-card-tag-color', '--van-nav-card-tag-bg',
+    '--van-nav-card-tag-radius',
   ];
 
   customProps.forEach(prop => root.style.removeProperty(prop));
