@@ -367,7 +367,7 @@ const buildConfigFromValues = (values: any) => ({
   pageBg: {
     gradientTo: colorToHex(values.pageBg?.gradientTo, ""),
     image: values.pageBg?.image || "",
-    dimOpacity: values.pageBg?.dimOpacity != null && values.pageBg.dimOpacity !== "" ? String(values.pageBg.dimOpacity) : "",
+    dimOpacity: values.pageBg?.dim ? "0.35" : "",
   },
   cardExtra: {
     logoRadius: values.cardExtra?.logoRadius || "",
@@ -912,7 +912,7 @@ export const Theme: React.FC<ThemeProps> = () => {
               font: { family: "", baseFontSize: "14px" },
               radius: { style: "small" },
               topbar: { transparent: false, blur: false, height: "" },
-              pageBg: { image: "", dimOpacity: "" },
+              pageBg: { image: "", dimOpacity: "", dim: false },
               cardExtra: { hoverLift: true, outline: false, height: "", showLogo: true, showTitle: true, showDesc: true, showTag: true, bgOpacity: "" },
               linkBtn: { buttonRadius: "" },
               footer: { hidden: false, text: "" },
@@ -1003,36 +1003,17 @@ export const Theme: React.FC<ThemeProps> = () => {
                   label: "页面背景",
                   children: (
                     <>
-                      {/* 主题色彩配置 */}
-          <Card title="主题色彩" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-              <Form.Item name={["colors", "primary"]} label="主色调">
-                <ColorPicker showText />
-              </Form.Item>
-              <Form.Item name={["colors", "bgBase"]} label="页面背景色">
-                <ColorPicker showText />
-              </Form.Item>
-              <Form.Item name={["colors", "bgCard"]} label="卡片背景色">
-                <ColorPicker showText />
-              </Form.Item>
-              <Form.Item name={["colors", "textPrimary"]} label="主文字颜色">
-                <ColorPicker showText />
-              </Form.Item>
-              <Form.Item name={["colors", "textSecondary"]} label="次文字颜色">
-                <ColorPicker showText />
-              </Form.Item>
-              <Form.Item name={["colors", "border"]} label="边框颜色">
-                <ColorPicker showText />
-              </Form.Item>
-            </div>
-          </Card>{/* 页面背景 */}
+                      {/* 页面背景 */}
           <Card title="页面背景" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["pageBg", "gradientTo"]} label="渐变第二色" tooltip="留空为纯色；填写后与页面背景色形成纵向渐变">
-                <Input placeholder="留空 = 纯色" />
+              <Form.Item name={["colors", "bgBase"]} label="背景颜色">
+                <ColorPicker showText />
               </Form.Item>
-              <Form.Item name={["pageBg", "dimOpacity"]} label="背景暗色遮罩" tooltip="叠加在背景图上的黑色遮罩透明度">
-                <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} placeholder="0 - 1" />
+              <Form.Item name={["pageBg", "gradientTo"]} label="渐变第二色" tooltip="留空为纯色；填写后与背景颜色形成纵向渐变">
+                <ColorPicker showText allowClear />
+              </Form.Item>
+              <Form.Item name={["pageBg", "dim"]} label="背景压暗" valuePropName="checked" tooltip="开启后背景图上叠加一层暗色遮罩，让文字更清晰">
+                <Switch />
               </Form.Item>
               <Form.Item
                 name={["pageBg", "image"]}
@@ -1303,8 +1284,14 @@ export const Theme: React.FC<ThemeProps> = () => {
                       {/* 链接与按钮 */}
           <Card title="链接与按钮" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["linkBtn", "linkColor"]} label="链接颜色">
-                <Input placeholder="留空跟随主色调" />
+              <Form.Item name={["colors", "primary"]} label="主题色" tooltip="影响链接、选中标签、按钮等强调色">
+                <ColorPicker showText />
+              </Form.Item>
+              <Form.Item name={["colors", "border"]} label="边框颜色" tooltip="留空使用默认">
+                <ColorPicker showText allowClear />
+              </Form.Item>
+              <Form.Item name={["linkBtn", "linkColor"]} label="链接颜色" tooltip="留空跟随主题色">
+                <ColorPicker showText allowClear />
               </Form.Item>
               <Form.Item name={["linkBtn", "buttonRadius"]} label="按钮形状：方形↔圆形">
                 <Input placeholder="4px" />
@@ -1363,20 +1350,39 @@ export const Theme: React.FC<ThemeProps> = () => {
                       {/* 字体与圆角 */}
           <Card title="字体与圆角" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["font", "family"]} label="字体族" tooltip="留空使用系统默认字体栈，多个字体用逗号分隔">
-                <Input placeholder="留空 = 系统默认" />
+              <Form.Item name={["font", "family"]} label="字体" tooltip="留空使用系统默认字体栈">
+                <Select
+                  allowClear
+                  placeholder="系统默认"
+                  options={[
+                    { label: "系统默认", value: "" },
+                    { label: "微软雅黑", value: "'Microsoft YaHei', sans-serif" },
+                    { label: "苹方", value: "'PingFang SC', sans-serif" },
+                    { label: "思源黑体", value: "'Source Han Sans SC', 'Noto Sans SC', sans-serif" },
+                    { label: "宋体", value: "SimSun, serif" },
+                    { label: "Georgia（衬线）", value: "Georgia, serif" },
+                    { label: "Arial", value: "Arial, Helvetica, sans-serif" },
+                    { label: "等宽字体", value: "'Courier New', monospace" },
+                  ]}
+                />
               </Form.Item>
-              <Form.Item name={["font", "baseFontSize"]} label="正文字号">
-                <Input placeholder="14px" />
+              <Form.Item name={["font", "baseFontSize"]} label="正文字号" tooltip="单位 px，填写数字即可">
+                <Input addonAfter="px" placeholder="14" />
+              </Form.Item>
+              <Form.Item name={["colors", "textPrimary"]} label="正文字色" tooltip="留空使用默认">
+                <ColorPicker showText allowClear />
+              </Form.Item>
+              <Form.Item name={["colors", "textSecondary"]} label="次级文字色" tooltip="留空使用默认">
+                <ColorPicker showText allowClear />
               </Form.Item>
 
             </div>
           </Card>
-                      {/* 排版配置 */}
+                      {/* 标题与简介文字 */}
           <Card title="标题与简介文字" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-              <Form.Item name={["typography", "titleFontSize"]} label="标题字号">
-                <Input placeholder="16px" />
+              <Form.Item name={["typography", "titleFontSize"]} label="标题字号" tooltip="单位 px，填写数字即可">
+                <Input addonAfter="px" placeholder="16" />
               </Form.Item>
               <Form.Item name={["typography", "titleFontWeight"]} label="标题字重">
                 <Select
@@ -1388,8 +1394,8 @@ export const Theme: React.FC<ThemeProps> = () => {
                   ]}
                 />
               </Form.Item>
-              <Form.Item name={["typography", "descFontSize"]} label="简介字号">
-                <Input placeholder="13px" />
+              <Form.Item name={["typography", "descFontSize"]} label="简介字号" tooltip="单位 px，填写数字即可">
+                <Input addonAfter="px" placeholder="13" />
               </Form.Item>
             </div>
           </Card>
