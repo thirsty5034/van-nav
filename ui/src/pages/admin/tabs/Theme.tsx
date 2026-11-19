@@ -659,11 +659,11 @@ export const Theme: React.FC<ThemeProps> = () => {
             }}
           >
             <Tabs
-              defaultActiveKey="basic"
+              defaultActiveKey="preset"
               items={[
                 {
-                  key: "basic",
-                  label: "色彩与排版",
+                  key: "preset",
+                  label: "预设主题",
                   children: (
                     <>
                       {/* 预设主题选择 */}
@@ -697,6 +697,14 @@ export const Theme: React.FC<ThemeProps> = () => {
             ))}
           </div>
         </Card>
+                    </>
+                  ),
+                },
+                {
+                  key: "color",
+                  label: "色彩与背景",
+                  children: (
+                    <>
                       {/* 主题色彩配置 */}
           <Card title="主题色彩" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
@@ -719,8 +727,46 @@ export const Theme: React.FC<ThemeProps> = () => {
                 <ColorPicker showText />
               </Form.Item>
             </div>
+          </Card>{/* 页面背景 */}
+          <Card title="页面背景" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["pageBg", "gradientTo"]} label="渐变第二色" tooltip="留空为纯色；填写后与页面背景色形成纵向渐变">
+                <Input placeholder="留空 = 纯色" />
+              </Form.Item>
+              <Form.Item name={["pageBg", "dimOpacity"]} label="背景暗色遮罩" tooltip="叠加在背景图上的黑色遮罩透明度">
+                <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} placeholder="0 - 1" />
+              </Form.Item>
+              <Form.Item
+                name={["pageBg", "image"]}
+                label="背景图片"
+                tooltip="支持 data: 协议或站内路径（如 /bg.webp），禁止外链"
+              >
+                <Input placeholder="data:image/png;base64,... 或 /bg.webp" />
+              </Form.Item>
+            </div>
           </Card>
-                      {/* 布局配置 */}
+                    </>
+                  ),
+                },
+                {
+                  key: "card",
+                  label: "卡片样式",
+                  children: (
+                    <>
+                      <Card title="全局圆角风格" style={{ marginBottom: 24 }}>
+            <div style={{ maxWidth: 360 }}>
+              <Form.Item name={["radius", "style"]} label="全局圆角风格">
+                <Select
+                  options={[
+                    { label: "直角", value: "none" },
+                    { label: "小圆角（默认）", value: "small" },
+                    { label: "中圆角", value: "medium" },
+                    { label: "大圆角", value: "large" },
+                  ]}
+                />
+              </Form.Item>
+            </div>
+          </Card>{/* 布局配置 */}
           <Card title="布局调整" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
               <Form.Item name={["layout", "cardBorderRadius"]} label="卡片圆角">
@@ -743,8 +789,26 @@ export const Theme: React.FC<ThemeProps> = () => {
                 ]}
               />
             </Form.Item>
-          </Card>
-                      {/* 排版配置 */}
+          </Card>{/* 卡片细项 */}
+          <Card title="卡片细项" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["cardExtra", "logoSize"]} label="Logo 尺寸">
+                <Input placeholder="32px" />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "logoRadius"]} label="Logo 圆角">
+                <Input placeholder="0px / 8px / 50%" />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "titleColor"]} label="标题颜色">
+                <Input placeholder="留空跟随文字主色" />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "hoverLift"]} label="Hover 动效" valuePropName="checked" tooltip="鼠标悬停时卡片上浮">
+                <Switch />
+              </Form.Item>
+              <Form.Item name={["cardExtra", "outline"]} label="描边模式" valuePropName="checked" tooltip="开启后卡片用边框替代阴影">
+                <Switch />
+              </Form.Item>
+            </div>
+          </Card>{/* 排版配置 */}
           <Card title="排版设置" style={{ marginBottom: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
               <Form.Item name={["typography", "titleFontSize"]} label="标题字号">
@@ -765,6 +829,83 @@ export const Theme: React.FC<ThemeProps> = () => {
               </Form.Item>
             </div>
             
+          </Card>
+                    </>
+                  ),
+                },
+                {
+                  key: "topbar",
+                  label: "顶栏",
+                  children: (
+                    <>
+                      {/* 顶栏样式 */}
+          <Card title="顶栏样式" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["topbar", "transparent"]} label="透明顶栏" valuePropName="checked">
+                <Checkbox>背景透明（滚动内容透出）</Checkbox>
+              </Form.Item>
+              <Form.Item name={["topbar", "blur"]} label="毛玻璃效果" valuePropName="checked">
+                <Checkbox>背景模糊</Checkbox>
+              </Form.Item>
+              <Form.Item name={["topbar", "background"]} label="顶栏背景色" tooltip="留空跟随页面背景；勾选透明顶栏时忽略此项">
+                <Input placeholder="#1677ff / 留空跟随页面" />
+              </Form.Item>
+              <Form.Item name={["topbar", "textColor"]} label="顶栏文字色">
+                <Input placeholder="留空跟随文字主色" />
+              </Form.Item>
+              <Form.Item name={["topbar", "height"]} label="顶栏最小高度">
+                <Input placeholder="默认（由内容撑开）" />
+              </Form.Item>
+            </div>
+          </Card>
+                    </>
+                  ),
+                },
+                {
+                  key: "font",
+                  label: "字体",
+                  children: (
+                    <>
+                      {/* 字体与圆角 */}
+          <Card title="字体与圆角" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["font", "family"]} label="字体族" tooltip="留空使用系统默认字体栈，多个字体用逗号分隔">
+                <Input placeholder="留空 = 系统默认" />
+              </Form.Item>
+              <Form.Item name={["font", "baseFontSize"]} label="正文字号">
+                <Input placeholder="14px" />
+              </Form.Item>
+              
+            </div>
+          </Card>
+                    </>
+                  ),
+                },
+                {
+                  key: "link",
+                  label: "链接与页脚",
+                  children: (
+                    <>
+                      {/* 链接与按钮 */}
+          <Card title="链接与按钮" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["linkBtn", "linkColor"]} label="链接颜色">
+                <Input placeholder="留空跟随主色调" />
+              </Form.Item>
+              <Form.Item name={["linkBtn", "buttonRadius"]} label="按钮圆角">
+                <Input placeholder="4px" />
+              </Form.Item>
+            </div>
+          </Card>{/* 页脚 */}
+          <Card title="页脚 / 备案区" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <Form.Item name={["footer", "textColor"]} label="文字颜色">
+                <Input placeholder="留空跟随次级文字色" />
+              </Form.Item>
+              <Form.Item name={["footer", "hidden"]} label="隐藏备案区" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+            </div>
           </Card>
                     </>
                   ),
@@ -849,106 +990,8 @@ export const Theme: React.FC<ThemeProps> = () => {
                     </Card>
                   ),
                 },
-                { key: "topbar", label: "顶栏与背景", children: (<>{/* 顶栏样式 */}
-          <Card title="顶栏样式" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["topbar", "transparent"]} label="透明顶栏" valuePropName="checked">
-                <Checkbox>背景透明（滚动内容透出）</Checkbox>
-              </Form.Item>
-              <Form.Item name={["topbar", "blur"]} label="毛玻璃效果" valuePropName="checked">
-                <Checkbox>背景模糊</Checkbox>
-              </Form.Item>
-              <Form.Item name={["topbar", "background"]} label="顶栏背景色" tooltip="留空跟随页面背景；勾选透明顶栏时忽略此项">
-                <Input placeholder="#1677ff / 留空跟随页面" />
-              </Form.Item>
-              <Form.Item name={["topbar", "textColor"]} label="顶栏文字色">
-                <Input placeholder="留空跟随文字主色" />
-              </Form.Item>
-              <Form.Item name={["topbar", "height"]} label="顶栏最小高度">
-                <Input placeholder="默认（由内容撑开）" />
-              </Form.Item>
-            </div>
-          </Card>{/* 页面背景 */}
-          <Card title="页面背景" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["pageBg", "gradientTo"]} label="渐变第二色" tooltip="留空为纯色；填写后与页面背景色形成纵向渐变">
-                <Input placeholder="留空 = 纯色" />
-              </Form.Item>
-              <Form.Item name={["pageBg", "dimOpacity"]} label="背景暗色遮罩" tooltip="叠加在背景图上的黑色遮罩透明度">
-                <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} placeholder="0 - 1" />
-              </Form.Item>
-              <Form.Item
-                name={["pageBg", "image"]}
-                label="背景图片"
-                tooltip="支持 data: 协议或站内路径（如 /bg.webp），禁止外链"
-              >
-                <Input placeholder="data:image/png;base64,... 或 /bg.webp" />
-              </Form.Item>
-            </div>
-          </Card></>) },
-                { key: "card", label: "卡片与链接", children: (<>{/* 卡片细项 */}
-          <Card title="卡片细项" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["cardExtra", "logoSize"]} label="Logo 尺寸">
-                <Input placeholder="32px" />
-              </Form.Item>
-              <Form.Item name={["cardExtra", "logoRadius"]} label="Logo 圆角">
-                <Input placeholder="0px / 8px / 50%" />
-              </Form.Item>
-              <Form.Item name={["cardExtra", "titleColor"]} label="标题颜色">
-                <Input placeholder="留空跟随文字主色" />
-              </Form.Item>
-              <Form.Item name={["cardExtra", "hoverLift"]} label="Hover 动效" valuePropName="checked" tooltip="鼠标悬停时卡片上浮">
-                <Switch />
-              </Form.Item>
-              <Form.Item name={["cardExtra", "outline"]} label="描边模式" valuePropName="checked" tooltip="开启后卡片用边框替代阴影">
-                <Switch />
-              </Form.Item>
-            </div>
-          </Card>{/* 链接与按钮 */}
-          <Card title="链接与按钮" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["linkBtn", "linkColor"]} label="链接颜色">
-                <Input placeholder="留空跟随主色调" />
-              </Form.Item>
-              <Form.Item name={["linkBtn", "buttonRadius"]} label="按钮圆角">
-                <Input placeholder="4px" />
-              </Form.Item>
-            </div>
-          </Card></>) },
-                { key: "font", label: "字体与页脚", children: (<>{/* 字体与圆角 */}
-          <Card title="字体与圆角" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["font", "family"]} label="字体族" tooltip="留空使用系统默认字体栈，多个字体用逗号分隔">
-                <Input placeholder="留空 = 系统默认" />
-              </Form.Item>
-              <Form.Item name={["font", "baseFontSize"]} label="正文字号">
-                <Input placeholder="14px" />
-              </Form.Item>
-              <Form.Item name={["radius", "style"]} label="全局圆角风格">
-                <Select
-                  options={[
-                    { label: "直角", value: "none" },
-                    { label: "小圆角（默认）", value: "small" },
-                    { label: "中圆角", value: "medium" },
-                    { label: "大圆角", value: "large" },
-                  ]}
-                />
-              </Form.Item>
-            </div>
-          </Card>{/* 页脚 */}
-          <Card title="页脚 / 备案区" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-              <Form.Item name={["footer", "textColor"]} label="文字颜色">
-                <Input placeholder="留空跟随次级文字色" />
-              </Form.Item>
-              <Form.Item name={["footer", "hidden"]} label="隐藏备案区" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </div>
-          </Card></>) },
                 {
-                  key: "css",
+key: "css",
                   label: "自定义 CSS",
                   children: (
                     <Card
@@ -988,7 +1031,7 @@ export const Theme: React.FC<ThemeProps> = () => {
                   ),
                 },
                 {
-                  key: "presets",
+key: "presets",
                   label: "主题方案",
                   children: (
                     <Card
