@@ -389,7 +389,8 @@ const buildConfigFromValues = (values: any) => ({
 // - 自定义 CSS 注入模拟页 <style>，其选择器（body/.topbar/.card-box/.record-wraper 等）
 //   在模拟页中均有对应元素，因此自定义 CSS 也能实时预览
 const buildPreviewDoc = () => {
-  const cardsHtml = "<a class=\"card-box\" data-catelog=\"\u6280\u672f\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%2324292f%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3EG%3C/text%3E%3C/svg%3E\" alt=\"GitHub\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">GitHub</span><span class=\"card-tag\">\u6280\u672f</span></div>\n          <div class=\"card-right-bottom\">\u5168\u7403\u5f00\u6e90\u4ee3\u7801\u6258\u7ba1\u53ca\u5f00\u53d1\u8005\u534f\u4f5c\u5e73\u53f0</div>\n        </div>\n      </a>\n<a class=\"card-box\" data-catelog=\"\u641c\u7d22\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%232932e1%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3E%E7%99%BE%3C/text%3E%3C/svg%3E\" alt=\"\u767e\u5ea6\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">\u767e\u5ea6</span><span class=\"card-tag\">\u641c\u7d22</span></div>\n          <div class=\"card-right-bottom\">\u5168\u7403\u9886\u5148\u7684\u4e2d\u6587\u641c\u7d22\u5f15\u64ce</div>\n        </div>\n      </a>\n<a class=\"card-box\" data-catelog=\"\u793e\u533a\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%23fb7299%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3E%E5%93%94%3C/text%3E%3C/svg%3E\" alt=\"\u54d4\u54e9\u54d4\u54e9\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">\u54d4\u54e9\u54d4\u54e9</span><span class=\"card-tag\">\u793e\u533a</span></div>\n          <div class=\"card-right-bottom\">\u56fd\u5185\u77e5\u540d\u7684\u5e74\u8f7b\u4e16\u4ee3\u6f6e\u6d41\u6587\u5316\u793e\u533a</div>\n        </div>\n      </a>\n<a class=\"card-box\" data-catelog=\"\u5de5\u5177\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%230f2b46%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3ED%3C/text%3E%3C/svg%3E\" alt=\"DeepL \u7ffb\u8bd1\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">DeepL \u7ffb\u8bd1</span><span class=\"card-tag\">\u5de5\u5177</span></div>\n          <div class=\"card-right-bottom\">\u7ed3\u5408AI\u6df1\u5ea6\u5b66\u4e60\u7684\u9ad8\u51c6\u786e\u7387\u7ffb\u8bd1\u5de5\u5177</div>\n        </div>\n      </a>\n<a class=\"card-box\" data-catelog=\"\u793e\u533a\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%230084ff%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3E%E7%9F%A5%3C/text%3E%3C/svg%3E\" alt=\"\u77e5\u4e4e\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">\u77e5\u4e4e</span><span class=\"card-tag\">\u793e\u533a</span></div>\n          <div class=\"card-right-bottom\">\u4e2d\u6587\u4e92\u8054\u7f51\u9ad8\u8d28\u91cf\u95ee\u7b54\u793e\u533a</div>\n        </div>\n      </a>\n<a class=\"card-box\" data-catelog=\"\u5de5\u5177\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%23111111%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3EN%3C/text%3E%3C/svg%3E\" alt=\"Notion\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">Notion</span><span class=\"card-tag\">\u5de5\u5177</span></div>\n          <div class=\"card-right-bottom\">\u5168\u80fd\u578b\u4e00\u4f53\u5316\u77e5\u8bc6\u5e93\u4e0e\u534f\u4f5c\u5de5\u5177</div>\n        </div>\n      </a>";
+  const cardsHtml =
+    "<a class=\"card-box\" data-catelog=\"\u6280\u672f\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%2324292f%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3EG%3C/text%3E%3C/svg%3E\" alt=\"GitHub\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">GitHub</span><span class=\"card-tag\">\u6280\u672f</span></div>\n          <div class=\"card-right-bottom\">\u5168\u7403\u5f00\u6e90\u4ee3\u7801\u6258\u7ba1\u53ca\u5f00\u53d1\u8005\u534f\u4f5c\u5e73\u53f0</div>\n        </div>\n      </a>\n<a class=\"card-box\" data-catelog=\"\u641c\u7d22\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%232932e1%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3E%E7%99%BE%3C/text%3E%3C/svg%3E\" alt=\"\u767e\u5ea6\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">\u767e\u5ea6</span><span class=\"card-tag\">\u641c\u7d22</span></div>\n          <div class=\"card-right-bottom\">\u5168\u7403\u9886\u5148\u7684\u4e2d\u6587\u641c\u7d22\u5f15\u64ce</div>\n        </div>\n      </a>\n<a class=\"card-box\" data-catelog=\"\u793e\u533a\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%23fb7299%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3E%E5%93%94%3C/text%3E%3C/svg%3E\" alt=\"\u54d4\u54e9\u54d4\u54e9\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">\u54d4\u54e9\u54d4\u54e9</span><span class=\"card-tag\">\u793e\u533a</span></div>\n          <div class=\"card-right-bottom\">\u56fd\u5185\u77e5\u540d\u7684\u5e74\u8f7b\u4e16\u4ee3\u6f6e\u6d41\u6587\u5316\u793e\u533a</div>\n        </div>\n      </a>\n<a class=\"card-box\" data-catelog=\"\u5de5\u5177\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%230f2b46%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3ED%3C/text%3E%3C/svg%3E\" alt=\"DeepL \u7ffb\u8bd1\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">DeepL \u7ffb\u8bd1</span><span class=\"card-tag\">\u5de5\u5177</span></div>\n          <div class=\"card-right-bottom\">\u7ed3\u5408AI\u6df1\u5ea6\u5b66\u4e60\u7684\u9ad8\u51c6\u786e\u7387\u7ffb\u8bd1\u5de5\u5177</div>\n        </div>\n      </a>\n<a class=\"card-box\" data-catelog=\"\u793e\u533a\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%230084ff%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3E%E7%9F%A5%3C/text%3E%3C/svg%3E\" alt=\"\u77e5\u4e4e\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">\u77e5\u4e4e</span><span class=\"card-tag\">\u793e\u533a</span></div>\n          <div class=\"card-right-bottom\">\u4e2d\u6587\u4e92\u8054\u7f51\u9ad8\u8d28\u91cf\u95ee\u7b54\u793e\u533a</div>\n        </div>\n      </a>\n<a class=\"card-box\" data-catelog=\"\u5de5\u5177\">\n        <div class=\"card-left\"><img src=\"data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%23111111%22/%3E%3Ctext%20x%3D%2232%22%20y%3D%2242%22%20font-size%3D%2230%22%20fill%3D%22%23ffffff%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3EN%3C/text%3E%3C/svg%3E\" alt=\"Notion\" /></div>\n        <div class=\"card-right\">\n          <div class=\"card-right-top\"><span class=\"card-right-title\">Notion</span><span class=\"card-tag\">\u5de5\u5177</span></div>\n          <div class=\"card-right-bottom\">\u5168\u80fd\u578b\u4e00\u4f53\u5316\u77e5\u8bc6\u5e93\u4e0e\u534f\u4f5c\u5de5\u5177</div>\n        </div>\n      </a>";
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -488,47 +489,6 @@ body.footer-hidden .record-wraper { display: none; }
 </html>`;
 };
 
-const ThemePreview: React.FC<{ form: any; isDark: boolean }> = ({ form, isDark }) => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const values = Form.useWatch([], form);
-  const [srcDoc] = useState(() => buildPreviewDoc());
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      try {
-        const doc = iframeRef.current?.contentDocument;
-        if (!doc || !doc.body || !values) return;
-        const config = buildConfigFromValues(values);
-        const vars = computeThemeVars(config, isDark);
-        applyVarsToStyle(doc.body.style, vars);
-        let styleEl = doc.getElementById("preview-custom-css") as HTMLStyleElement | null;
-        if (!styleEl) {
-          styleEl = doc.createElement("style");
-          styleEl.id = "preview-custom-css";
-          doc.head.appendChild(styleEl);
-        }
-        styleEl.textContent = vars["--van-nav-custom-css"] || "";
-        doc.body.classList.toggle("card-hover-off", config.cardExtra?.hoverLift === false);
-        doc.body.classList.toggle("card-outline-mode", config.cardExtra?.outline === true);
-        doc.body.classList.toggle("footer-hidden", config.footer?.hidden === true);
-      } catch {
-        // iframe 文档未就绪时忽略本次同步
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [values, isDark]);
-
-  return (
-    <iframe
-      ref={iframeRef}
-      srcDoc={srcDoc}
-      sandbox="allow-same-origin"
-      title="主题实时预览"
-      style={{ width: "100%", height: 520, border: "1px solid #d9d9d9", borderRadius: 8, background: "#fff" }}
-    />
-  );
-};
-
 export interface ThemeProps {}
 
 // 夜间配色预设（仅填充 darkTheme 表单，不写入数据库）
@@ -552,6 +512,39 @@ export const Theme: React.FC<ThemeProps> = () => {
   const [isDark, setIsDark] = useState(() => document.body.classList.contains("dark-mode"));
   // 当前夜间策略（控制时间窗口选择器的显隐）
   const nightModeValue = Form.useWatch(["nightMode", "mode"], form);
+
+  // ===== 实时预览：沙箱模拟页同步 =====
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
+  const [srcDoc] = useState(() => buildPreviewDoc());
+  const values = Form.useWatch([], form);
+
+  const syncPreview = useCallback(() => {
+    try {
+      const doc = previewIframeRef.current?.contentDocument;
+      if (!doc || !doc.body) return;
+      // getFieldsValue(true)：包含未挂载页签中的字段
+      const config = buildConfigFromValues(form.getFieldsValue(true));
+      const vars = computeThemeVars(config, isDark);
+      applyVarsToStyle(doc.body.style, vars);
+      let styleEl = doc.getElementById("preview-custom-css") as HTMLStyleElement | null;
+      if (!styleEl) {
+        styleEl = doc.createElement("style");
+        styleEl.id = "preview-custom-css";
+        doc.head.appendChild(styleEl);
+      }
+      styleEl.textContent = vars["--van-nav-custom-css"] || "";
+      doc.body.classList.toggle("card-hover-off", config.cardExtra?.hoverLift === false);
+      doc.body.classList.toggle("card-outline-mode", config.cardExtra?.outline === true);
+      doc.body.classList.toggle("footer-hidden", config.footer?.hidden === true);
+    } catch {
+      // iframe 文档未就绪时忽略本次同步
+    }
+  }, [form, isDark]);
+
+  useEffect(() => {
+    const timer = setTimeout(syncPreview, 300);
+    return () => clearTimeout(timer);
+  }, [values, isDark, syncPreview]);
 
   // 监听主题变化
   useEffect(() => {
@@ -639,13 +632,14 @@ export const Theme: React.FC<ThemeProps> = () => {
           applyPreferredTheme("theme-preset");
         }
         loadThemeConfig();
+        syncPreview();
       } else {
         message.error(res?.errorMessage || "应用失败");
       }
     } catch (err: any) {
       message.error("应用失败: " + (err.message || "未知错误"));
     }
-  }, [loadThemeConfig]);
+  }, [loadThemeConfig, syncPreview]);
 
   const handleDeletePreset = useCallback((id: number) => {
     Modal.confirm({
@@ -698,13 +692,14 @@ export const Theme: React.FC<ThemeProps> = () => {
           applyPreferredTheme("theme-import");
         }
         loadThemeConfig();
+        syncPreview();
       } else {
         message.error(res?.errorMessage || "导入失败");
       }
     } catch (err: any) {
       message.error("导入失败: " + (err.message || "文件不是合法的 JSON"));
     }
-  }, [loadThemeConfig]);
+  }, [loadThemeConfig, syncPreview]);
 
   // 保存主题配置
   const handleSave = useCallback(async () => {
@@ -762,8 +757,9 @@ export const Theme: React.FC<ThemeProps> = () => {
     if (preset) {
       form.setFieldsValue(preset.config);
       message.info(`已应用「${preset.name}」预设主题，请点击「保存配置」生效`);
+      syncPreview();
     }
-  }, [form]);
+  }, [form, syncPreview]);
 
   return (
     <div className="theme-page-layout">
@@ -1252,7 +1248,13 @@ key: "presets",
             title="实时预览"
             extra={<span style={{ fontSize: 12, color: '#999' }}>随左侧配置实时变化，自定义 CSS 同步生效</span>}
           >
-            <ThemePreview form={form} isDark={isDark} />
+            <iframe
+              ref={previewIframeRef}
+              srcDoc={srcDoc}
+              sandbox="allow-same-origin"
+              title="主题实时预览"
+              style={{ width: "100%", height: 520, border: "1px solid #d9d9d9", borderRadius: 8, background: "#fff" }}
+            />
           </Card>
         </div>
     </div>
