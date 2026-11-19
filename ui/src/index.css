@@ -232,11 +232,23 @@ body.dark-mode .card-tag {
 }
 
 
-/* ===== 主题页左右布局（设置区 + 固定预览区） ===== */
+/* ===== 主题页左右布局（设置区 + 固定预览区，中间分隔条可拖拽调宽） ===== */
 .theme-page-layout { display: flex; gap: 24px; align-items: flex-start; }
 .theme-page-main { flex: 1 1 auto; min-width: 0; }
 .theme-page-preview { width: 480px; flex-shrink: 0; position: sticky; top: 16px; }
+.theme-page-resizer {
+  width: 10px;
+  flex-shrink: 0;
+  align-self: stretch;
+  cursor: col-resize;
+  border-radius: 4px;
+  background: transparent;
+  transition: background 0.2s;
+}
+.theme-page-resizer:hover { background: rgba(22, 119, 255, 0.25); }
+body.dark-mode .theme-page-resizer:hover { background: rgba(255, 255, 255, 0.2); }
 @media (max-width: 1024px) {
   .theme-page-layout { flex-direction: column; }
-  .theme-page-preview { width: 100%; position: static; }
+  .theme-page-preview { width: 100% !important; position: static; }
+  .theme-page-resizer { display: none; }
 }

@@ -679,6 +679,29 @@ export const Theme: React.FC<ThemeProps> = () => {
   const logo192Watch = Form.useWatch(["siteSetting", "logo192"], form);
   const logo512Watch = Form.useWatch(["siteSetting", "logo512"], form);
 
+  // 预览区宽度：拖动分隔条自由调整（320px ~ 视口允许的最大值），双击恢复默认
+  const [previewWidth, setPreviewWidth] = useState(480);
+  const dragState = useRef<{ startX: number; startW: number } | null>(null);
+  const onResizerMouseDown = useCallback((e: React.MouseEvent) => {
+    dragState.current = { startX: e.clientX, startW: previewWidth };
+    const move = (ev: MouseEvent) => {
+      if (!dragState.current) return;
+      // 向左拖增大预览区；左侧设置区至少保留约 560px
+      const w = dragState.current.startW + (dragState.current.startX - ev.clientX);
+      const max = Math.max(360, window.innerWidth - 620);
+      setPreviewWidth(Math.min(Math.max(w, 320), max));
+    };
+    const up = () => {
+      dragState.current = null;
+      document.body.style.userSelect = "";
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  }, [previewWidth]);
+
   // 把迁入的站点外观设置填充进表单（siteSetting/siteConfig 命名空间，保存时各走各的 API）
   useEffect(() => {
     if (store?.setting) {
@@ -1778,7 +1801,13 @@ key: "presets",
           </Form>
         </Spin>
       </div>
-      <div className="theme-page-preview">
+      <div
+        className="theme-page-resizer"
+        onMouseDown={onResizerMouseDown}
+        onDoubleClick={() => setPreviewWidth(480)}
+        title="拖动调整预览区宽度；双击恢复默认"
+      />
+      <div className="theme-page-preview" style={{ width: previewWidth }}>
           <Card
             title="实时预览"
             extra={<span style={{ fontSize: 12, color: '#999' }}>随左侧配置实时变化，自定义 CSS 同步生效</span>}
