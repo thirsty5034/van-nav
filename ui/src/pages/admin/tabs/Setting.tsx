@@ -272,7 +272,8 @@ export const Setting: React.FC<SettingProps> = (props) => {
   const handleUpdateWebSite = useCallback(
     async (values: any) => {
       try {
-        await fetchUpdateSetting(values);
+        // 表单只收集已注册字段，而后端为全量更新；先合并旧值，避免未注册字段（favicon/title 等）被清空
+        await fetchUpdateSetting({ ...(store?.setting ?? {}), ...values });
         message.success(t("admin.settings.msg.updateSuccess"));
       } catch (err) {
         message.warning(t("admin.settings.msg.updateFailed"));
@@ -280,12 +281,13 @@ export const Setting: React.FC<SettingProps> = (props) => {
         reload();
       }
     },
-    [reload]
+    [reload, store]
   );
   const handleUpdateSiteConfig = useCallback(
     async (values: any) => {
       try {
-        await fetchUpdateSiteConfig(values);
+        // 同上：合并旧值后再提交，避免全量更新清空未注册字段（noImageMode/compactMode/sortByClicks 等）
+        await fetchUpdateSiteConfig({ ...(store?.siteConfig ?? {}), ...values });
         message.success(t("admin.settings.msg.updateSuccess"));
       } catch (err) {
         message.warning(t("admin.settings.msg.updateFailed"));
@@ -293,7 +295,7 @@ export const Setting: React.FC<SettingProps> = (props) => {
         reload();
       }
     },
-    [reload]
+    [reload, store]
   );
 
   // 导出配置

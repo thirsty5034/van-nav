@@ -1,7 +1,9 @@
 package service
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -9,6 +11,9 @@ import (
 	"github.com/mereith/nav/database"
 	"github.com/mereith/nav/types"
 )
+
+// ErrThemePresetNotFound 主题方案不存在（handler 层据此返回 404）
+var ErrThemePresetNotFound = errors.New("主题方案不存在")
 
 // 预编译正则表达式，避免重复编译
 var (
@@ -18,13 +23,13 @@ var (
 func init() {
 	// 预编译危险CSS关键字正则（使用RE2兼容语法，不使用lookahead）
 	patterns := []string{
-		`(?i)expression\s*\(`,      // IE expression()
-		`(?i)behavior\s*:`,         // IE behavior
-		`(?i)-moz-binding\s*:`,     // Firefox binding
-		`(?i)@import\s+`,           // 外部样式导入
-		`(?i)url\s*\(`,            // url() 调用（后续逻辑检测协议）
+		`(?i)expression\s*\(`,  // IE expression()
+		`(?i)behavior\s*:`,     // IE behavior
+		`(?i)-moz-binding\s*:`, // Firefox binding
+		`(?i)@import`,          // 外部样式导入（含无空白写法 @import"..."）
+		`(?i)url\s*\(`,         // url() 调用（后续逻辑检测协议）
 	}
-	
+
 	for _, pattern := range patterns {
 		compiled, err := regexp.Compile(pattern)
 		if err != nil {
@@ -110,11 +115,11 @@ func sanitizeCustomCSS(css string) (string, error) {
 	if len(css) > 10240 { // 10KB
 		return "", fmt.Errorf("customCSS长度超过10KB限制")
 	}
-	
+
 	if css == "" {
 		return "", nil
 	}
-	
+
 	// 2. 危险关键字过滤（使用预编译正则）
 	for _, pattern := range dangerousCSSPatterns {
 		if pattern.MatchString(css) {
@@ -129,10 +134,10 @@ func sanitizeCustomCSS(css string) (string, error) {
 			return "", fmt.Errorf("检测到潜在危险CSS关键字，请移除后重试")
 		}
 	}
-	
+
 	// 3. 去除首尾空白
 	css = strings.TrimSpace(css)
-	
+
 	return css, nil
 }
 
@@ -141,7 +146,7 @@ func isDataURL(css string) bool {
 	// 匹配所有 url(...) 调用
 	re := regexp.MustCompile(`(?i)url\s*\(\s*['"]?([^)'"]*)`)
 	matches := re.FindAllStringSubmatch(css, -1)
-	
+
 	for _, match := range matches {
 		if len(match) < 2 {
 			continue
@@ -412,16 +417,16 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 如果数据库中没有配置，返回默认配置
 	if len(configMap) == 0 {
 		defaultConfig := getDefaultThemeConfig()
 		return &defaultConfig, nil
 	}
-	
+
 	// 将map转换为结构体
 	config := getDefaultThemeConfig() // 先填充默认值
-	
+
 	// 解析colors
 	if colors, ok := configMap["colors"].(map[string]interface{}); ok {
 		if v, ok := colors["primary"].(string); ok {
@@ -443,8 +448,7 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 			config.Colors.Border = v
 		}
 	}
-	
-	
+
 	// 解析layout
 	if layout, ok := configMap["layout"].(map[string]interface{}); ok {
 		if v, ok := layout["cardBorderRadius"].(string); ok {
@@ -461,7 +465,7 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 		}
 
 	}
-	
+
 	// 解析typography
 	if typography, ok := configMap["typography"].(map[string]interface{}); ok {
 		if v, ok := typography["titleFontSize"].(string); ok {
@@ -474,12 +478,12 @@ func GetThemeConfig() (*types.ThemeConfig, error) {
 			config.Typography.DescFontSize = v
 		}
 	}
-	
+
 	// 解析customCSS
 	if v, ok := configMap["customCSS"].(string); ok {
 		config.CustomCSS = v
 	}
-	
+
 	// 解析version
 	if v, ok := configMap["version"].(string); ok {
 		config.Version = v
@@ -600,7 +604,8 @@ func isValidNightModeMode(mode string) bool {
 }
 
 // colorsFromMap 从 map 解析颜色配置，缺省字段回退 fallback
-func colorsFromMap(colors map[string]interface{}, fallback types.ThemeColors) types.ThemeColors {	if v, ok := colors["primary"].(string); ok {
+func colorsFromMap(colors map[string]interface{}, fallback types.ThemeColors) types.ThemeColors {
+	if v, ok := colors["primary"].(string); ok {
 		fallback.Primary = v
 	}
 	if v, ok := colors["bgBase"].(string); ok {
@@ -648,11 +653,42 @@ func SaveThemeConfig(config types.ThemeConfig) error {
 
 // buildThemeConfigMap 校验、净化并转换为存储 map（保存/方案/导入共用同一校验标准）
 func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, error) {
+	// 0. 旧版载荷零值归一化：仅补零值字段，不覆盖用户显式传入的值
+	// （旧版前端只发 colors/layout/typography/customCSS，新增的夜间模式与暗色主题字段反序列化后为零值）
+	if config.NightMode.Mode == "" {
+		config.NightMode.Mode = "system"
+	}
+	if config.NightMode.Start == "" {
+		config.NightMode.Start = "18:00"
+	}
+	if config.NightMode.End == "" {
+		config.NightMode.End = "08:00"
+	}
+	darkDefaults := getDefaultDarkTheme().Colors
+	if config.DarkTheme.Colors.Primary == "" {
+		config.DarkTheme.Colors.Primary = darkDefaults.Primary
+	}
+	if config.DarkTheme.Colors.BgBase == "" {
+		config.DarkTheme.Colors.BgBase = darkDefaults.BgBase
+	}
+	if config.DarkTheme.Colors.BgCard == "" {
+		config.DarkTheme.Colors.BgCard = darkDefaults.BgCard
+	}
+	if config.DarkTheme.Colors.TextPrimary == "" {
+		config.DarkTheme.Colors.TextPrimary = darkDefaults.TextPrimary
+	}
+	if config.DarkTheme.Colors.TextSecondary == "" {
+		config.DarkTheme.Colors.TextSecondary = darkDefaults.TextSecondary
+	}
+	if config.DarkTheme.Colors.Border == "" {
+		config.DarkTheme.Colors.Border = darkDefaults.Border
+	}
+
 	// 1. 校验配置有效性
 	if err := validateThemeConfig(&config); err != nil {
 		return nil, fmt.Errorf("配置校验失败: %w", err)
 	}
-	
+
 	// 2. 净化自定义CSS
 	sanitizedCSS, err := sanitizeCustomCSS(config.CustomCSS)
 	if err != nil {
@@ -764,10 +800,10 @@ func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, erro
 			"buttonRadius": config.LinkBtn.ButtonRadius,
 		},
 		"footer": map[string]interface{}{
-			"textColor": config.Footer.TextColor,
-			"bgColor":   config.Footer.BgColor,
-			"hidden":    config.Footer.Hidden,
-			"text":      config.Footer.Text,
+			"textColor":  config.Footer.TextColor,
+			"bgColor":    config.Footer.BgColor,
+			"hidden":     config.Footer.Hidden,
+			"text":       config.Footer.Text,
 			"fontFamily": config.Footer.FontFamily,
 		},
 		"search": map[string]interface{}{
@@ -799,7 +835,7 @@ func buildThemeConfigMap(config types.ThemeConfig) (map[string]interface{}, erro
 			"borderColor": config.Tag.BorderColor,
 		},
 	}
-	
+
 	return configMap, nil
 }
 
@@ -838,18 +874,32 @@ func SaveThemePreset(id int64, name string, config types.ThemeConfig) (int64, er
 	if err != nil {
 		return 0, fmt.Errorf("序列化主题方案失败: %w", err)
 	}
-	return database.SaveThemePreset(database.ThemePreset{ID: id, Name: name, ConfigJSON: string(configJSON)})
+	newID, err := database.SaveThemePreset(database.ThemePreset{ID: id, Name: name, ConfigJSON: string(configJSON)})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, ErrThemePresetNotFound
+		}
+		return 0, err
+	}
+	return newID, nil
 }
 
-// ApplyThemePreset 将方案应用为当前主题配置
+// ApplyThemePreset 将方案应用为当前主题配置（与主配置同校验/消毒标准）
 func ApplyThemePreset(id int64) error {
 	preset, err := database.GetThemePreset(id)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrThemePresetNotFound
+		}
 		return err
 	}
-	var configMap map[string]interface{}
-	if err := json.Unmarshal([]byte(preset.ConfigJSON), &configMap); err != nil {
+	var config types.ThemeConfig
+	if err := json.Unmarshal([]byte(preset.ConfigJSON), &config); err != nil {
 		return fmt.Errorf("解析主题方案配置失败: %w", err)
+	}
+	configMap, err := buildThemeConfigMap(config)
+	if err != nil {
+		return err
 	}
 	return database.SaveThemeConfig(configMap)
 }

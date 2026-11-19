@@ -3,6 +3,7 @@ package handler
 import (
 	"crypto/tls"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -1645,6 +1646,13 @@ func SaveThemePresetHandler(c *gin.Context) {
 	}
 	id, err := service.SaveThemePreset(req.ID, req.Name, req.Config)
 	if err != nil {
+		if errors.Is(err, service.ErrThemePresetNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"success":      false,
+				"errorMessage": err.Error(),
+			})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success":      false,
 			"errorMessage": err.Error(),
@@ -1692,6 +1700,13 @@ func ApplyThemePresetHandler(c *gin.Context) {
 		return
 	}
 	if err := service.ApplyThemePreset(id); err != nil {
+		if errors.Is(err, service.ErrThemePresetNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"success":      false,
+				"errorMessage": err.Error(),
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success":      false,
 			"errorMessage": err.Error(),

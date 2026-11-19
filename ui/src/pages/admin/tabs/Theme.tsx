@@ -942,6 +942,12 @@ export const Theme: React.FC<ThemeProps> = () => {
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
+      // 先校验已挂载字段；校验失败时 antd 会自动滚动/标红提示，这里直接中止，不重复 message
+      try {
+        await form.validateFields();
+      } catch {
+        return;
+      }
       // getFieldsValue(true)：包含未挂载页签中的字段，避免切页签丢配置
       const all = form.getFieldsValue(true);
       const config = buildConfigFromValues(all);

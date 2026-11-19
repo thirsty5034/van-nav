@@ -437,3 +437,114 @@ func TestGetThemeConfigLegacyFallback(t *testing.T) {
 		t.Errorf("旧数据页脚文案应为空, got %q", got.Footer.Text)
 	}
 }
+
+// TestSanitizeCustomCSSImportNoWhitespace 验证无空白 @import 写法被拒绝（评审 I3）
+func TestSanitizeCustomCSSImportNoWhitespace(t *testing.T) {
+	cases := []string{
+		`@import"//evil.com/x.css";`,
+		`@import url("//evil.com/x.css");`,
+		`@IMPORT "//evil.com/x.css";`,
+	}
+	for _, css := range cases {
+		if _, err := sanitizeCustomCSS(css); err == nil {
+			t.Errorf("危险 CSS %q 应被拒绝", css)
+		}
+	}
+	// 正常 CSS 应通过
+	if _, err := sanitizeCustomCSS(`.card-box { color: #333; }`); err != nil {
+		t.Errorf("正常 CSS 不应被拒绝: %v", err)
+	}
+}
+
+// TestBuildThemeConfigMapLegacyPayloadCompat 验证旧版最小载荷可保存且新字段补默认（评审 I1）
+func TestBuildThemeConfigMapLegacyPayloadCompat(t *testing.T) {
+	database.InitDB()
+	defer database.DeleteThemeConfig()
+
+	legacy := getDefaultThemeConfig()
+	// 模拟旧版前端：只填 colors/layout/typography/customCSS，夜间模式与暗色主题全部零值
+	legacy.NightMode = types.NightModeConfig{}
+	legacy.DarkTheme = types.DarkThemeConfig{}
+
+	if err := SaveThemeConfig(legacy); err != nil {
+		t.Fatalf("旧版最小载荷应可保存, got %v", err)
+	}
+	got, err := GetThemeConfig()
+	if err != nil {
+		t.Fatalf("读取主题配置失败: %v", err)
+	}
+	if got.NightMode.Mode != "system" || got.NightMode.Start != "18:00" || got.NightMode.End != "08:00" {
+		t.Errorf("旧载荷夜间模式应补默认值, got %+v", got.NightMode)
+	}
+	dark := getDefaultDarkTheme().Colors
+	if got.DarkTheme.Colors.Primary != dark.Primary || got.DarkTheme.Colors.BgBase != dark.BgBase ||
+		got.DarkTheme.Colors.BgCard != dark.BgCard {
+		t.Errorf("旧载荷暗色主题应补默认值, got %+v, want %+v", got.DarkTheme.Colors, dark)
+	}
+}
+
+// TestApplyThemePresetSanitizesAndValidates 验证 apply 走统一校验/消毒入口（评审 I2）
+func TestApplyThemePresetSanitizesAndValidates(t *testing.T) {
+	database.InitDB()
+	defer database.DeleteThemeConfig()
+
+	// 1. 正常方案：apply 后主配置应更新
+	preset := getDefaultThemeConfig()
+	preset.CustomCSS = ".card-box { border-radius: 12px; }"
+	presetID, err := SaveThemePreset(0, "正常方案", preset)
+	if err != nil {
+		t.Fatalf("保存方案失败: %v", err)
+	}
+	defer database.DeleteThemePreset(presetID)
+	if err := ApplyThemePreset(presetID); err != nil {
+		t.Fatalf("应用正常方案不应报错: %v", err)
+	}
+	got, err := GetThemeConfig()
+	if err != nil {
+		t.Fatalf("读取主配置失败: %v", err)
+	}
+	if got.CustomCSS != preset.CustomCSS {
+		t.Errorf("应用方案后主配置 CSS 应更新, got %q", got.CustomCSS)
+	}
+
+	// 2. 历史脏方案（含危险 CSS，绕过 service 直写库）：apply 应被拒绝且主配置不被污染
+	dirtyJSON := `{"version":"1.0","customCSS":"@import\"//evil.com/x.css\";"}`
+	res, err := database.DB.Exec(
+		`INSERT INTO nav_theme_presets (name, config_json, created_at, updated_at) VALUES ('脏方案', ?, datetime('now'), datetime('now'))`,
+		dirtyJSON,
+	)
+	if err != nil {
+		t.Fatalf("写入脏方案失败: %v", err)
+	}
+	dirtyID, err := res.LastInsertId()
+	if err != nil {
+		t.Fatalf("获取脏方案ID失败: %v", err)
+	}
+	defer database.DeleteThemePreset(dirtyID)
+
+	before, err := GetThemeConfig()
+	if err != nil {
+		t.Fatalf("读取主配置失败: %v", err)
+	}
+	if err := ApplyThemePreset(dirtyID); err == nil {
+		t.Errorf("含危险 CSS 的方案 apply 应被拒绝")
+	}
+	after, err := GetThemeConfig()
+	if err != nil {
+		t.Fatalf("读取主配置失败: %v", err)
+	}
+	if after.CustomCSS != before.CustomCSS {
+		t.Errorf("apply 被拒后主配置不应变化, before %q after %q", before.CustomCSS, after.CustomCSS)
+	}
+}
+
+// TestSaveThemePresetUpdateNonexistent 验证更新不存在的方案返回明确错误（评审 I4）
+func TestSaveThemePresetUpdateNonexistent(t *testing.T) {
+	database.InitDB()
+	defer database.DeleteThemeConfig()
+
+	base := getDefaultThemeConfig()
+	if _, err := SaveThemePreset(999999, "幽灵方案", base); err != ErrThemePresetNotFound {
+		t.Errorf("更新不存在的方案应返回 ErrThemePresetNotFound, got %v", err)
+	}
+}

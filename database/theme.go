@@ -1,14 +1,16 @@
 package database
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
 // GetThemeConfig 获取主题配置
 func GetThemeConfig() (map[string]interface{}, error) {
 	query := `SELECT config_json FROM nav_theme_config WHERE id = 1`
-	
+
 	var configJSON string
 	err := DB.QueryRow(query).Scan(&configJSON)
 	if err != nil {
@@ -18,12 +20,12 @@ func GetThemeConfig() (map[string]interface{}, error) {
 		}
 		return nil, fmt.Errorf("查询主题配置失败: %w", err)
 	}
-	
+
 	var config map[string]interface{}
 	if err := json.Unmarshal([]byte(configJSON), &config); err != nil {
 		return nil, fmt.Errorf("解析主题配置JSON失败: %w", err)
 	}
-	
+
 	return config, nil
 }
 
@@ -33,18 +35,18 @@ func SaveThemeConfig(config map[string]interface{}) error {
 	if err != nil {
 		return fmt.Errorf("序列化主题配置失败: %w", err)
 	}
-	
+
 	query := `INSERT INTO nav_theme_config (id, config_json, updated_at) 
               VALUES (1, ?, datetime('now'))
               ON CONFLICT(id) DO UPDATE SET 
               config_json = excluded.config_json,
               updated_at = excluded.updated_at`
-	
+
 	_, err = DB.Exec(query, string(configJSON))
 	if err != nil {
 		return fmt.Errorf("保存主题配置失败: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -62,10 +64,10 @@ func DeleteThemeConfig() error {
 
 // ThemePreset 主题方案记录
 type ThemePreset struct {
-	ID        int64  `json:"id"`
-	Name      string `json:"name"`
+	ID         int64  `json:"id"`
+	Name       string `json:"name"`
 	ConfigJSON string `json:"configJson"`
-	UpdatedAt string `json:"updatedAt"`
+	UpdatedAt  string `json:"updatedAt"`
 }
 
 // ListThemePresets 获取全部主题方案（按更新时间倒序）
@@ -91,9 +93,13 @@ func ListThemePresets() ([]ThemePreset, error) {
 func SaveThemePreset(preset ThemePreset) (int64, error) {
 	if preset.ID > 0 {
 		query := `UPDATE nav_theme_presets SET name = ?, config_json = ?, updated_at = datetime('now') WHERE id = ?`
-		_, err := DB.Exec(query, preset.Name, preset.ConfigJSON, preset.ID)
+		res, err := DB.Exec(query, preset.Name, preset.ConfigJSON, preset.ID)
 		if err != nil {
 			return 0, fmt.Errorf("更新主题方案失败: %w", err)
+		}
+		// 更新 0 行说明方案不存在，向上返回 sql.ErrNoRows 供 service 层转换为业务错误
+		if n, err := res.RowsAffected(); err == nil && n == 0 {
+			return 0, sql.ErrNoRows
 		}
 		return preset.ID, nil
 	}
@@ -125,6 +131,10 @@ func GetThemePreset(id int64) (ThemePreset, error) {
 	err := DB.QueryRow(`SELECT id, name, config_json, updated_at FROM nav_theme_presets WHERE id = ?`, id).
 		Scan(&p.ID, &p.Name, &p.ConfigJSON, &p.UpdatedAt)
 	if err != nil {
+		// 方案不存在时原样返回 sql.ErrNoRows，供 service 层转换为业务错误
+		if errors.Is(err, sql.ErrNoRows) {
+			return p, sql.ErrNoRows
+		}
 		return p, fmt.Errorf("查询主题方案失败: %w", err)
 	}
 	return p, nil

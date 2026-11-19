@@ -133,7 +133,8 @@ export const resolveIsDark = (
   const mode = nightMode?.mode || 'system';
   if (mode === 'off') return false;
   if (mode === 'scheduled') {
-    return isInNightWindow(new Date(), nightMode?.start || '18:00', nightMode?.end || '08:00');
+    // 空窗口直接透传：isInNightWindow 对空/非法时间返回 false（不自动进入夜间），与后端强校验对齐
+    return isInNightWindow(new Date(), nightMode?.start, nightMode?.end);
   }
   // system（缺省）
   if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
@@ -181,6 +182,9 @@ export const startThemeWatcher = () => {
   watcherStarted = true;
   const tick = () => {
     if (initTheme() !== 'auto') return; // 手动偏好时不自动干预
+    // 先算目标暗色状态，与当前实际状态一致则不应用、不广播，避免每分钟级联空转（下游 ThemeSync 会全量重取配置）
+    const targetDark = resolveIsDark('auto', getCurrentThemeConfig()?.nightMode);
+    if ((document.querySelector('body')?.classList.contains('dark-mode') ?? false) === targetDark) return;
     applyPreferredTheme('watcher');
     // 通知订阅方（antd 主题、全局监听）自动策略已重算
     broadcastThemeChange();
